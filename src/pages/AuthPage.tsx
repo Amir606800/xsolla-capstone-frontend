@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import officePhoto from '../assets/images/CrescentOfficesPhoto.webp'
+import { isValidEmail, isValidPassword, passwordsMatch } from '../utils/validation'
 import './AuthPage.css'
 
 type Mode = 'signin' | 'signup'
 type Theme = 'light' | 'dark'
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function getInitialTheme(): Theme {
   try {
@@ -37,9 +36,9 @@ export default function AuthPage() {
   }, [theme])
 
   const isSignup = mode === 'signup'
-  const emailOk = EMAIL_RE.test(email)
-  const passwordOk = isSignup ? password.length >= 8 : password.length > 0
-  const confirmOk = !isSignup || confirm === password
+  const emailOk = isValidEmail(email)
+  const passwordOk = isValidPassword(password, isSignup)
+  const confirmOk = !isSignup || passwordsMatch(password, confirm)
   const valid = emailOk && passwordOk && confirmOk
 
   function switchMode(next: Mode) {

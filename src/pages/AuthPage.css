@@ -28,7 +28,7 @@
   background-size: cover;
   background-position: center;
   -webkit-mask-image: linear-gradient(to right, #000 0%, #000 55%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 0%, #000 45%, transparent 100%);
 }
 
 .auth__brand {
@@ -42,12 +42,12 @@
 }
 .auth__logo {
   font-weight: 800;
-  font-size: 64px;
+  font-size: 70px;
   line-height: 1;
   letter-spacing: 2px;
 }
 .auth__school {
-  font-size: 22px;
+  font-size: 32px;
   font-weight: 500;
   letter-spacing: 6px;
 }
