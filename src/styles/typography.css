@@ -1,34 +1,37 @@
 /*
- * Typography - mirrors the xsolla.com type system (scale, weights, line-heights).
+ * Typography - Xsolla type scale (sizes, weights, line-heights from xsolla.com).
  *
- *   Display / H1 ........ Pilat          40/44  500
- *   H2 ................... GraphikLC      32/40  500
- *   H3 ................... GraphikLC      24/30  500
- *   H4 ................... GraphikLC      18/24  500
- *   Paragraph ............ GraphikLC      16/24  400
- *   Label ................ Aktiv Grotesk  14/18  500
- *   Minor ................ GraphikLC      12/16  400
+ * Font priority, first one that is available wins:
+ *   1. SharpGrotesk20  - the Sharp Grotesk Book 20 used on Xsolla's docs site
+ *   2. GraphikLC / Pilat / Aktiv Grotesk - the xsolla.com fonts
+ *   3. Hanken Grotesk  - free stand-in (self-hosted via @fontsource), always available
  *
- * Pilat / GraphikLC / Aktiv Grotesk are commercial fonts, so the files are not in
- * the repo. Until they are added, "Hanken Grotesk" (free, self-hosted via
- * @fontsource) is used as the closest stand-in. To switch to the real fonts, add
- * their files to `public/fonts/` and declare them once (e.g. in index.html or a
- * new CSS file in /public) - the stacks below already list them first:
+ * The Xsolla fonts are commercial: their files are NOT in the repo. Put the files in
+ * public/fonts/sharp-grotesk/ (see the README.txt there) and they are picked up
+ * automatically - no code change needed. Until then the stand-in is shown.
  *
- *   @font-face { font-family: 'GraphikLC'; font-weight: 400; font-display: swap;
- *                src: url('/fonts/GraphikLC-Regular.woff2') format('woff2'); }
- *   @font-face { font-family: 'GraphikLC'; font-weight: 500; font-display: swap;
- *                src: url('/fonts/GraphikLC-Medium.woff2') format('woff2'); }
- *   @font-face { font-family: 'Pilat'; font-weight: 500; font-display: swap;
- *                src: url('/fonts/Pilat-Medium.woff2') format('woff2'); }
- *   @font-face { font-family: 'Aktiv Grotesk'; font-weight: 500; font-display: swap;
- *                src: url('/fonts/AktivGrotesk-Medium.woff2') format('woff2'); }
+ * Only the Book (regular) weight of SharpGrotesk20 is known. It is declared for the whole
+ * 400-700 range so the browser never fakes a bold (which looks smeared). When real Medium /
+ * Bold files exist, add one @font-face per weight and narrow this one to 400.
  */
+@font-face {
+  font-family: 'SharpGrotesk20';
+  src:
+    local('SharpGrotesk20'),
+    local('Sharp Grotesk Book 20'),
+    local('SharpGroteskBook20'),
+    url('/fonts/sharp-grotesk/SharpGroteskBook20.woff2') format('woff2'),
+    url('/fonts/sharp-grotesk/SharpGroteskBook20.woff') format('woff');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --font-fallback: 'Hanken Grotesk Variable', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-body: 'GraphikLC', var(--font-fallback);
-  --font-display: 'Pilat', var(--font-body);
-  --font-label: 'Aktiv Grotesk', var(--font-body);
+  --font-body: 'SharpGrotesk20', 'GraphikLC', var(--font-fallback);
+  --font-display: 'SharpGrotesk20', 'Pilat', var(--font-body);
+  --font-label: 'SharpGrotesk20', 'Aktiv Grotesk', var(--font-body);
 
   --fs-display: clamp(32px, 4vw, 48px);
   --lh-display: 1.12;

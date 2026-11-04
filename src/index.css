@@ -1,7 +1,16 @@
+/*
+ * Colour tokens.
+ * Light theme: the Xsolla turquoise/red/green are toned down. The bright brand
+ * values (kept in the dark theme) are only ~2.5:1 against light backgrounds,
+ * which is tiring to read; these values keep the Xsolla look but reach >= 4.5:1
+ * wherever they are used as TEXT (checked by src/styles/contrast.test.ts).
+ */
 :root {
-  --xs-cyan: #00c8f0;
-  --danger: #ff5a3c;
-  --ok: #1fb25a;
+  --xs-cyan: #2aa9c2; /* fills, rings, borders */
+  --danger: #b83a28;
+  --ok: #15753a;
+  --glow: 8%; /* strength of glows / halos (kept subtle on purpose) */
+  --on-fill: #ffffff; /* text on the solid red/green badges */
   --bg: #f3f3f1;
   --header-bg: #ffffff;
   --card: #ffffff;
@@ -12,11 +21,11 @@
   --tab-bg: #ececea;
   --tab-active-bg: #1c2a30;
   --tab-active-text: #ffffff;
-  --btn-bg: #7be8ff;
+  --btn-bg: #8ad8e8;
   --btn-text: #0b0b0b;
   --btn-disabled-bg: #c5c7b9;
   --btn-disabled-text: #8e9186;
-  --link: #00a9cc;
+  --link: #0a7088;
   --divider: #dcdcd8;
   --error: #d63c3c;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
@@ -29,6 +38,11 @@
 }
 
 :root[data-theme='dark'] {
+  --xs-cyan: #00c8f0;
+  --danger: #ff6b50;
+  --ok: #1fb25a;
+  --glow: 22%;
+  --on-fill: #101412;
   --bg: #1c2629;
   --header-bg: #1c2629;
   --card: #243238;

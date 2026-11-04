@@ -9,6 +9,8 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: ReactNode
+  /** CSS selector (inside the dialog) of the element to focus on open. Defaults to the close button. */
+  initialFocus?: string
 }
 
 const FOCUSABLE =
@@ -19,7 +21,7 @@ const FOCUSABLE =
  * moved inside and trapped while open, restored to the trigger on close, and
  * the page behind does not scroll.
  */
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, title, children, initialFocus }: ModalProps) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -34,7 +36,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
     const previouslyFocused = document.activeElement as HTMLElement | null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    closeRef.current?.focus()
+    const preferred = initialFocus ? dialogRef.current?.querySelector<HTMLElement>(initialFocus) : null
+    ;(preferred ?? closeRef.current)?.focus()
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCloseRef.current()
@@ -46,7 +49,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       document.body.style.overflow = previousOverflow
       if (previouslyFocused && document.contains(previouslyFocused)) previouslyFocused.focus()
     }
-  }, [open])
+  }, [open, initialFocus])
 
   if (!open) return null
 

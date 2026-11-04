@@ -43,7 +43,7 @@ test('path layout follows the viewport (snake on wide, timeline on narrow)', asy
     expect(Math.abs(m1.y - m4.y)).toBeLessThan(2)
     expect(m2.x).toBeGreaterThan(m1.x)
     expect(m5.y).toBeGreaterThan(m4.y)
-    expect(Math.abs(m5.x - m4.x)).toBeLessThan(2)
+    expect(Math.abs(m5.x - m4.x)).toBeLessThan(4) // same column (sub-pixel text widths differ per font)
     expect(m8.x).toBeLessThan(m5.x)
   }
 })

@@ -16,6 +16,8 @@ const PATHS = {
   moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
   chevron: 'M6 9l6 6 6-6',
   check: 'M20 6L9 17l-5-5',
+  search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',
+  'corner-down-left': 'M9 10l-5 5 5 5M20 4v7a4 4 0 0 1-4 4H4',
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   'chevron-left': 'M15 18l-6-6 6-6',
   'chevron-right': 'M9 18l6-6-6-6',

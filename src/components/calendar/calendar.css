@@ -1,6 +1,11 @@
 /* Event colours are global: the day pop-up is rendered in a portal, outside .calendar */
 :root {
   --ev-lecture: var(--xs-cyan);
+  --ev-meeting: #7556e0;
+  --ev-off-campus: #c27a06;
+  --ev-deadline: #c4553a;
+}
+:root[data-theme='dark'] {
   --ev-meeting: #9b7bff;
   --ev-off-campus: #f5a524;
   --ev-deadline: #ff7a59;

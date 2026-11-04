@@ -224,7 +224,7 @@
   width: 100%;
   padding: 0 4px;
   background: var(--ok);
-  color: #fff;
+  color: var(--on-fill);
   text-align: center;
   font-size: 10px;
   text-transform: capitalize;
@@ -344,7 +344,7 @@
 
 /* ---------- Active (current) module: "Opened" and "Due" badges on both sides ---------- */
 .node--active .node__circle {
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--xs-cyan) 55%, transparent));
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--xs-cyan) var(--glow), transparent));
 }
 .node--active .node__label {
   border-color: var(--xs-cyan);
@@ -383,7 +383,7 @@
 }
 .node__tag--right .node__tag-label {
   background: var(--ok);
-  color: #fff;
+  color: var(--on-fill);
 }
 .node__tag--right.is-urgent .node__tag-label {
   background: var(--danger);

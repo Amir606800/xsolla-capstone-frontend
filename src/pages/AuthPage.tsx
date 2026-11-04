@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import officePhoto from '../assets/images/CrescentOfficesPhoto.webp'
+import { XsollaLogo } from '../components/XsollaLogo'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { isValidEmail, isValidName, isValidPassword, passwordsMatch } from '../utils/validation'
@@ -65,9 +66,7 @@ export default function AuthPage() {
     <div className="auth">
       <aside className="auth__hero" style={{ ['--hero-img' as string]: `url(${officePhoto})` }}>
         <div className="auth__brand">
-          <span className="auth__logo" aria-label="Xsolla">
-            XSOLLA
-          </span>
+          <XsollaLogo className="auth__logo" />
           <span className="auth__school">SCHOOL BAKU</span>
         </div>
       </aside>

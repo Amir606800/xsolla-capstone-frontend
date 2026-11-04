@@ -4,11 +4,17 @@ import { useAuth } from '../../hooks/useAuth'
 import { useNotifications } from '../../hooks/useNotifications'
 import { useTheme } from '../../hooks/useTheme'
 import { Icon } from '../Icon'
+import { XsollaLogo } from '../XsollaLogo'
 import { NotificationsModal } from '../notifications/NotificationsModal'
+import { CommandPalette } from '../search/CommandPalette'
+import { CurrentModuleChip } from './CurrentModuleChip'
 
 interface HeaderProps {
   onMenuClick: () => void
 }
+
+const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform)
+const SHORTCUT = isMac ? '⌘ K' : 'Ctrl K'
 
 function HeaderBase({ onMenuClick }: HeaderProps) {
   const { user, signOut } = useAuth()
@@ -17,7 +23,20 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
   const { unreadCount } = useNotifications()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Ctrl/Cmd + K opens the search from anywhere
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault() // don't let the browser focus its own search bar
+        setSearchOpen(true)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   // Close the user menu on outside click / Escape (listeners only while open)
   useEffect(() => {
@@ -54,9 +73,7 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
       </button>
 
       <div className="header__brand">
-        <span className="header__logo" aria-label="Xsolla">
-          XSOLLA
-        </span>
+        <XsollaLogo className="header__logo" />
         <span className="header__divider" aria-hidden="true" />
         <span className="header__org">
           <span className="header__org-name">School Baku</span>
@@ -64,7 +81,34 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
         </span>
       </div>
 
+      {/* centre column: truly centred in the header, so the bar looks balanced */}
+      <div className="header__center">
+        <button
+          type="button"
+          className="search-trigger"
+          onClick={() => setSearchOpen(true)}
+          aria-haspopup="dialog"
+          aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
+        >
+          <Icon name="search" size={18} />
+          <span className="search-trigger__text">Search courses, tasks, pages…</span>
+          <kbd aria-hidden="true">{SHORTCUT}</kbd>
+        </button>
+      </div>
+
       <div className="header__actions">
+        <CurrentModuleChip />
+
+        <button
+          type="button"
+          className="header__icon-btn header__search-btn"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Search"
+          aria-haspopup="dialog"
+        >
+          <Icon name="search" />
+        </button>
+
         <button
           type="button"
           className="header__icon-btn"
@@ -117,7 +161,9 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
           )}
         </div>
       </div>
+
       <NotificationsModal open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   )
 }

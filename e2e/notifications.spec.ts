@@ -36,12 +36,53 @@ test('the Unread filter narrows the list', async ({ page }) => {
   await expect(dialog.getByRole('list', { name: 'Notifications' }).getByRole('listitem')).toHaveCount(8)
 })
 
-test('clicking a notification opens the related page, closes the modal and lowers the count', async ({ page }) => {
+test('clicking a notification asks before leaving the page', async ({ page }) => {
   await bell(page).click()
   await page.getByRole('dialog').getByRole('link', { name: /1:1 with your mentor/ }).click()
+
+  // nothing happened yet: same page, the question is shown
+  await expect(page).toHaveURL(/\/dashboard$/)
+  const question = page.getByRole('region', { name: 'Open this notification?' })
+  await expect(question).toBeVisible()
+  await expect(question).toContainText('the Calendar')
+  await expect(question.getByRole('button', { name: 'Stay here' })).toBeFocused()
+
+  await question.getByRole('button', { name: 'Stay here' }).click()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(bell(page)).toHaveAccessibleName('Notifications, 4 unread')
+})
+
+test('confirming opens the page, closes the modal and lowers the unread count', async ({ page }) => {
+  await bell(page).click()
+  await page.getByRole('dialog').getByRole('link', { name: /1:1 with your mentor/ }).click()
+  await page.getByRole('button', { name: 'Open page' }).click()
+
   await expect(page).toHaveURL(/\/calendar$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(bell(page)).toHaveAccessibleName('Notifications, 3 unread')
+})
+
+test('"Don\'t ask me again" is remembered across reloads', async ({ page }) => {
+  await bell(page).click()
+  await page.getByRole('dialog').getByRole('link', { name: /1:1 with your mentor/ }).click()
+  await page.getByRole('checkbox', { name: "Don't ask me again" }).check()
+  await page.getByRole('button', { name: 'Open page' }).click()
+  await expect(page).toHaveURL(/\/calendar$/)
+
+  await page.goto('/dashboard') // fresh load
+  await bell(page).click()
+  await page.getByRole('dialog').getByRole('link', { name: /HTTP server/ }).click()
+  await expect(page).toHaveURL(/\/courses\/m6$/) // no question this time
+  await expect(page.getByRole('region', { name: 'Open this notification?' })).toHaveCount(0)
+})
+
+test('the question can be switched back on from the modal', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('notif_confirm', 'skip'))
+  await page.goto('/dashboard')
+  await bell(page).click()
+  await page.getByRole('checkbox', { name: 'Ask before opening a notification' }).check()
+  await page.getByRole('dialog').getByRole('link', { name: /1:1 with your mentor/ }).click()
+  await expect(page.getByRole('region', { name: 'Open this notification?' })).toBeVisible()
 })
 
 test('"Mark all as read" removes the badge', async ({ page }) => {
@@ -85,4 +126,12 @@ test('the list scrolls inside the modal while the page behind stays put', async 
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   )
   expect(overflow).toBe(false)
+})
+
+test('the whole modal, including its footer setting, is reachable on screen', async ({ page }) => {
+  await bell(page).click()
+  await page.getByRole('checkbox', { name: 'Ask before opening a notification' }).scrollIntoViewIfNeeded()
+  await expect(page.getByRole('checkbox', { name: 'Ask before opening a notification' })).toBeInViewport()
+  const box = (await page.locator('.modal').boundingBox())!
+  expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize()!.height)
 })

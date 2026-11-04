@@ -11,14 +11,27 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  display: flex;
+  /* brand | centred search | actions: both outer columns are equal, so the search bar sits
+     exactly in the middle and the logo and the actions have the same distance to the edges */
+  display: grid;
+  grid-template-columns: 1fr minmax(240px, 560px) 1fr;
   align-items: center;
-  gap: 12px;
+  column-gap: 20px;
   height: 64px;
-  padding: 0 16px;
-  background: var(--header-bg);
+  padding: 0 22px; /* 22px = where the sidebar icons start, so the logo lines up with them */
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--xs-cyan) 4%, transparent), transparent 40%, transparent 60%,
+      color-mix(in srgb, var(--xs-cyan) 4%, transparent)),
+    var(--header-bg);
   border-top: 3px solid;
   border-image: linear-gradient(90deg, #1c1a3a, #3b1f2b) 1;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--xs-cyan) 14%, var(--divider));
+}
+.header__center {
+  min-width: 0;
+}
+.header__icon-btn.header__search-btn {
+  display: none;
 }
 .header__brand {
   display: flex;
@@ -26,10 +39,10 @@
   gap: 14px;
 }
 .header__logo {
-  font-weight: 800;
-  font-size: 28px;
-  letter-spacing: 1px;
-  line-height: 1;
+  display: block;
+  height: 24px;
+  width: auto;
+  color: var(--text); /* black on the light theme, white on the dark one */
 }
 .header__divider {
   width: 1px;
@@ -40,6 +53,7 @@
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  white-space: nowrap;
 }
 .header__org-name {
   font-size: 15px;
@@ -50,7 +64,7 @@
   color: var(--text-muted);
 }
 .header__actions {
-  margin-left: auto;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -140,7 +154,7 @@
 
 .sidebar {
   position: sticky;
-  top: 64px;
+  top: 69px;
   align-self: flex-start;
   flex: 0 0 280px;
   display: flex;
@@ -149,44 +163,106 @@
   overflow-x: hidden;
   overflow-y: auto;
   transition: flex-basis 0.2s ease;
-  padding: 14px 12px;
-  background: var(--sidebar-bg);
-  border-radius: 8px;
+  padding: 16px 12px 12px;
+  /* "glass" panel: a soft turquoise light from the top-left corner, a fine glowing border */
+  background:
+    radial-gradient(130% 55% at 0% 0%, color-mix(in srgb, var(--xs-cyan) 7%, transparent), transparent 65%),
+    var(--sidebar-bg);
+  border: 1px solid color-mix(in srgb, var(--xs-cyan) 16%, var(--divider));
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent),
+    0 0 28px -10px color-mix(in srgb, var(--xs-cyan) var(--glow), transparent);
 }
 .sidebar__close {
   display: none;
 }
 .sidebar__group + .sidebar__group {
-  margin-top: 18px;
+  margin-top: 20px;
 }
 .sidebar__heading {
-  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
   padding: 0 12px;
-  font-size: 13px;
-  letter-spacing: 1.5px;
   color: var(--text-muted);
+  font-family: var(--font-label);
+  font-size: var(--fs-minor);
+  letter-spacing: 2px;
+}
+.sidebar__heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--divider), transparent);
 }
 .sidebar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .sidebar__link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px;
-  border-radius: 6px;
-  color: var(--text);
+  padding: 7px 12px 7px 8px;
+  border-radius: 14px;
+  color: var(--text-muted);
   text-decoration: none;
-  font-size: 17px;
+  font-size: 16px;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+.sidebar__icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .sidebar__link:hover {
-  background: var(--active-bg);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text);
+  transform: translateX(2px);
+}
+.sidebar__link:hover .sidebar__icon {
+  color: var(--text);
 }
 .sidebar__link.is-active {
-  background: var(--active-bg);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--xs-cyan) 13%, transparent), transparent 85%);
+  color: var(--text);
   font-weight: 500;
+}
+/* glowing marker on the active item */
+.sidebar__link.is-active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 18%;
+  bottom: 18%;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--xs-cyan);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--xs-cyan) 40%, transparent);
+}
+.sidebar__link.is-active .sidebar__icon {
+  background: var(--xs-cyan);
+  color: #06232b;
+  box-shadow: 0 0 8px -3px color-mix(in srgb, var(--xs-cyan) var(--glow), transparent);
 }
 .sidebar__link:focus-visible,
 .header__icon-btn:focus-visible,
@@ -201,15 +277,52 @@
   white-space: nowrap;
 }
 
-/* Collapse / expand button, pinned to the bottom of the sidebar */
+/* Bottom of the sidebar: program progress + collapse button */
+.sidebar__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.sidebar__progress {
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--xs-cyan) 20%, var(--divider));
+  border-radius: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--xs-cyan) 7%, transparent), transparent 70%);
+}
+.sidebar__progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.sidebar__progress-head strong {
+  color: var(--text);
+  font-weight: var(--fw-medium);
+}
+.sidebar__progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  overflow: hidden;
+}
+.sidebar__progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--xs-cyan), color-mix(in srgb, var(--xs-cyan) 55%, #9b7bff));
+}
+
 .sidebar__toggle {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-top: auto;
-  padding: 12px;
+  padding: 7px 12px 7px 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 14px;
   background: transparent;
   color: var(--text-muted);
   font: inherit;
@@ -217,7 +330,7 @@
   cursor: pointer;
 }
 .sidebar__toggle:hover {
-  background: var(--active-bg);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
   color: var(--text);
 }
 .sidebar__toggle:focus-visible {
@@ -232,13 +345,17 @@
     padding-inline: 10px;
   }
   .sidebar.is-collapsed .sidebar__text,
-  .sidebar.is-collapsed .sidebar__heading {
+  .sidebar.is-collapsed .sidebar__heading,
+  .sidebar.is-collapsed .sidebar__progress {
     display: none;
   }
   .sidebar.is-collapsed .sidebar__link,
   .sidebar.is-collapsed .sidebar__toggle {
     justify-content: center;
     padding-inline: 0;
+  }
+  .sidebar.is-collapsed .sidebar__link.is-active::before {
+    left: -10px;
   }
   .sidebar.is-collapsed .sidebar__group + .sidebar__group {
     margin-top: 12px;
@@ -262,6 +379,21 @@
     padding: 0;
     gap: 0;
   }
+  /* small screens: menu button | brand | actions in one row, search becomes an icon */
+  .header {
+    display: flex;
+    gap: 12px;
+    padding: 0 16px;
+  }
+  .header__center {
+    display: none;
+  }
+  .header__icon-btn.header__search-btn {
+    display: inline-flex;
+  }
+  .header__actions {
+    margin-left: auto;
+  }
   .header__menu-btn {
     display: inline-flex;
   }
@@ -270,13 +402,15 @@
     display: none;
   }
   .sidebar {
+    border-radius: 0 18px 18px 0;
+  }
+  .sidebar {
     position: fixed;
     z-index: 40;
     top: 0;
     left: 0;
     height: 100vh;
     width: 280px;
-    border-radius: 0;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
   }
@@ -310,5 +444,12 @@
 @media (prefers-reduced-motion: reduce) {
   .sidebar {
     transition: none;
+  }
+}
+
+/* the "current module" chip needs room: hide it on medium screens */
+@media (max-width: 1180px) {
+  .now-chip {
+    display: none;
   }
 }

@@ -17,7 +17,7 @@ test('guests are redirected to /login', async ({ page }) => {
 })
 
 test('renders the split layout with branding and card', async ({ page }) => {
-  await expect(page.getByText('XSOLLA', { exact: true })).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Xsolla' })).toBeVisible()
   await expect(page.getByText('SCHOOL BAKU')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Sign in' })).toHaveAttribute('aria-selected', 'true')

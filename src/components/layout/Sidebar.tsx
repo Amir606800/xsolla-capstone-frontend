@@ -1,35 +1,9 @@
 import { memo } from 'react'
 import { NavLink } from 'react-router'
+import { STUDENT_NAV } from '../../config/nav'
+import { useCourses } from '../../hooks/useCourses'
+import { isModuleLocked } from '../../utils/progress'
 import { Icon } from '../Icon'
-import type { IconName } from '../Icon'
-
-interface NavItem {
-  to: string
-  label: string
-  icon: IconName
-}
-
-interface NavGroup {
-  heading?: string
-  items: NavItem[]
-}
-
-// Static data: defined once at module level, never re-created on render.
-const STUDENT_NAV: NavGroup[] = [
-  {
-    items: [
-      { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-      { to: '/courses', label: 'My courses', icon: 'courses' },
-      { to: '/tasks', label: 'Tasks', icon: 'tasks' },
-      { to: '/calendar', label: 'Calendar', icon: 'calendar' },
-      { to: '/grades', label: 'Grades', icon: 'grades' },
-    ],
-  },
-  {
-    heading: 'COMMUNITY',
-    items: [{ to: '/team', label: 'My team', icon: 'team' }],
-  },
-]
 
 interface SidebarProps {
   /** Mobile drawer state. */
@@ -38,6 +12,37 @@ interface SidebarProps {
   /** Desktop icon-only rail. Ignored on small screens, where the drawer is always full width. */
   collapsed: boolean
   onToggleCollapsed: () => void
+}
+
+/** "Week 6 of 12": how far into the program we are (modules that have opened so far). */
+function ProgramProgress() {
+  const { status, modules, now } = useCourses()
+  if (status !== 'ready' || modules.length === 0) return null
+
+  const opened = modules.filter((m) => !isModuleLocked(m, now)).length
+  const pct = Math.round((opened / modules.length) * 100)
+
+  return (
+    <div className="sidebar__progress">
+      <div className="sidebar__progress-head">
+        <span>Program</span>
+        <strong>
+          Week {opened} of {modules.length}
+        </strong>
+      </div>
+      <div
+        className="sidebar__progress-bar"
+        role="progressbar"
+        aria-label="Program progress"
+        aria-valuemin={0}
+        aria-valuemax={modules.length}
+        aria-valuenow={opened}
+        aria-valuetext={`Week ${opened} of ${modules.length}`}
+      >
+        <div className="sidebar__progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
 }
 
 function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarProps) {
@@ -72,7 +77,9 @@ function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarPro
                       title={collapsed ? item.label : undefined}
                       className={({ isActive }) => `sidebar__link${isActive ? ' is-active' : ''}`}
                     >
-                      <Icon name={item.icon} />
+                      <span className="sidebar__icon">
+                        <Icon name={item.icon} size={20} />
+                      </span>
                       <span className="sidebar__text">{item.label}</span>
                     </NavLink>
                   </li>
@@ -82,18 +89,24 @@ function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarPro
           ))}
         </nav>
 
-        <button
-          type="button"
-          className="sidebar__toggle"
-          onClick={onToggleCollapsed}
-          aria-expanded={!collapsed}
-          aria-controls="app-sidebar"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <Icon name={collapsed ? 'expand' : 'collapse'} />
-          <span className="sidebar__text">Collapse</span>
-        </button>
+        <div className="sidebar__bottom">
+          <ProgramProgress />
+
+          <button
+            type="button"
+            className="sidebar__toggle"
+            onClick={onToggleCollapsed}
+            aria-expanded={!collapsed}
+            aria-controls="app-sidebar"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <span className="sidebar__icon">
+              <Icon name={collapsed ? 'expand' : 'collapse'} size={20} />
+            </span>
+            <span className="sidebar__text">Collapse</span>
+          </button>
+        </div>
       </aside>
     </>
   )

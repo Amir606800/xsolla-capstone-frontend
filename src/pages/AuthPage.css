@@ -41,10 +41,12 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
 }
 .auth__logo {
-  font-weight: 800;
-  font-size: 70px;
-  line-height: 1;
-  letter-spacing: 2px;
+  display: block;
+  height: 64px;
+  width: auto;
+  /* the photo is darkened in both themes, so the logo stays white here (black would be invisible) */
+  color: #fff;
+  margin-bottom: 6px;
 }
 .auth__school {
   font-size: 32px;
@@ -240,7 +242,7 @@
     mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
   }
   .auth__logo {
-    font-size: 44px;
+    height: 40px;
   }
   .auth__school {
     font-size: 16px;
