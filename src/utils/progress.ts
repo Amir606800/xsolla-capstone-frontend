@@ -1,4 +1,4 @@
-import type { AssignmentItem, CourseModule } from '../types/course'
+import type { AssignmentItem, CourseModule, ResourceItem } from '../types/course'
 
 const HOUR = 3_600_000
 export const URGENT_WITHIN_MS = 48 * HOUR
@@ -45,6 +45,29 @@ export interface GradeEntry {
 
 export function assignmentsOf(module: CourseModule): AssignmentItem[] {
   return module.items.filter((i): i is AssignmentItem => i.type === 'assignment')
+}
+
+export function resourcesOf(module: CourseModule): ResourceItem[] {
+  return module.items.filter((i): i is ResourceItem => i.type === 'resource')
+}
+
+export type AssignmentStatus = 'open' | 'overdue' | 'submitted' | 'graded'
+
+export function assignmentStatus(a: AssignmentItem, now: Date): AssignmentStatus {
+  if (a.submission?.grade !== undefined) return 'graded'
+  if (a.submission) return 'submitted'
+  return new Date(a.dueAt) < now ? 'overdue' : 'open'
+}
+
+/** Module window for display: explicit dates win, otherwise derived from its assignments. */
+export function moduleWindow(module: CourseModule): { opensAt?: string; dueAt?: string } {
+  const dues = assignmentsOf(module)
+    .map((a) => a.dueAt)
+    .sort()
+  return {
+    opensAt: module.opensAt,
+    dueAt: module.closesAt ?? dues[dues.length - 1],
+  }
 }
 
 export function moduleProgress(module: CourseModule, now: Date): ModuleProgress {

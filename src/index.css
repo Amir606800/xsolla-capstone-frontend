@@ -1,5 +1,7 @@
 :root {
   --xs-cyan: #00c8f0;
+  --danger: #ff5a3c;
+  --ok: #1fb25a;
   --bg: #f3f3f1;
   --header-bg: #ffffff;
   --card: #ffffff;
@@ -21,7 +23,6 @@
   --sidebar-bg: #f3f3f1;
   --main-bg: #eceeed;
   --active-bg: #e3e4e1;
-  font-family: 'Aeonik', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -47,19 +48,6 @@
   --sidebar-bg: #243238;
   --main-bg: #172023;
   --active-bg: #3a4a50;
-}
-
-.page-title {
-  margin: 0 0 8px;
-  font-size: clamp(32px, 5vw, 56px);
-  font-weight: 400;
-  line-height: 1.1;
-}
-
-.page-subtitle {
-  margin: 0;
-  font-size: 18px;
-  color: var(--text-muted);
 }
 
 * {

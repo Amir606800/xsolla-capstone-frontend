@@ -1,0 +1,330 @@
+.module {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.module__state {
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text-muted);
+}
+.module__state .btn {
+  margin-top: 8px;
+}
+.module .page-title {
+  margin-bottom: 0;
+}
+
+/* ---------- Module header ---------- */
+.module-head__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: var(--link);
+  text-decoration: none;
+  font-size: 15px;
+}
+.module-head__back:hover {
+  text-decoration: underline;
+}
+.module-head__eyebrow {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+.module-head__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 32px;
+  margin: 20px 0 0;
+}
+.module-head__meta > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.module-head__meta dt {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.module-head__meta dd {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+.module-head__progress {
+  flex: 1 1 220px;
+  max-width: 360px;
+}
+.module-head__progress .stat__head {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+/* ---------- Layout ---------- */
+.module__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.module__side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.card__head .pill {
+  margin-left: auto;
+}
+
+/* ---------- Assignments ---------- */
+.assignments {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.assignment + .assignment {
+  border-top: 1px solid var(--divider);
+}
+.assignment__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.assignment__head:hover {
+  background: var(--sidebar-bg);
+}
+.assignment__head:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: -2px;
+}
+.assignment__title-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.assignment__head > svg:last-child {
+  flex: none;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.assignment.is-open .assignment__head > svg:last-child {
+  transform: rotate(180deg);
+}
+.assignment__body {
+  padding: 4px 20px 20px;
+}
+.assignment__body > p {
+  margin: 8px 0;
+}
+.assignment__requirements {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  color: var(--text-muted);
+}
+
+/* ---------- Submission ---------- */
+.submission {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--sidebar-bg);
+}
+.submission__title {
+  margin: 12px 0 4px;
+  font-size: var(--fs-p);
+  line-height: var(--lh-p);
+  font-weight: var(--fw-medium);
+}
+.submission__hint,
+.submission__muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.submission__hint {
+  margin: 0 0 4px;
+}
+.submission__current {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--divider);
+}
+.submission__line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--ok);
+  font-size: 14px;
+}
+.submission__text {
+  margin: 6px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.submission__grade {
+  margin-top: 8px;
+}
+.submission__grade p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.submission__textarea {
+  height: auto;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.4;
+}
+.submission__file-input {
+  width: 100%;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.submission__files {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.submission__files li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.submission__files li span {
+  color: var(--text-muted);
+}
+.submission__remove {
+  margin-left: auto;
+  padding: 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.submission__remove:hover {
+  background: var(--active-bg);
+  color: var(--text);
+}
+.submission__errors {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--danger);
+  font-size: 14px;
+}
+.submission__done {
+  margin: 8px 0 0;
+  color: var(--ok);
+  font-size: 14px;
+}
+.submission__submit {
+  margin-top: 14px;
+}
+
+/* ---------- Resources ---------- */
+.resource {
+  align-items: center;
+}
+.resource__icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--active-bg);
+}
+.resource__text {
+  flex: 1;
+  min-width: 0;
+}
+.resource__text .list__title {
+  overflow-wrap: anywhere;
+}
+
+/* ---------- My courses grid ---------- */
+.module-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.module-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  padding: 18px;
+  border: 1px solid var(--field-border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  text-decoration: none;
+}
+.module-card:hover {
+  border-color: var(--xs-cyan);
+}
+.module-card:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.module-card__eyebrow {
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.module-card__title {
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+  font-weight: var(--fw-medium);
+}
+.module-card__desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.module-card .stat__head {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.module-card__foot {
+  margin-top: auto;
+}
+
+@media (max-width: 1100px) {
+  .module__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assignment__head > svg:last-child {
+    transition: none;
+  }
+}

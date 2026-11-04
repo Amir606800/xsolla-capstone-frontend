@@ -1,0 +1,125 @@
+/*
+ * Typography - mirrors the xsolla.com type system (scale, weights, line-heights).
+ *
+ *   Display / H1 ........ Pilat          40/44  500
+ *   H2 ................... GraphikLC      32/40  500
+ *   H3 ................... GraphikLC      24/30  500
+ *   H4 ................... GraphikLC      18/24  500
+ *   Paragraph ............ GraphikLC      16/24  400
+ *   Label ................ Aktiv Grotesk  14/18  500
+ *   Minor ................ GraphikLC      12/16  400
+ *
+ * Pilat / GraphikLC / Aktiv Grotesk are commercial fonts, so the files are not in
+ * the repo. Until they are added, "Hanken Grotesk" (free, self-hosted via
+ * @fontsource) is used as the closest stand-in. To switch to the real fonts, add
+ * their files to `public/fonts/` and declare them once (e.g. in index.html or a
+ * new CSS file in /public) - the stacks below already list them first:
+ *
+ *   @font-face { font-family: 'GraphikLC'; font-weight: 400; font-display: swap;
+ *                src: url('/fonts/GraphikLC-Regular.woff2') format('woff2'); }
+ *   @font-face { font-family: 'GraphikLC'; font-weight: 500; font-display: swap;
+ *                src: url('/fonts/GraphikLC-Medium.woff2') format('woff2'); }
+ *   @font-face { font-family: 'Pilat'; font-weight: 500; font-display: swap;
+ *                src: url('/fonts/Pilat-Medium.woff2') format('woff2'); }
+ *   @font-face { font-family: 'Aktiv Grotesk'; font-weight: 500; font-display: swap;
+ *                src: url('/fonts/AktivGrotesk-Medium.woff2') format('woff2'); }
+ */
+:root {
+  --font-fallback: 'Hanken Grotesk Variable', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-body: 'GraphikLC', var(--font-fallback);
+  --font-display: 'Pilat', var(--font-body);
+  --font-label: 'Aktiv Grotesk', var(--font-body);
+
+  --fs-display: clamp(32px, 4vw, 48px);
+  --lh-display: 1.12;
+  --fs-h1: 40px;
+  --lh-h1: 44px;
+  --fs-h2: 32px;
+  --lh-h2: 40px;
+  --fs-h3: 24px;
+  --lh-h3: 30px;
+  --fs-h4: 18px;
+  --lh-h4: 24px;
+  --fs-p: 16px;
+  --lh-p: 24px;
+  --fs-label: 14px;
+  --lh-label: 18px;
+  --fs-minor: 12px;
+  --lh-minor: 16px;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-strong: 600;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--fs-p);
+  line-height: var(--lh-p);
+  font-weight: var(--fw-regular);
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0;
+}
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-h1);
+}
+h2 {
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+}
+h3 {
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+}
+h4 {
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+}
+strong,
+b {
+  font-weight: var(--fw-strong);
+}
+
+/* Page-level display heading + lead text used across the app */
+.page-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  font-weight: var(--fw-medium);
+}
+.page-subtitle {
+  margin: 0;
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+  color: var(--text-muted);
+}
+
+.text-label {
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--fw-medium);
+}
+.text-minor {
+  font-size: var(--fs-minor);
+  line-height: var(--lh-minor);
+}

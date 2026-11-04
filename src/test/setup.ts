@@ -29,7 +29,14 @@ vi.mock('../api/auth', () => ({
 
 vi.mock('../api/courses', async () => {
   const { buildMockModules } = await import('../mocks/courses')
-  return { fetchModules: vi.fn(async () => buildMockModules(new Date())) }
+  return {
+    fetchModules: vi.fn(async () => buildMockModules(new Date())),
+    submitWork: vi.fn(async (_id: string, p: { textBody: string; files: File[] }) => ({
+      submittedAt: new Date().toISOString(),
+      textBody: p.textBody || undefined,
+      files: p.files.map((f) => ({ name: f.name, sizeBytes: f.size })),
+    })),
+  }
 })
 
 afterEach(() => {

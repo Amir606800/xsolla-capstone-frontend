@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { fetchModules } from '../api/courses'
-import type { CourseModule } from '../types/course'
+import { fetchModules, submitWork } from '../api/courses'
+import type { SubmitPayload } from '../api/courses'
+import type { CourseModule, Submission } from '../types/course'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
+
+function withSubmission(modules: CourseModule[], assignmentId: string, result: Submission): CourseModule[] {
+  return modules.map((m) =>
+    m.items.some((i) => i.id === assignmentId)
+      ? {
+          ...m,
+          items: m.items.map((i) =>
+            i.id === assignmentId && i.type === 'assignment'
+              // resubmitting updates the work but keeps an existing grade/feedback
+              ? { ...i, submission: { ...i.submission, ...result } }
+              : i,
+          ),
+        }
+      : m,
+  )
+}
 
 /**
  * Loads the course once for the signed-in shell, so the Dashboard, Courses,
@@ -37,7 +54,16 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     setAttempt((a) => a + 1)
   }, [])
 
-  const value = useMemo(() => ({ status, modules, now, reload }), [status, modules, now, reload])
+  const submitAssignment = useCallback(async (assignmentId: string, payload: SubmitPayload) => {
+    const result = await submitWork(assignmentId, payload)
+    setModules((prev) => withSubmission(prev, assignmentId, result))
+    setNow(new Date())
+  }, [])
+
+  const value = useMemo(
+    () => ({ status, modules, now, reload, submitAssignment }),
+    [status, modules, now, reload, submitAssignment],
+  )
 
   return <CoursesContext.Provider value={value}>{children}</CoursesContext.Provider>
 }

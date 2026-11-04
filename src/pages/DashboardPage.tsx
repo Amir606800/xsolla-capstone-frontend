@@ -7,6 +7,7 @@ import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { useCourses } from '../hooks/useCourses'
 import { overallStats, recentGrades, upcomingDeadlines } from '../utils/progress'
+import '../styles/ui.css'
 import '../components/dashboard/dashboard.css'
 
 export default function DashboardPage() {

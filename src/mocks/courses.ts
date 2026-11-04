@@ -31,6 +31,21 @@ const FEEDBACK = [
   'Solid solution. Try to split the larger functions.',
 ]
 
+const DESCRIPTIONS = [
+  'Set up your tools, meet your team and learn the Git workflow used all program long.',
+  'HTML, CSS and how the web works: build and style your first pages.',
+  'Core JavaScript: types, functions, the DOM and asynchronous code.',
+  'Add static types to your JavaScript and learn to model data safely.',
+  'Component-based UIs: state, props, hooks and routing with React.',
+  'Fundamentals of Go: syntax, packages and building a small HTTP server.',
+  'Relational data: schema design, SQL queries and PostgreSQL.',
+  'Design and build REST APIs, including authentication.',
+  'Package and run applications with Docker and Compose.',
+  'Unit, integration and end-to-end testing strategies.',
+  'Automate builds, tests and deployments with a CI/CD pipeline.',
+  'Bring everything together in a team project and present it.',
+]
+
 // task titles per module (1-3 each)
 const TASKS: string[][] = [
   ['Git workflow', 'Team setup'],
@@ -54,13 +69,25 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
     const id = `m${idx + 1}`
     const weekOffset = (idx - currentIdx) * 7 // days from "now" to this module's deadlines
 
-    const resource: ResourceItem = {
-      id: `${id}-r1`,
-      moduleId: id,
-      type: 'resource',
-      title: `${title} - slides`,
-      kind: 'pdf',
-    }
+    const resources: ResourceItem[] = [
+      {
+        id: `${id}-r1`,
+        moduleId: id,
+        type: 'resource',
+        title: `${title} - lecture slides`,
+        kind: 'pdf',
+        description: "Lecturer's presentation",
+      },
+      {
+        id: `${id}-r2`,
+        moduleId: id,
+        type: 'resource',
+        title: `${title} - further reading`,
+        kind: 'link',
+        description: 'External source',
+        url: 'https://developer.mozilla.org/',
+      },
+    ]
 
     const assignments = TASKS[idx].map((taskTitle, t): AssignmentItem => {
       const dueDays = weekOffset + 2 + t * 2
@@ -69,6 +96,12 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
         moduleId: id,
         type: 'assignment',
         title: taskTitle,
+        description: `Complete the "${taskTitle}" task for the ${title} module.`,
+        requirements: [
+          'Push your work to the team repository',
+          'Include a short README explaining your approach',
+          'Hand in the link or files here before the deadline',
+        ],
         dueAt: iso(now, dueDays),
         maxPoints: 100,
       }
@@ -93,6 +126,14 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
       return item
     })
 
-    return { id, position: idx + 1, title, items: [resource, ...assignments] }
+    return {
+      id,
+      position: idx + 1,
+      title,
+      description: DESCRIPTIONS[idx],
+      opensAt: iso(now, weekOffset),
+      closesAt: iso(now, weekOffset + 6),
+      items: [...resources, ...assignments],
+    }
   })
 }

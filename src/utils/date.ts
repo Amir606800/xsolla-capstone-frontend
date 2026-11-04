@@ -2,6 +2,18 @@
 const monthFmt = new Intl.DateTimeFormat('en', { month: 'short' })
 const fullFmt = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
 
+const dateTimeFmt = new Intl.DateTimeFormat('en', {
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+
+export function formatDateTime(iso: string): string {
+  return dateTimeFmt.format(new Date(iso))
+}
+
 export function monthShort(iso: string): string {
   return monthFmt.format(new Date(iso))
 }
