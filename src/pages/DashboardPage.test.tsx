@@ -29,11 +29,33 @@ describe('DashboardPage', () => {
     renderDashboard()
     expect(await screen.findByRole('heading', { name: 'Progress' })).toBeInTheDocument()
     expect(screen.getByRole('list', { name: 'Course modules' })).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: /^Module \d+:/ })).toHaveLength(12)
+    expect(screen.getAllByRole('link', { name: /^Module \d+:/ })).toHaveLength(6) // open modules
+    expect(screen.getAllByRole('group', { name: /^Module \d+:.*locked/ })).toHaveLength(6) // future modules
     expect(screen.getByRole('heading', { name: 'Upcoming deadlines' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Recent grades' })).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Quizzes' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('does not list tasks of modules that are not open yet under upcoming deadlines', async () => {
+    renderDashboard()
+    await screen.findByRole('heading', { name: 'Progress' })
+    const card = screen.getByRole('heading', { name: 'Upcoming deadlines' }).closest('section')!
+    // module 7+ tasks (e.g. "Schema design") must stay hidden from a student
+    expect(card).not.toHaveTextContent('Schema design')
+    expect(card).not.toHaveTextContent('Docker')
+  })
+
+  it('shows the open path to a teacher: nothing is locked', async () => {
+    localStorage.setItem('auth_user', JSON.stringify({ id: 2, name: 'Lec', email: 'l@x.co', role: 'teacher' }))
+    renderWithProviders(
+      <CoursesProvider>
+        <DashboardPage />
+      </CoursesProvider>,
+    )
+    await screen.findByRole('heading', { name: 'Progress' })
+    expect(screen.getAllByRole('link', { name: /^Module \d+:/ })).toHaveLength(12)
+    expect(screen.queryByRole('group', { name: /locked/ })).not.toBeInTheDocument()
   })
 
   it('shows an error with retry, and recovers', async () => {

@@ -1,5 +1,5 @@
-import { useId, useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
+import { useId, useRef, useState } from 'react'
+import type { ChangeEvent, DragEvent, FormEvent } from 'react'
 import type { SubmitPayload } from '../../api/courses'
 import type { AssignmentItem } from '../../types/course'
 import { formatDateTime } from '../../utils/date'
@@ -22,12 +22,47 @@ export function SubmissionPanel({ assignment, onSubmit }: SubmissionPanelProps) 
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const dragDepth = useRef(0)
 
   const canSubmit = (text.trim().length > 0 || files.length > 0) && !busy
 
   function handleFiles(e: ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(e.target.files ?? [])
     e.target.value = '' // allow picking the same file again after removing it
+    addFiles(picked)
+  }
+
+  // Drag & drop. dragenter/dragleave also fire for child elements, so count
+  // the depth instead of toggling on every event (avoids flicker).
+  function hasFiles(e: DragEvent) {
+    return Array.from(e.dataTransfer?.types ?? []).includes('Files')
+  }
+  function handleDragEnter(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    dragDepth.current += 1
+    setDragging(true)
+  }
+  function handleDragOver(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault() // required to allow dropping
+    e.dataTransfer.dropEffect = 'copy'
+  }
+  function handleDragLeave(e: DragEvent) {
+    if (!hasFiles(e)) return
+    dragDepth.current = Math.max(0, dragDepth.current - 1)
+    if (dragDepth.current === 0) setDragging(false)
+  }
+  function handleDrop(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault() // stops the browser from opening the file
+    dragDepth.current = 0
+    setDragging(false)
+    addFiles(Array.from(e.dataTransfer.files))
+  }
+
+  function addFiles(picked: File[]) {
     const errors: string[] = []
     const accepted: File[] = []
     for (const f of picked) {
@@ -112,14 +147,29 @@ export function SubmissionPanel({ assignment, onSubmit }: SubmissionPanelProps) 
         <label className="field__label" htmlFor={`${uid}-files`}>
           Files <span className="submission__muted">({ALLOWED_EXTENSIONS.join(', ')}, up to 50 MB each)</span>
         </label>
-        <input
-          id={`${uid}-files`}
-          className="submission__file-input"
-          type="file"
-          multiple
-          accept={ACCEPT}
-          onChange={handleFiles}
-        />
+        <div
+          className={`dropzone${dragging ? ' is-dragging' : ''}`}
+          role="group"
+          aria-label="File drop area"
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <Icon name="upload" size={24} />
+          <span className="dropzone__text">
+            {dragging ? 'Drop to add the files' : 'Drag & drop files here, or click to browse'}
+          </span>
+          {/* The real input covers the zone, so clicking and keyboard use still work. */}
+          <input
+            id={`${uid}-files`}
+            className="dropzone__input"
+            type="file"
+            multiple
+            accept={ACCEPT}
+            onChange={handleFiles}
+          />
+        </div>
 
         {fileErrors.length > 0 && (
           <ul className="submission__errors" role="alert">

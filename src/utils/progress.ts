@@ -51,6 +51,20 @@ export function resourcesOf(module: CourseModule): ResourceItem[] {
   return module.items.filter((i): i is ResourceItem => i.type === 'resource')
 }
 
+/**
+ * A module that has not opened yet. Students must not see its content;
+ * a module without an `opensAt` date is always open.
+ */
+export function isModuleLocked(module: CourseModule, now: Date): boolean {
+  return module.opensAt !== undefined && new Date(module.opensAt) > now
+}
+
+/** The module whose opening..closing window contains `now` ("this week"). */
+export function isActiveModule(module: CourseModule, now: Date): boolean {
+  if (!module.opensAt || !module.closesAt) return false
+  return new Date(module.opensAt) <= now && now <= new Date(module.closesAt)
+}
+
 export type AssignmentStatus = 'open' | 'overdue' | 'submitted' | 'graded'
 
 export function assignmentStatus(a: AssignmentItem, now: Date): AssignmentStatus {

@@ -42,9 +42,9 @@ describe('App routing', () => {
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/dashboard' })
 
-    await user.click(await screen.findByRole('link', { name: 'Calendar' }))
+    await user.click(await screen.findByRole('link', { name: 'Grades' }))
     expect(await screen.findByRole('heading', { name: 'Coming soon' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Calendar' })).toHaveClass('is-active')
+    expect(screen.getByRole('link', { name: 'Grades' })).toHaveClass('is-active')
     expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveClass('is-active')
   })
 

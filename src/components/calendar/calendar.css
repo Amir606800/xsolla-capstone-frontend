@@ -1,0 +1,336 @@
+/* Event colours are global: the day pop-up is rendered in a portal, outside .calendar */
+:root {
+  --ev-lecture: var(--xs-cyan);
+  --ev-meeting: #9b7bff;
+  --ev-off-campus: #f5a524;
+  --ev-deadline: #ff7a59;
+}
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.calendar .page-title {
+  margin-bottom: 0;
+}
+
+/* ---------- Toolbar ---------- */
+.calendar__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.calendar__month {
+  margin: 0;
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+}
+.calendar__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.calendar__arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+.calendar__arrow:hover {
+  background: var(--active-bg);
+}
+.calendar__arrow:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+
+/* ---------- Legend ---------- */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------- Month grid ---------- */
+.month {
+  border: 1px solid var(--field-border);
+  border-radius: 12px;
+  background: var(--card);
+  overflow: hidden;
+}
+.month__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--divider);
+  background: var(--sidebar-bg);
+}
+.month__weekdays span {
+  padding: 10px 8px;
+  color: var(--text-muted);
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.month__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--divider);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-height: clamp(88px, 13vh, 130px);
+  min-width: 0;
+  padding: 6px;
+  border: 0;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cell:hover {
+  background: var(--sidebar-bg);
+}
+.cell:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: -2px;
+  z-index: 1;
+}
+.cell.is-outside {
+  background: color-mix(in srgb, var(--card) 55%, var(--main-bg));
+}
+.cell.is-outside .cell__num {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+.cell.is-selected {
+  box-shadow: inset 0 0 0 2px var(--xs-cyan);
+  z-index: 1;
+}
+.cell__num {
+  align-self: flex-start;
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 13px;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+}
+.cell.is-today .cell__num {
+  background: var(--xs-cyan);
+  color: #06232b;
+}
+
+/* ---------- Events inside a date box ---------- */
+.cell__events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ev {
+  --c: var(--ev-lecture);
+}
+.ev--lecture {
+  --c: var(--ev-lecture);
+}
+.ev--meeting {
+  --c: var(--ev-meeting);
+}
+.ev--off-campus {
+  --c: var(--ev-off-campus);
+}
+.ev--deadline {
+  --c: var(--ev-deadline);
+}
+.ev--deadline.is-done {
+  --c: var(--ok);
+}
+.ev--deadline.is-overdue {
+  --c: var(--danger);
+}
+
+.cell__events .ev {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  padding: 1px 5px;
+  border-left: 3px solid var(--c);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  font-size: 12px;
+  line-height: 16px;
+}
+.cell__events .ev.is-done .ev__title {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.ev__time {
+  flex: none;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ev__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cell__more {
+  padding-left: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.cell__dots {
+  display: none;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+/* ---------- Day panel ---------- */
+.day-event {
+  align-items: center;
+}
+.day-event__bar {
+  flex: none;
+  align-self: stretch;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--c);
+}
+.day-event__text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Small screens: dots in the cell, details in the panel ---------- */
+@media (max-width: 720px) {
+  .cell {
+    min-height: 56px;
+    padding: 4px;
+    align-items: center;
+  }
+  .cell__num {
+    align-self: center;
+  }
+  .cell__events {
+    display: none;
+  }
+  .cell__dots {
+    display: flex;
+    justify-content: center;
+  }
+  .month__weekdays span {
+    padding: 8px 2px;
+    letter-spacing: 0;
+    font-size: var(--fs-minor);
+  }
+}
+
+/* ---------- Day pop-up: detailed event cards ---------- */
+.event-cards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.event-card {
+  display: flex;
+  gap: 14px;
+  padding: 16px 20px;
+}
+.event-card + .event-card {
+  border-top: 1px solid var(--divider);
+}
+.event-card__bar {
+  flex: none;
+  align-self: stretch;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--c);
+}
+.event-card__main {
+  flex: 1;
+  min-width: 0;
+}
+.event-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.event-card__title {
+  margin: 0;
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+  overflow-wrap: anywhere;
+}
+.event-card__facts {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+.event-card__facts > div {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 8px;
+}
+.event-card__facts dt {
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.event-card__facts dd {
+  margin: 0;
+}
+.event-card__muted {
+  color: var(--text-muted);
+}
+.event-card__ok {
+  color: var(--ok);
+}
+.event-card__danger {
+  color: var(--danger);
+}
+.event-card__desc {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+}
+.event-card__link {
+  margin-top: 12px;
+}

@@ -143,8 +143,12 @@
   top: 64px;
   align-self: flex-start;
   flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
   height: calc(100vh - 64px - 10px);
+  overflow-x: hidden;
   overflow-y: auto;
+  transition: flex-basis 0.2s ease;
   padding: 14px 12px;
   background: var(--sidebar-bg);
   border-radius: 8px;
@@ -193,6 +197,55 @@
 .sidebar-backdrop {
   display: none;
 }
+.sidebar__text {
+  white-space: nowrap;
+}
+
+/* Collapse / expand button, pinned to the bottom of the sidebar */
+.sidebar__toggle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: auto;
+  padding: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.sidebar__toggle:hover {
+  background: var(--active-bg);
+  color: var(--text);
+}
+.sidebar__toggle:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+
+/* Desktop only: collapsed = icon rail. On small screens the drawer is always full width. */
+@media (min-width: 901px) {
+  .sidebar.is-collapsed {
+    flex-basis: 76px;
+    padding-inline: 10px;
+  }
+  .sidebar.is-collapsed .sidebar__text,
+  .sidebar.is-collapsed .sidebar__heading {
+    display: none;
+  }
+  .sidebar.is-collapsed .sidebar__link,
+  .sidebar.is-collapsed .sidebar__toggle {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .sidebar.is-collapsed .sidebar__group + .sidebar__group {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--divider);
+  }
+}
 
 .shell__main {
   flex: 1;
@@ -229,6 +282,9 @@
   }
   .sidebar.is-open {
     transform: translateX(0);
+  }
+  .sidebar__toggle {
+    display: none;
   }
   .sidebar__close {
     display: inline-flex;

@@ -6,6 +6,7 @@ import { ScoreCard } from '../components/dashboard/ScoreCard'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { useCourses } from '../hooks/useCourses'
+import { useModuleAccess } from '../hooks/useModuleAccess'
 import { overallStats, recentGrades, upcomingDeadlines } from '../utils/progress'
 import '../styles/ui.css'
 import '../components/dashboard/dashboard.css'
@@ -13,9 +14,14 @@ import '../components/dashboard/dashboard.css'
 export default function DashboardPage() {
   const { user } = useAuth()
   const { status, modules, now, reload } = useCourses()
+  const isLocked = useModuleAccess()
 
   const stats = useMemo(() => overallStats(modules, now), [modules, now])
-  const deadlines = useMemo(() => upcomingDeadlines(modules, now, 5), [modules, now])
+  // tasks of modules that are not open yet stay hidden from students
+  const deadlines = useMemo(
+    () => upcomingDeadlines(modules.filter((m) => !isLocked(m)), now, 5),
+    [modules, now, isLocked],
+  )
   const grades = useMemo(() => recentGrades(modules, 4), [modules])
 
   return (
@@ -50,7 +56,7 @@ export default function DashboardPage() {
             <div className="progress">
               <ScoreCard stats={stats} />
               <div className="progress__path">
-                <JourneyPath modules={modules} now={now} />
+                <JourneyPath modules={modules} now={now} isLocked={isLocked} />
               </div>
             </div>
           </section>

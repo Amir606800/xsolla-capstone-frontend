@@ -190,11 +190,47 @@
   resize: vertical;
   line-height: 1.4;
 }
-.submission__file-input {
-  width: 100%;
+.dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 16px;
+  border: 2px dashed var(--field-border);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--text-muted);
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.dropzone:hover {
+  border-color: var(--xs-cyan);
+}
+.dropzone:focus-within {
+  border-color: var(--xs-cyan);
+  box-shadow: 0 0 0 2px rgba(0, 200, 240, 0.25);
+}
+.dropzone.is-dragging {
+  border-color: var(--xs-cyan);
+  border-style: solid;
+  background: color-mix(in srgb, var(--xs-cyan) 14%, var(--field));
   color: var(--text);
-  font: inherit;
-  font-size: 14px;
+}
+.dropzone__text {
+  font-size: var(--fs-label);
+  pointer-events: none;
+}
+.dropzone__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 .submission__files {
   margin: 8px 0 0;
@@ -316,6 +352,64 @@
 .module-card__foot {
   margin-top: auto;
 }
+.module-card__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Header row with the grid/list switch */
+.courses-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+/* List layout: one full-width row per module */
+.module-cards--list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.module-cards--list .module-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 20px;
+}
+.module-cards--list .module-card__desc {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+.module-cards--list .module-card__text {
+  gap: 4px;
+}
+.module-cards--list .module-card__progress {
+  flex: 0 0 220px;
+}
+.module-cards--list .module-card__foot {
+  flex: 0 0 150px;
+  margin-top: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .module-cards--list .module-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .module-cards--list .module-card__progress,
+  .module-cards--list .module-card__foot {
+    flex: none;
+  }
+  .module-cards--list .module-card__foot {
+    justify-content: flex-start;
+  }
+}
 
 @media (max-width: 1100px) {
   .module__grid {
@@ -327,4 +421,33 @@
   .assignment__head > svg:last-child {
     transition: none;
   }
+}
+
+/* ---------- Locked module ---------- */
+.module-card.is-locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--card) 70%, var(--main-bg));
+}
+.module-card.is-locked:hover {
+  border-color: var(--field-border);
+}
+.module-card.is-locked .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.module__locked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--text);
+}
+.module__locked p {
+  margin: 0;
+  color: var(--text-muted);
+}
+.module__locked strong {
+  color: var(--text);
 }

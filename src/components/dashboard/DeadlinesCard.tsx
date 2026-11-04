@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { formatShortDate, formatTimeLeft } from '../../utils/date'
+import { formatDateTime, formatTimeLeft } from '../../utils/date'
 import type { DeadlineEntry } from '../../utils/progress'
 import { Icon } from '../Icon'
 
@@ -22,7 +22,7 @@ function DeadlinesCardBase({ entries, now }: { entries: DeadlineEntry[]; now: Da
               <div>
                 <p className="list__title">{item.title}</p>
                 <p className="list__meta">
-                  {moduleTitle} · {formatShortDate(item.dueAt)}
+                  {moduleTitle} · {formatDateTime(item.dueAt)}
                 </p>
               </div>
               <span className={`pill${overdue ? ' pill--danger' : ''}`}>

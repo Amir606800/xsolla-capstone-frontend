@@ -1,8 +1,10 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../hooks/useAuth'
+import { useNotifications } from '../../hooks/useNotifications'
 import { useTheme } from '../../hooks/useTheme'
 import { Icon } from '../Icon'
+import { NotificationsModal } from '../notifications/NotificationsModal'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -12,7 +14,9 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
   const { user, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  const { unreadCount } = useNotifications()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Close the user menu on outside click / Escape (listeners only while open)
@@ -70,8 +74,19 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
         </button>
 
-        <button type="button" className="header__icon-btn" aria-label="Notifications">
+        <button
+          type="button"
+          className="header__icon-btn bell"
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+          aria-haspopup="dialog"
+          onClick={() => setNotifOpen(true)}
+        >
           <Icon name="bell" />
+          {unreadCount > 0 && (
+            <span className="bell__badge" aria-hidden="true">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
 
         <div className="header__user" ref={menuRef}>
@@ -102,6 +117,7 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
           )}
         </div>
       </div>
+      <NotificationsModal open={notifOpen} onClose={() => setNotifOpen(false)} />
     </header>
   )
 }

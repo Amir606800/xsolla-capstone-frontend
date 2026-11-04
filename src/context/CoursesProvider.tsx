@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { fetchModules, submitWork } from '../api/courses'
 import type { SubmitPayload } from '../api/courses'
+import { useAuth } from '../hooks/useAuth'
 import type { CourseModule, Submission } from '../types/course'
+import { isModuleLocked } from '../utils/progress'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
 
@@ -54,11 +56,21 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     setAttempt((a) => a + 1)
   }, [])
 
-  const submitAssignment = useCallback(async (assignmentId: string, payload: SubmitPayload) => {
-    const result = await submitWork(assignmentId, payload)
-    setModules((prev) => withSubmission(prev, assignmentId, result))
-    setNow(new Date())
-  }, [])
+  const role = useAuth().user?.role
+
+  const submitAssignment = useCallback(
+    async (assignmentId: string, payload: SubmitPayload) => {
+      // Defence in depth: the UI hides locked modules, but never accept work for one.
+      const owner = modules.find((m) => m.items.some((i) => i.id === assignmentId))
+      if (role === 'student' && owner && isModuleLocked(owner, new Date())) {
+        throw new Error('This module is not open yet')
+      }
+      const result = await submitWork(assignmentId, payload)
+      setModules((prev) => withSubmission(prev, assignmentId, result))
+      setNow(new Date())
+    },
+    [modules, role],
+  )
 
   const value = useMemo(
     () => ({ status, modules, now, reload, submitAssignment }),

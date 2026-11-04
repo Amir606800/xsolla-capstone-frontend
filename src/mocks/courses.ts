@@ -8,6 +8,9 @@ import type { AssignmentItem, CourseModule, ResourceItem, Submission } from '../
 
 const DAY = 86_400_000
 const iso = (now: Date, days: number) => new Date(now.getTime() + days * DAY).toISOString()
+/** A local calendar day `days` from today at hh:mm (so deadlines/openings fall on sensible clock times). */
+const dayAt = (now: Date, days: number, h = 0, m = 0) =>
+  new Date(now.getFullYear(), now.getMonth(), now.getDate() + days, h, m).toISOString()
 
 const TITLES = [
   'Onboarding & Git',
@@ -102,7 +105,7 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
           'Include a short README explaining your approach',
           'Hand in the link or files here before the deadline',
         ],
-        dueAt: iso(now, dueDays),
+        dueAt: dayAt(now, dueDays, 18), // due at 18:00
         maxPoints: 100,
       }
 
@@ -131,8 +134,8 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
       position: idx + 1,
       title,
       description: DESCRIPTIONS[idx],
-      opensAt: iso(now, weekOffset),
-      closesAt: iso(now, weekOffset + 6),
+      opensAt: dayAt(now, weekOffset), // opens at midnight
+      closesAt: dayAt(now, weekOffset + 6, 23, 59),
       items: [...resources, ...assignments],
     }
   })

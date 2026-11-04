@@ -39,6 +39,20 @@ vi.mock('../api/courses', async () => {
   }
 })
 
+vi.mock('../api/events', async () => {
+  const { buildMockEvents } = await import('../mocks/events')
+  return { fetchEvents: vi.fn(async () => buildMockEvents(new Date())) }
+})
+
+vi.mock('../api/notifications', async () => {
+  const { buildMockNotifications } = await import('../mocks/notifications')
+  return {
+    fetchNotifications: vi.fn(async () => buildMockNotifications(new Date())),
+    markNotificationRead: vi.fn(async () => undefined),
+    markAllNotificationsRead: vi.fn(async () => undefined),
+  }
+})
+
 afterEach(() => {
   cleanup()
   localStorage.clear()

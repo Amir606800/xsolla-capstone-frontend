@@ -19,7 +19,9 @@ test('My courses lists 12 modules and opens one', async ({ page, isMobile }) => 
   await openSidebar(page, isMobile)
   await page.getByRole('link', { name: 'My courses' }).click()
   await expect(page).toHaveURL(/\/courses$/)
-  await expect(page.getByRole('list', { name: 'Modules' }).getByRole('link')).toHaveCount(12)
+  const list = page.getByRole('list', { name: 'Modules' })
+  await expect(list.getByRole('listitem')).toHaveCount(12)
+  await expect(list.getByRole('link')).toHaveCount(6) // the other 6 are locked
 
   await page.getByRole('link', { name: /Module 6/ }).click()
   await expect(page).toHaveURL(/\/courses\/m6$/)

@@ -16,7 +16,9 @@ test('shows score, stats, 12 modules, deadlines and grades', async ({ page }) =>
   await expect(page.getByRole('progressbar', { name: 'Modules' })).toBeVisible()
   await expect(page.getByRole('progressbar', { name: 'Tasks' })).toBeVisible()
   await expect(page.getByText('Coming soon')).toBeVisible() // quiz slot
-  await expect(page.getByRole('link', { name: /^Module \d+:/ })).toHaveCount(12)
+  // modules 1-6 are open (links); modules 7-12 are locked for a student
+  await expect(page.getByRole('link', { name: /^Module \d+:/ })).toHaveCount(6)
+  await expect(page.locator('.node--locked')).toHaveCount(6)
   await expect(page.getByRole('heading', { name: 'Upcoming deadlines' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Recent grades' })).toBeVisible()
 })
@@ -28,7 +30,7 @@ test('clicking a module opens its page', async ({ page }) => {
 
 test('path layout follows the viewport (snake on wide, timeline on narrow)', async ({ page, isMobile }) => {
   const box = async (n: number) =>
-    (await page.getByRole('link', { name: new RegExp(`^Module ${n}:`) }).boundingBox())!
+    (await page.getByLabel(new RegExp(`^Module ${n}:`)).boundingBox())!
 
   const [m1, m2, m4, m5, m8] = [await box(1), await box(2), await box(4), await box(5), await box(8)]
 
@@ -68,4 +70,32 @@ test('module data is fetched once while moving between pages', async ({ page, is
   // shared context: content is there immediately, no loading flash
   await expect(page.getByRole('status')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Progress' })).toBeVisible()
+})
+
+
+test('the current module shows Opened / Due badges on both sides and the time left', async ({ page }) => {
+  const current = page.locator('.node--active')
+  await expect(current).toHaveCount(1)
+  await expect(current).toHaveAttribute('aria-current', 'step')
+  await expect(current.locator('.node__tag--left')).toContainText('Opened')
+  await expect(current.locator('.node__tag--right')).toContainText('Due')
+  await expect(current.locator('.node__tag-time')).toHaveText(/^\d\d:\d\d$/)
+  await expect(current.locator('.node__when')).toHaveText(/^in \d+ (days?|hours?)$/)
+})
+
+test('the badges sit on opposite sides of the circle and stay inside the card', async ({ page }) => {
+  const circle = (await page.locator('.node--active .node__circle').boundingBox())!
+  const left = (await page.locator('.node__tag--left').boundingBox())!
+  const right = (await page.locator('.node__tag--right').boundingBox())!
+  const card = (await page.locator('.card--progress').boundingBox())!
+
+  expect(left.x + left.width / 2).toBeLessThan(circle.x + circle.width / 2)
+  expect(right.x + right.width / 2).toBeGreaterThan(circle.x + circle.width / 2)
+  expect(left.x).toBeGreaterThanOrEqual(card.x)
+  expect(right.x + right.width).toBeLessThanOrEqual(card.x + card.width)
+})
+
+test('upcoming deadlines show the exact time', async ({ page }) => {
+  const rows = page.getByRole('heading', { name: 'Upcoming deadlines' }).locator('xpath=ancestor::section[1]').getByRole('listitem')
+  await expect(rows.first()).toContainText(/\d\d:\d\d/)
 })

@@ -5,6 +5,8 @@ import { ModuleHeader } from '../components/module/ModuleHeader'
 import { QuizzesCard } from '../components/module/QuizzesCard'
 import { ResourceList } from '../components/module/ResourceList'
 import { useCourses } from '../hooks/useCourses'
+import { useModuleAccess } from '../hooks/useModuleAccess'
+import { formatDateTime } from '../utils/date'
 import { assignmentsOf, resourcesOf } from '../utils/progress'
 import '../styles/ui.css'
 import '../components/module/module.css'
@@ -12,6 +14,7 @@ import '../components/module/module.css'
 export default function ModulePage() {
   const { moduleId } = useParams()
   const { status, modules, now, reload, submitAssignment } = useCourses()
+  const isLocked = useModuleAccess()
 
   if (status === 'loading') {
     return (
@@ -38,6 +41,23 @@ export default function ModulePage() {
       <div className="module__state">
         <h1 className="page-title">Module not found</h1>
         <p>It may have been removed or you don&apos;t have access to it.</p>
+        <Link to="/courses" className="btn">
+          Back to my courses
+        </Link>
+      </div>
+    )
+  }
+
+  // Typing the URL of a future module must not reveal its content to a student.
+  if (isLocked(module)) {
+    return (
+      <div className="module__state module__locked">
+        <Icon name="lock" size={32} />
+        <h1 className="page-title">{module.title}</h1>
+        <p>
+          This module opens on <strong>{module.opensAt ? formatDateTime(module.opensAt) : 'a later date'}</strong>.
+          Its materials and tasks will appear here then.
+        </p>
         <Link to="/courses" className="btn">
           Back to my courses
         </Link>

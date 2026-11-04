@@ -332,3 +332,91 @@
     transition: none;
   }
 }
+
+/* ---------- Locked (not open yet) module node ---------- */
+.node--locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.node--locked .ring__content {
+  color: var(--text-muted);
+}
+
+/* ---------- Active (current) module: "Opened" and "Due" badges on both sides ---------- */
+.node--active .node__circle {
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--xs-cyan) 55%, transparent));
+}
+.node--active .node__label {
+  border-color: var(--xs-cyan);
+}
+.node__tag {
+  position: absolute;
+  top: -10px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 54px;
+  border-radius: 4px;
+  background: #fff;
+  color: #111;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  line-height: 1.25;
+  text-align: center;
+}
+.node__tag--left {
+  left: -28px;
+}
+.node__tag--right {
+  right: -28px;
+}
+.node__tag-label {
+  width: 100%;
+  padding: 0 6px;
+  background: var(--xs-cyan);
+  color: #06232b;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.node__tag--right .node__tag-label {
+  background: var(--ok);
+  color: #fff;
+}
+.node__tag--right.is-urgent .node__tag-label {
+  background: var(--danger);
+}
+.node__tag-value {
+  padding: 1px 6px 0;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.node__tag-time {
+  padding: 0 6px 2px;
+  color: #555;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.node__when {
+  margin-top: 2px;
+  color: var(--ok);
+  font-size: 12px;
+  font-weight: 600;
+}
+.node__when.is-urgent {
+  color: var(--danger);
+}
+
+/* Narrow (timeline) layout. Kept after the base .node__tag rules so it wins the cascade. */
+@container progress (max-width: 560px) {
+  /* the timeline hugs the card's left edge, so the side badges must not stick out of it */
+  .node__tag--left {
+    left: -14px;
+  }
+  .node__tag--right {
+    right: -6px;
+  }
+}

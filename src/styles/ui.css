@@ -158,6 +158,40 @@
   color: var(--text-muted);
 }
 
+/* Segmented switch (grid/list, all/unread) */
+.view-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  background: var(--card);
+}
+.view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.view-toggle__btn:hover {
+  color: var(--text);
+}
+.view-toggle__btn.is-active {
+  background: var(--tab-active-bg);
+  color: var(--tab-active-text);
+}
+.view-toggle__btn:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn,
   .stat__fill {

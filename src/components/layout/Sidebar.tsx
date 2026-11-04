@@ -32,11 +32,15 @@ const STUDENT_NAV: NavGroup[] = [
 ]
 
 interface SidebarProps {
+  /** Mobile drawer state. */
   open: boolean
   onClose: () => void
+  /** Desktop icon-only rail. Ignored on small screens, where the drawer is always full width. */
+  collapsed: boolean
+  onToggleCollapsed: () => void
 }
 
-function SidebarBase({ open, onClose }: SidebarProps) {
+function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarProps) {
   return (
     <>
       <div
@@ -44,7 +48,11 @@ function SidebarBase({ open, onClose }: SidebarProps) {
         onClick={onClose}
         aria-hidden="true"
       />
-      <aside className={`sidebar${open ? ' is-open' : ''}`} aria-label="Sidebar">
+      <aside
+        id="app-sidebar"
+        className={`sidebar${open ? ' is-open' : ''}${collapsed ? ' is-collapsed' : ''}`}
+        aria-label="Sidebar"
+      >
         <button type="button" className="sidebar__close" onClick={onClose} aria-label="Close navigation">
           <Icon name="close" />
         </button>
@@ -59,10 +67,13 @@ function SidebarBase({ open, onClose }: SidebarProps) {
                     <NavLink
                       to={item.to}
                       onClick={onClose}
+                      // the visible text is hidden when collapsed, so keep an explicit name
+                      aria-label={item.label}
+                      title={collapsed ? item.label : undefined}
                       className={({ isActive }) => `sidebar__link${isActive ? ' is-active' : ''}`}
                     >
                       <Icon name={item.icon} />
-                      {item.label}
+                      <span className="sidebar__text">{item.label}</span>
                     </NavLink>
                   </li>
                 ))}
@@ -70,6 +81,19 @@ function SidebarBase({ open, onClose }: SidebarProps) {
             </div>
           ))}
         </nav>
+
+        <button
+          type="button"
+          className="sidebar__toggle"
+          onClick={onToggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-controls="app-sidebar"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <Icon name={collapsed ? 'expand' : 'collapse'} />
+          <span className="sidebar__text">Collapse</span>
+        </button>
       </aside>
     </>
   )
