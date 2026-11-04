@@ -1,59 +1,60 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Navigate, useNavigate } from 'react-router'
 import officePhoto from '../assets/images/CrescentOfficesPhoto.webp'
-import { isValidEmail, isValidPassword, passwordsMatch } from '../utils/validation'
+import { useAuth } from '../hooks/useAuth'
+import { useTheme } from '../hooks/useTheme'
+import { isValidEmail, isValidName, isValidPassword, passwordsMatch } from '../utils/validation'
 import './AuthPage.css'
 
 type Mode = 'signin' | 'signup'
-type Theme = 'light' | 'dark'
-
-function getInitialTheme(): Theme {
-  try {
-    const saved = localStorage.getItem('theme')
-    if (saved === 'light' || saved === 'dark') return saved
-  } catch {
-    // storage unavailable
-  }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
 
 export default function AuthPage() {
+  const { isAuthenticated, signIn, signUp } = useAuth()
+  const { theme, toggleTheme } = useTheme()
+  const navigate = useNavigate()
+
   const [mode, setMode] = useState<Mode>('signin')
-  const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [touched, setTouched] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    try {
-      localStorage.setItem('theme', theme)
-    } catch {
-      // storage unavailable
-    }
-  }, [theme])
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />
 
   const isSignup = mode === 'signup'
+  const nameOk = !isSignup || isValidName(name)
   const emailOk = isValidEmail(email)
   const passwordOk = isValidPassword(password, isSignup)
   const confirmOk = !isSignup || passwordsMatch(password, confirm)
-  const valid = emailOk && passwordOk && confirmOk
+  const valid = nameOk && emailOk && passwordOk && confirmOk
 
   function switchMode(next: Mode) {
     setMode(next)
     setTouched(false)
+    setFormError('')
     setPassword('')
     setConfirm('')
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setTouched(true)
-    if (!valid) return
-    // TODO: backend integration (login / register)
-    console.log(mode, { email })
+    if (!valid || submitting) return
+    setSubmitting(true)
+    setFormError('')
+    try {
+      if (isSignup) await signUp(email, name.trim(), password)
+      else await signIn(email, password)
+      navigate('/dashboard', { replace: true })
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Something went wrong')
+      setSubmitting(false)
+    }
   }
 
   function handleGoogle() {
@@ -74,7 +75,7 @@ export default function AuthPage() {
       <button
         type="button"
         className="auth__theme"
-        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onClick={toggleTheme}
         aria-label="Toggle theme"
       >
         {theme === 'dark' ? '☀' : '☾'}
@@ -104,6 +105,23 @@ export default function AuthPage() {
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
+            {isSignup && (
+              <>
+                <label className="auth__label" htmlFor="name">
+                  Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  autoComplete="name"
+                  className="auth__input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                {touched && !nameOk && <p className="auth__error">Enter your name</p>}
+              </>
+            )}
+
             <label className="auth__label" htmlFor="email">
               Email
             </label>
@@ -174,7 +192,13 @@ export default function AuthPage() {
               </>
             )}
 
-            <button type="submit" className="auth__submit" disabled={!valid}>
+            {formError && (
+              <p className="auth__error" role="alert">
+                {formError}
+              </p>
+            )}
+
+            <button type="submit" className="auth__submit" disabled={!valid || submitting}>
               {isSignup ? 'Sign up' : 'Sign in'}
             </button>
           </form>

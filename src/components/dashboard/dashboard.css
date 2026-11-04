@@ -1,0 +1,467 @@
+.dash {
+  --ring-color: var(--xs-cyan);
+  --ring-track: var(--divider);
+  --danger: #ff5a3c;
+  --ok: #1fb25a;
+  --line: color-mix(in srgb, var(--xs-cyan) 40%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.dash .page-title {
+  margin-bottom: 0;
+  font-size: clamp(28px, 4vw, 44px);
+}
+.dash__state {
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text-muted);
+}
+.dash__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.btn {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--field-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.card--progress {
+  container: progress / inline-size;
+}
+.card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--divider);
+}
+.card__head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.card__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--active-bg);
+  color: var(--text);
+}
+.card__icon--accent {
+  background: var(--xs-cyan);
+  color: #06232b;
+}
+.card__empty {
+  margin: 0;
+  padding: 20px;
+  color: var(--text-muted);
+}
+
+/* ---------- Progress: score + path ---------- */
+.progress {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 32px;
+  padding: 24px;
+}
+.progress__path {
+  min-width: 0;
+}
+
+/* Score card */
+.score {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 12px;
+  align-self: start;
+}
+.score__ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.score__percent {
+  font-size: 30px;
+  font-weight: 700;
+}
+.score__label {
+  padding: 6px 22px;
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.score__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.stat__head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--link);
+  font-size: 17px;
+}
+.stat__value {
+  color: var(--text-muted);
+}
+.stat__value strong {
+  color: var(--link);
+  font-weight: 500;
+}
+.stat__bar {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--divider);
+  overflow: hidden;
+}
+.stat__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--xs-cyan) 0 10px,
+    color-mix(in srgb, var(--xs-cyan) 75%, #fff) 10px 20px
+  );
+  transition: width 0.6s ease;
+}
+.stat.is-placeholder .stat__head,
+.stat.is-placeholder .stat__value {
+  color: var(--text-muted);
+}
+
+/* Ring */
+.ring {
+  position: relative;
+  flex: none;
+}
+.ring__track,
+.ring__value {
+  fill: none;
+}
+.ring__track {
+  stroke: var(--ring-track);
+}
+.ring__value {
+  stroke: var(--ring-color);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+.ring__content {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* ---------- Winding path ---------- */
+.path {
+  --gap: 40px;
+  --circle: 92px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  margin: 0;
+  padding: 0 0 0 0;
+  list-style: none;
+}
+.path__row {
+  position: relative;
+}
+.path__row > ul {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.path__row.is-reversed > ul {
+  direction: rtl;
+}
+.path__row > ul > li {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  direction: ltr;
+}
+
+/* straight line through the row's nodes */
+.path__row::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--circle) / 2 - 1.5px);
+  inset-inline-start: 12.5%;
+  width: calc((var(--n) - 1) * 25%);
+  height: 3px;
+  background: var(--line);
+}
+.path__row.is-reversed::before {
+  inset-inline-start: auto;
+  inset-inline-end: 12.5%;
+}
+/* U-turn to the next row */
+.path__row:not(.is-last)::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--circle) / 2 - 1.5px);
+  right: calc(12.5% - 86px);
+  width: 86px;
+  height: calc(100% + var(--gap));
+  border: 3px solid var(--line);
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+}
+.path__row.is-reversed:not(.is-last)::after {
+  right: auto;
+  left: calc(12.5% - 86px);
+  border: 3px solid var(--line);
+  border-right: 0;
+  border-radius: 999px 0 0 999px;
+}
+
+/* ---------- Node ---------- */
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 130px;
+  color: var(--text);
+  text-decoration: none;
+}
+.node:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+.node__circle {
+  position: relative;
+  width: var(--circle);
+  height: var(--circle);
+  border-radius: 50%;
+  background: var(--card);
+}
+.node__circle .ring__content {
+  inset: 10px;
+  border-radius: 50%;
+  background: var(--sidebar-bg);
+  color: var(--xs-cyan);
+}
+.node--not-started .ring__content {
+  color: var(--text-muted);
+}
+.node--overdue {
+  --ring-color: var(--danger);
+}
+.node--overdue .ring__content {
+  color: var(--danger);
+}
+.node:hover .ring__content {
+  background: var(--active-bg);
+}
+.node__badge {
+  position: absolute;
+  top: -6px;
+  right: -14px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 32px;
+  border-radius: 3px;
+  background: #fff;
+  color: #111;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.node__badge-month {
+  width: 100%;
+  padding: 0 4px;
+  background: var(--ok);
+  color: #fff;
+  text-align: center;
+  font-size: 10px;
+  text-transform: capitalize;
+}
+.node__badge.is-urgent .node__badge-month {
+  background: var(--danger);
+}
+.node__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 14px;
+  text-align: center;
+}
+.node__title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.node__percent {
+  color: var(--text-muted);
+}
+
+/* ---------- Lists (deadlines, grades) ---------- */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.list__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+}
+.list__row + .list__row {
+  border-top: 1px solid var(--divider);
+}
+.list__title {
+  margin: 0;
+  font-weight: 500;
+}
+.list__meta {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.list__feedback {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-style: italic;
+}
+.pill {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--active-bg);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.pill--danger {
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: var(--danger);
+}
+.pill--grade {
+  background: color-mix(in srgb, var(--xs-cyan) 22%, transparent);
+  font-weight: 600;
+}
+
+/* ---------- Responsive (container queries on the progress card) ---------- */
+@container progress (max-width: 900px) {
+  .progress {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .score {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .score__ring {
+    flex: 0 0 auto;
+  }
+  .score__stats {
+    flex: 1 1 360px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 18px;
+  }
+}
+
+/* Narrow: vertical timeline instead of the winding path */
+@container progress (max-width: 560px) {
+  .path {
+    --gap: 0px;
+  }
+  .path__row::before,
+  .path__row::after {
+    display: none;
+  }
+  .path__row > ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .path__row.is-reversed > ul {
+    direction: ltr;
+  }
+  .path__row > ul > li {
+    justify-content: flex-start;
+    padding-bottom: 28px;
+  }
+  .path__row > ul > li::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--circle) / 2 - 1.5px);
+    top: var(--circle);
+    bottom: 0;
+    width: 3px;
+    background: var(--line);
+  }
+  .path__row.is-last > ul > li:last-child::after {
+    display: none;
+  }
+  .path__row.is-last > ul > li:last-child {
+    padding-bottom: 0;
+  }
+  .node {
+    flex-direction: row;
+    max-width: none;
+    width: 100%;
+    gap: 16px;
+  }
+  .node__label {
+    width: auto;
+    flex: 1;
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring__value,
+  .stat__fill {
+    transition: none;
+  }
+}

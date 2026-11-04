@@ -1,7 +1,19 @@
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+async function signIn(page: Page) {
+  await page.getByLabel('Email').fill('sam@example.com')
+  await page.getByLabel('Password', { exact: true }).fill('secret')
+  await page.locator('button[type="submit"]').click()
+}
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/login')
+})
+
+test('guests are redirected to /login', async ({ page }) => {
+  await page.goto('/dashboard')
+  await expect(page).toHaveURL(/\/login$/)
 })
 
 test('renders the split layout with branding and card', async ({ page }) => {
@@ -19,9 +31,10 @@ test('sign in button enables only with valid input', async ({ page }) => {
   await expect(submit).toBeEnabled()
 })
 
-test('sign up flow validates confirmation', async ({ page }) => {
+test('sign up flow validates name and confirmation', async ({ page }) => {
   await page.getByRole('tab', { name: 'Sign up' }).click()
   const submit = page.locator('button[type="submit"]')
+  await page.getByLabel('Name').fill('Sam')
   await page.getByLabel('Email').fill('me@example.com')
   await page.getByLabel('Password', { exact: true }).fill('longenough1')
   await page.getByLabel('Confirm password').fill('nope')
@@ -55,4 +68,29 @@ test('page has no horizontal overflow and card is visible', async ({ page }) => 
   )
   expect(overflow).toBe(false)
   await expect(page.locator('.auth__card')).toBeVisible()
+})
+
+test('sign in leads to the dashboard and the session survives a reload', async ({ page }) => {
+  await signIn(page)
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByRole('heading', { name: 'Welcome, Sam' })).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Welcome, Sam' })).toBeVisible()
+
+  // signed-in users skip the login page
+  await page.goto('/login')
+  await expect(page).toHaveURL(/\/dashboard$/)
+})
+
+test('log out returns to login and blocks the dashboard', async ({ page }) => {
+  await signIn(page)
+  await expect(page).toHaveURL(/\/dashboard$/)
+
+  await page.getByRole('button', { name: 'Account menu' }).click()
+  await page.getByRole('menuitem', { name: 'Log out' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  await page.goto('/dashboard')
+  await expect(page).toHaveURL(/\/login$/)
 })

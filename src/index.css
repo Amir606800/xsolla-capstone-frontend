@@ -18,6 +18,9 @@
   --divider: #dcdcd8;
   --error: #d63c3c;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --sidebar-bg: #f3f3f1;
+  --main-bg: #eceeed;
+  --active-bg: #e3e4e1;
   font-family: 'Aeonik', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
@@ -41,6 +44,22 @@
   --link: #4fdcff;
   --divider: #364449;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --sidebar-bg: #243238;
+  --main-bg: #172023;
+  --active-bg: #3a4a50;
+}
+
+.page-title {
+  margin: 0 0 8px;
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-muted);
 }
 
 * {

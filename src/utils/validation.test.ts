@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { isValidEmail, isValidPassword, passwordsMatch } from './validation'
+import { isValidEmail, isValidName, isValidPassword, passwordsMatch } from './validation'
+
+describe('isValidName', () => {
+  it('requires a non-blank name', () => {
+    expect(isValidName('Sam')).toBe(true)
+    expect(isValidName('   ')).toBe(false)
+    expect(isValidName('')).toBe(false)
+  })
+})
 
 describe('isValidEmail', () => {
   it.each(['a@b.co', 'user.name+tag@example.com', 'x@sub.domain.org'])('accepts %s', (v) => {
