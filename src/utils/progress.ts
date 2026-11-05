@@ -175,3 +175,58 @@ export function recentGrades(modules: CourseModule[], limit: number): GradeEntry
   }
   return entries.sort((a, b) => b.gradedAt.localeCompare(a.gradedAt)).slice(0, limit)
 }
+
+/** The assignment the student should do next in a module: earliest unsubmitted one. */
+export function nextAssignment(module: CourseModule): AssignmentItem | null {
+  const open = assignmentsOf(module)
+    .filter((a) => !a.submission)
+    .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+  return open[0] ?? null
+}
+
+export type ActivityKind = 'submitted' | 'graded' | 'opened'
+
+export interface ActivityEntry {
+  /** Unique per event, e.g. "graded:a6-1". */
+  id: string
+  kind: ActivityKind
+  title: string
+  moduleId: string
+  moduleTitle: string
+  at: string // ISO
+  grade?: number
+  maxPoints?: number
+}
+
+/**
+ * What happened lately, newest first: work handed in, work graded and modules that opened.
+ * Only events that already happened are listed (a module opening next week is not activity).
+ */
+export function recentActivity(modules: CourseModule[], now: Date, limit: number): ActivityEntry[] {
+  const entries: ActivityEntry[] = []
+  for (const m of modules) {
+    if (m.opensAt && new Date(m.opensAt) <= now) {
+      entries.push({
+        id: `opened:${m.id}`,
+        kind: 'opened',
+        title: `Module ${m.position} opened`,
+        moduleId: m.id,
+        moduleTitle: m.title,
+        at: m.opensAt,
+      })
+    }
+    for (const a of assignmentsOf(m)) {
+      const s = a.submission
+      if (!s) continue
+      const base = { title: a.title, moduleId: m.id, moduleTitle: m.title }
+      entries.push({ ...base, id: `submitted:${a.id}`, kind: 'submitted', at: s.submittedAt })
+      if (s.grade !== undefined && s.gradedAt) {
+        entries.push({ ...base, id: `graded:${a.id}`, kind: 'graded', at: s.gradedAt, grade: s.grade, maxPoints: a.maxPoints })
+      }
+    }
+  }
+  return entries
+    .filter((e) => new Date(e.at) <= now)
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, limit)
+}

@@ -15,10 +15,239 @@
   background: var(--card);
   color: var(--text-muted);
 }
-.dash__grid {
+.dash__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+.dash__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dash__hint {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.widgets__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.widgets__empty p {
+  margin: 0;
+}
+
+/* ---------- Widget grid: 12 columns, a widget spans 4 / 6 / 8 / 12 of them ---------- */
+.widgets {
+  container: widgets / inline-size;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 20px;
+}
+.widget {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.widget--sm {
+  grid-column: span 4;
+}
+.widget--md {
+  grid-column: span 6;
+}
+.widget--lg {
+  grid-column: span 8;
+}
+.widget--full {
+  grid-column: span 12;
+}
+.widget__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.widget__body > .card {
+  flex: 1;
+}
+
+/* edit mode */
+.widget.is-editing {
+  outline: 2px dashed var(--field-border);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+.widget.is-dragging {
+  z-index: 10;
+  opacity: 0.92;
+  outline-color: var(--xs-cyan);
+}
+.widget__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 4px;
+  border-radius: 6px;
+  background: var(--card);
+}
+.widget__btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.widget__btn:hover:not(:disabled) {
+  background: var(--active-bg);
+}
+.widget__btn:disabled {
+  color: var(--btn-disabled-text);
+  cursor: not-allowed;
+}
+.widget__handle {
+  cursor: grab;
+  touch-action: none; /* lets a finger drag the widget instead of scrolling the page */
+}
+.widget.is-dragging .widget__handle {
+  cursor: grabbing;
+}
+.widget__remove {
+  margin-left: auto;
+  color: var(--danger);
+}
+.widget__sizes {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 8px;
+  padding: 2px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+}
+.widget__size {
+  min-width: 32px;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-minor);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.widget__size:hover {
+  color: var(--text);
+}
+.widget__size[aria-pressed='true'] {
+  background: var(--tab-active-bg);
+  color: var(--tab-active-text);
+}
+.widget__btn:focus-visible,
+.widget__size:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 1px;
+}
+
+/* "Add widget" pop-up rows */
+.widget-add__row {
+  align-items: center;
+}
+.widget-add__text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Current task widget */
+.current {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px 20px;
+}
+.current__module {
+  margin: 0;
+  font-weight: var(--fw-medium);
+}
+.current__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--divider);
+  overflow: hidden;
+}
+.current__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--xs-cyan);
+}
+.current__count,
+.current__done {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.current__next {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: var(--sidebar-bg);
+}
+.current__next .pill {
+  margin-top: 8px;
+}
+.current__label {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-family: var(--font-label);
+  font-size: var(--fs-minor);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.current__open {
+  align-self: flex-start;
+}
+
+/* Recent activity widget */
+.activity__text {
+  flex: 1;
+  min-width: 0;
+}
+.activity__icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--active-bg);
+  color: var(--text-muted);
+}
+.activity__icon--graded {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  color: var(--ok);
+}
+.activity__icon--submitted {
+  background: color-mix(in srgb, var(--xs-cyan) 20%, transparent);
+  color: var(--link);
 }
 
 /* ---------- Cards ---------- */
@@ -418,5 +647,25 @@
   }
   .node__tag--right {
     right: -6px;
+  }
+}
+
+/* Widget grid on narrow areas. Kept last so it wins the cascade over the base spans above. */
+@container widgets (max-width: 760px) {
+  .widget--sm,
+  .widget--md {
+    grid-column: span 6;
+  }
+  .widget--lg,
+  .widget--full {
+    grid-column: span 12;
+  }
+}
+@container widgets (max-width: 520px) {
+  .widget--sm,
+  .widget--md,
+  .widget--lg,
+  .widget--full {
+    grid-column: span 12;
   }
 }

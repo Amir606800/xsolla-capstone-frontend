@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { fetchModules } from '../api/courses'
 import { CoursesProvider } from '../context/CoursesProvider'
+import { DashboardLayoutProvider } from '../context/DashboardLayoutProvider'
 import { renderWithProviders } from '../test/renderWithProviders'
 import DashboardPage from './DashboardPage'
 
@@ -13,7 +14,9 @@ function renderDashboard() {
   )
   return renderWithProviders(
     <CoursesProvider>
-      <DashboardPage />
+      <DashboardLayoutProvider>
+        <DashboardPage />
+      </DashboardLayoutProvider>
     </CoursesProvider>,
   )
 }
@@ -33,6 +36,8 @@ describe('DashboardPage', () => {
     expect(screen.getAllByRole('group', { name: /^Module \d+:.*locked/ })).toHaveLength(6) // future modules
     expect(screen.getByRole('heading', { name: 'Upcoming deadlines' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Recent grades' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Current task' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Recent activity' })).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Quizzes' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
@@ -50,7 +55,9 @@ describe('DashboardPage', () => {
     localStorage.setItem('auth_user', JSON.stringify({ id: 2, name: 'Lec', email: 'l@x.co', role: 'teacher' }))
     renderWithProviders(
       <CoursesProvider>
-        <DashboardPage />
+        <DashboardLayoutProvider>
+          <DashboardPage />
+        </DashboardLayoutProvider>
       </CoursesProvider>,
     )
     await screen.findByRole('heading', { name: 'Progress' })

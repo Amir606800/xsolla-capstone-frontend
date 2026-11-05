@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useState } from 'react'
 import { Outlet } from 'react-router'
 import { CoursesProvider } from '../../context/CoursesProvider'
+import { DashboardLayoutProvider } from '../../context/DashboardLayoutProvider'
 import { NotificationsProvider } from '../../context/NotificationsProvider'
 import { usePersistedState } from '../../hooks/usePersistedState'
 import { Header } from './Header'
@@ -24,6 +25,7 @@ export default function AppLayout() {
   return (
     <CoursesProvider>
       <NotificationsProvider>
+      <DashboardLayoutProvider>
       <div className="shell">
         <Header onMenuClick={openNav} />
         <div className="shell__body">
@@ -40,6 +42,7 @@ export default function AppLayout() {
           </main>
         </div>
       </div>
+      </DashboardLayoutProvider>
       </NotificationsProvider>
     </CoursesProvider>
   )

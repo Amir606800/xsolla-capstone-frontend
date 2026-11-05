@@ -1,17 +1,12 @@
 import { memo } from 'react'
 import { Link } from 'react-router'
-import { useCourses } from '../../hooks/useCourses'
-import { useModuleAccess } from '../../hooks/useModuleAccess'
+import { useCurrentModule } from '../../hooks/useCurrentModule'
 import { formatTimeLeft } from '../../utils/date'
-import { isActiveModule, nextDeadline } from '../../utils/progress'
+import { nextDeadline } from '../../utils/progress'
 
 /** Header shortcut to the module that is running right now, with its next deadline. */
 function CurrentModuleChipBase() {
-  const { status, modules, now } = useCourses()
-  const isLocked = useModuleAccess()
-  if (status !== 'ready') return null
-
-  const current = modules.find((m) => isActiveModule(m, now) && !isLocked(m))
+  const { current, now } = useCurrentModule()
   if (!current) return null
 
   const deadline = nextDeadline(current, now)

@@ -40,6 +40,7 @@ test.describe('header balance (desktop)', () => {
   })
 
   test('the header is no longer empty: brand, search, current module and actions', async ({ page }) => {
+    await page.goto('/calendar') // the dashboard has its own Current task widget, so the chip steps aside there
     await expect(page.locator('.header__logo')).toBeVisible()
     await expect(page.locator('.search-trigger')).toBeVisible()
     await expect(page.getByRole('link', { name: /Current module/ })).toBeVisible()
@@ -47,6 +48,7 @@ test.describe('header balance (desktop)', () => {
   })
 
   test('there is no redundant search icon between the current-module chip and the theme button', async ({ page }) => {
+    await page.goto('/calendar')
     await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeHidden()
     await expect(page.getByRole('link', { name: /Current module/ })).toBeVisible() // wait for the data to load
     await expect(page.getByRole('button', { name: 'Notifications, 4 unread' })).toBeVisible()
@@ -55,6 +57,11 @@ test.describe('header balance (desktop)', () => {
       .locator('.header__actions > *:visible')
       .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.className))
     expect(names).toEqual(['Current module: Go Basics', 'Toggle theme', expect.stringMatching(/^Notifications/), 'header__user'])
+  })
+
+  test('on the dashboard the chip is hidden because the Current task widget shows it', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Current task' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /^Current module/ })).toHaveCount(0)
   })
 
   test('"School Baku" stays on one line', async ({ page }) => {

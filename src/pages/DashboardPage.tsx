@@ -1,13 +1,14 @@
-import { useMemo } from 'react'
-import { DeadlinesCard } from '../components/dashboard/DeadlinesCard'
-import { JourneyPath } from '../components/dashboard/JourneyPath'
-import { RecentGradesCard } from '../components/dashboard/RecentGradesCard'
-import { ScoreCard } from '../components/dashboard/ScoreCard'
+import { useCallback, useMemo, useState } from 'react'
+import { AddWidgetsModal } from '../components/dashboard/AddWidgetsModal'
+import { DashboardWidgets } from '../components/dashboard/DashboardWidgets'
+import type { DashboardData } from '../components/dashboard/DashboardWidgetBody'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { useCourses } from '../hooks/useCourses'
+import { useDashboardLayout } from '../hooks/useDashboardLayout'
 import { useModuleAccess } from '../hooks/useModuleAccess'
-import { overallStats, recentGrades, upcomingDeadlines } from '../utils/progress'
+import { hiddenWidgets } from '../utils/dashboardLayout'
+import { overallStats, recentActivity, recentGrades, upcomingDeadlines } from '../utils/progress'
 import '../styles/ui.css'
 import '../components/dashboard/dashboard.css'
 
@@ -15,19 +16,68 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const { status, modules, now, reload } = useCourses()
   const isLocked = useModuleAccess()
+  const { layout, reset } = useDashboardLayout()
+  const [editing, setEditing] = useState(false)
+  const [adding, setAdding] = useState(false)
 
-  const stats = useMemo(() => overallStats(modules, now), [modules, now])
-  // tasks of modules that are not open yet stay hidden from students
-  const deadlines = useMemo(
-    () => upcomingDeadlines(modules.filter((m) => !isLocked(m)), now, 5),
-    [modules, now, isLocked],
-  )
-  const grades = useMemo(() => recentGrades(modules, 4), [modules])
+  const data = useMemo<DashboardData>(() => {
+    // tasks and events of modules that are not open yet stay hidden from students
+    const open = modules.filter((m) => !isLocked(m))
+    return {
+      modules,
+      now,
+      isLocked,
+      stats: overallStats(modules, now),
+      deadlines: upcomingDeadlines(open, now, 5),
+      grades: recentGrades(modules, 4),
+      activity: recentActivity(open, now, 6),
+    }
+  }, [modules, now, isLocked])
+
+  const openAdd = useCallback(() => setAdding(true), [])
+  const hiddenCount = hiddenWidgets(layout).length
 
   return (
     <section className="dash">
-      <h1 className="page-title">Welcome, {user?.name}</h1>
-      <p className="page-subtitle">Let&apos;s see what&apos;s on your plate</p>
+      <div className="dash__top">
+        <div>
+          <h1 className="page-title">Welcome, {user?.name}</h1>
+          <p className="page-subtitle">Let&apos;s see what&apos;s on your plate</p>
+        </div>
+
+        {status === 'ready' && (
+          <div className="dash__tools">
+            {editing ? (
+              <>
+                <button type="button" className="btn btn--ghost" onClick={openAdd}>
+                  <Icon name="plus" size={18} />
+                  Add widget{hiddenCount > 0 ? ` (${hiddenCount})` : ''}
+                </button>
+                <button type="button" className="btn btn--ghost" onClick={reset}>
+                  <Icon name="reset" size={18} />
+                  Reset to default
+                </button>
+                <button type="button" className="btn" onClick={() => setEditing(false)}>
+                  <Icon name="check" size={18} />
+                  Done
+                </button>
+              </>
+            ) : (
+              <button type="button" className="btn btn--ghost" onClick={() => setEditing(true)}>
+                <Icon name="edit" size={18} />
+                Edit dashboard
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {editing && (
+        <p className="dash__hint">
+          Drag a widget by its handle or use the arrows to move it, pick a width, or remove it. Changes are saved
+          automatically.
+        </p>
+      )}
 
       {status === 'loading' && (
         <p className="dash__state" role="status">
@@ -44,29 +94,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {status === 'ready' && (
-        <>
-          <section className="card card--progress" aria-labelledby="progress-title">
-            <header className="card__head">
-              <span className="card__icon card__icon--accent">
-                <Icon name="check" size={20} />
-              </span>
-              <h2 id="progress-title">Progress</h2>
-            </header>
-            <div className="progress">
-              <ScoreCard stats={stats} />
-              <div className="progress__path">
-                <JourneyPath modules={modules} now={now} isLocked={isLocked} />
-              </div>
-            </div>
-          </section>
+      {status === 'ready' && <DashboardWidgets data={data} editing={editing} onAddClick={openAdd} />}
 
-          <div className="dash__grid">
-            <DeadlinesCard entries={deadlines} now={now} />
-            <RecentGradesCard entries={grades} />
-          </div>
-        </>
-      )}
+      <AddWidgetsModal open={adding} onClose={() => setAdding(false)} />
     </section>
   )
 }

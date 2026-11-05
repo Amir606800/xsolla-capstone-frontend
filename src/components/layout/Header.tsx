@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../hooks/useAuth'
+import { useDashboardLayout } from '../../hooks/useDashboardLayout'
 import { useNotifications } from '../../hooks/useNotifications'
 import { useTheme } from '../../hooks/useTheme'
 import { Icon } from '../Icon'
@@ -20,6 +21,10 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
   const { user, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const { isShown } = useDashboardLayout()
+  // the dashboard's own "Current task" widget shows the same thing, so the header chip steps aside there
+  const showChip = !(pathname === '/dashboard' && isShown('current-task'))
   const { unreadCount } = useNotifications()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
@@ -97,7 +102,7 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
       </div>
 
       <div className="header__actions">
-        <CurrentModuleChip />
+        {showChip && <CurrentModuleChip />}
 
         <button
           type="button"

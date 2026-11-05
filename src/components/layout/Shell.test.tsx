@@ -11,7 +11,7 @@ function renderApp(route = '/dashboard', role: 'student' | 'teacher' = 'student'
 
 describe('Current module chip in the header', () => {
   it('links to the module that is running now and shows its next deadline', async () => {
-    renderApp()
+    renderApp('/calendar')
     const chip = await screen.findByRole('link', { name: 'Current module: Go Basics' })
     expect(chip).toHaveAttribute('href', '/courses/m6')
     expect(chip).toHaveTextContent('Module 6 · Go Basics')
@@ -21,14 +21,30 @@ describe('Current module chip in the header', () => {
 
   it('opens that module when clicked', async () => {
     const user = userEvent.setup()
-    renderApp()
+    renderApp('/calendar')
     await user.click(await screen.findByRole('link', { name: /Current module/ }))
     expect(await screen.findByRole('heading', { name: 'Go Basics', level: 1 })).toBeInTheDocument()
   })
 
-  it('is there on every page of the app, not just the dashboard', async () => {
-    renderApp('/calendar')
+  it('is there on the other pages of the app', async () => {
+    renderApp('/courses')
     expect(await screen.findByRole('link', { name: /Current module/ })).toBeInTheDocument()
+  })
+
+  it('steps aside on the dashboard, where the "Current task" widget shows the same thing', async () => {
+    renderApp('/dashboard')
+    expect(await screen.findByRole('heading', { name: 'Current task' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Current module/ })).not.toBeInTheDocument()
+  })
+
+  it('comes back on the dashboard when the student has removed that widget', async () => {
+    localStorage.setItem(
+      'dashboard_layout:1',
+      JSON.stringify([{ id: 'current-task', size: 'sm', visible: false }]),
+    )
+    renderApp('/dashboard')
+    expect(await screen.findByRole('link', { name: /Current module/ })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Current task' })).not.toBeInTheDocument()
   })
 })
 
