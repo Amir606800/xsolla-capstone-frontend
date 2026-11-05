@@ -34,9 +34,12 @@
 
 .card {
   background: var(--card);
-  border: 1px solid var(--field-border);
-  border-radius: 12px;
+  border: 1px solid transparent; /* flat white tile on the grey page; the dark theme shows a hairline */
+  border-radius: 8px;
   overflow: hidden;
+}
+:root[data-theme='dark'] .card {
+  border-color: var(--field-border);
 }
 .card__head {
   display: flex;

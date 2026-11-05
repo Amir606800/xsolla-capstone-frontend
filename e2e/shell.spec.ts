@@ -76,17 +76,26 @@ test.describe('sidebar look (desktop)', () => {
     test.skip(isMobile, 'desktop layout')
   })
 
-  test('the active item has a glowing marker and a highlighted icon tile', async ({ page }) => {
+  test('the active item is a flat highlighted row with a thin accent bar', async ({ page }) => {
     const active = page.locator('.sidebar__link.is-active')
     await expect(active).toHaveCount(1)
     const marker = await active.evaluate((el) => getComputedStyle(el, '::before').content)
     expect(marker).not.toBe('none')
-    const tile = await active.locator('.sidebar__icon').evaluate((el) => getComputedStyle(el).backgroundColor)
+    const bg = await active.evaluate((el) => getComputedStyle(el).backgroundColor)
     const idle = await page
-      .locator('.sidebar__link:not(.is-active) .sidebar__icon')
+      .locator('.sidebar__link:not(.is-active)')
       .first()
       .evaluate((el) => getComputedStyle(el).backgroundColor)
-    expect(tile).not.toBe(idle)
+    expect(bg).not.toBe(idle)
+  })
+
+  test('the sidebar is a flat panel: no gradient, no shadow', async ({ page }) => {
+    const s = await page.getByRole('complementary', { name: 'Sidebar' }).evaluate((el) => {
+      const c = getComputedStyle(el)
+      return { image: c.backgroundImage, shadow: c.boxShadow }
+    })
+    expect(s.image).toBe('none')
+    expect(s.shadow).toBe('none')
   })
 
   test('shows the program progress card, and hides it when the rail is collapsed', async ({ page }) => {
@@ -161,12 +170,11 @@ test('glows are subtle: no strong halo around the sidebar or the current module'
   test.skip(isMobile, 'desktop')
   const glow = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--glow').trim())
   expect(parseInt(glow)).toBeLessThanOrEqual(25)
-  // the marker next to the active item has a small, soft shadow (no big blur)
+  // the marker next to the active item has no shadow at all
   const marker = await page
     .locator('.sidebar__link.is-active')
     .evaluate((el) => getComputedStyle(el, '::before').boxShadow)
-  const blur = Number(/(\d+)px/.exec(marker.replace(/rgba?\([^)]*\)/g, ''))?.[1] ?? 0)
-  expect(blur).toBeLessThanOrEqual(6)
+  expect(marker).toBe('none')
 })
 
 test('no horizontal overflow with the new header and sidebar, light and dark', async ({ page }) => {

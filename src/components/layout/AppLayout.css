@@ -19,13 +19,9 @@
   column-gap: 20px;
   height: 64px;
   padding: 0 22px; /* 22px = where the sidebar icons start, so the logo lines up with them */
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--xs-cyan) 4%, transparent), transparent 40%, transparent 60%,
-      color-mix(in srgb, var(--xs-cyan) 4%, transparent)),
-    var(--header-bg);
-  border-top: 3px solid;
-  border-image: linear-gradient(90deg, #1c1a3a, #3b1f2b) 1;
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--xs-cyan) 14%, var(--divider));
+  /* flat white bar with a thin dark strip on top, like the other Xsolla consoles */
+  background: var(--header-bg);
+  border-top: 3px solid #1c1a3a;
 }
 .header__center {
   min-width: 0;
@@ -164,15 +160,9 @@
   overflow-y: auto;
   transition: flex-basis 0.2s ease;
   padding: 16px 12px 12px;
-  /* "glass" panel: a soft turquoise light from the top-left corner, a fine glowing border */
-  background:
-    radial-gradient(130% 55% at 0% 0%, color-mix(in srgb, var(--xs-cyan) 7%, transparent), transparent 65%),
-    var(--sidebar-bg);
-  border: 1px solid color-mix(in srgb, var(--xs-cyan) 16%, var(--divider));
-  border-radius: 18px;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent),
-    0 0 28px -10px color-mix(in srgb, var(--xs-cyan) var(--glow), transparent);
+  /* plain grey panel, no borders or glow */
+  background: var(--sidebar-bg);
+  border-radius: 8px;
 }
 .sidebar__close {
   display: none;
@@ -189,13 +179,13 @@
   color: var(--text-muted);
   font-family: var(--font-label);
   font-size: var(--fs-minor);
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
 }
 .sidebar__heading::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--divider), transparent);
+  background: var(--divider);
 }
 .sidebar ul {
   display: flex;
@@ -209,60 +199,43 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 7px 12px 7px 8px;
-  border-radius: 14px;
-  color: var(--text-muted);
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: var(--text);
   text-decoration: none;
   font-size: 16px;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    transform 0.15s ease;
+  transition: background 0.15s ease;
 }
+/* bare icon, no tile: flat like the Xsolla console menus */
 .sidebar__icon {
   display: inline-grid;
   place-items: center;
   flex: none;
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--text) 6%, transparent);
+  width: 24px;
+  height: 24px;
   color: var(--text-muted);
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
 }
 .sidebar__link:hover {
-  background: color-mix(in srgb, var(--text) 5%, transparent);
-  color: var(--text);
-  transform: translateX(2px);
-}
-.sidebar__link:hover .sidebar__icon {
-  color: var(--text);
+  background: var(--active-bg);
 }
 .sidebar__link.is-active {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--xs-cyan) 13%, transparent), transparent 85%);
-  color: var(--text);
+  background: var(--active-bg);
   font-weight: 500;
 }
-/* glowing marker on the active item */
+/* thin accent bar on the active item */
 .sidebar__link.is-active::before {
   content: '';
   position: absolute;
-  left: -12px;
-  top: 18%;
-  bottom: 18%;
-  width: 4px;
-  border-radius: 0 4px 4px 0;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
   background: var(--xs-cyan);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--xs-cyan) 40%, transparent);
 }
 .sidebar__link.is-active .sidebar__icon {
-  background: var(--xs-cyan);
-  color: #06232b;
-  box-shadow: 0 0 8px -3px color-mix(in srgb, var(--xs-cyan) var(--glow), transparent);
+  color: var(--link);
 }
 .sidebar__link:focus-visible,
 .header__icon-btn:focus-visible,
@@ -287,9 +260,8 @@
 }
 .sidebar__progress {
   padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--xs-cyan) 20%, var(--divider));
-  border-radius: 14px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--xs-cyan) 7%, transparent), transparent 70%);
+  border-radius: 6px;
+  background: var(--card);
 }
 .sidebar__progress-head {
   display: flex;
@@ -313,16 +285,16 @@
 .sidebar__progress-fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--xs-cyan), color-mix(in srgb, var(--xs-cyan) 55%, #9b7bff));
+  background: var(--xs-cyan);
 }
 
 .sidebar__toggle {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 7px 12px 7px 8px;
+  padding: 10px 12px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 6px;
   background: transparent;
   color: var(--text-muted);
   font: inherit;
@@ -330,7 +302,7 @@
   cursor: pointer;
 }
 .sidebar__toggle:hover {
-  background: color-mix(in srgb, var(--text) 5%, transparent);
+  background: var(--active-bg);
   color: var(--text);
 }
 .sidebar__toggle:focus-visible {
@@ -353,9 +325,6 @@
   .sidebar.is-collapsed .sidebar__toggle {
     justify-content: center;
     padding-inline: 0;
-  }
-  .sidebar.is-collapsed .sidebar__link.is-active::before {
-    left: -10px;
   }
   .sidebar.is-collapsed .sidebar__group + .sidebar__group {
     margin-top: 12px;
@@ -402,7 +371,7 @@
     display: none;
   }
   .sidebar {
-    border-radius: 0 18px 18px 0;
+    border-radius: 0 8px 8px 0;
   }
   .sidebar {
     position: fixed;

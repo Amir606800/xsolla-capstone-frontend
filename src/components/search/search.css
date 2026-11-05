@@ -42,7 +42,7 @@
   cursor: pointer;
 }
 .palette__item.is-active {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--xs-cyan) 12%, transparent), transparent);
+  background: var(--active-bg);
   box-shadow: inset 2px 0 0 var(--xs-cyan);
 }
 .palette__icon {
@@ -93,7 +93,7 @@
   height: 42px;
   padding: 0 8px 0 14px;
   border: 1px solid var(--field-border);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--sidebar-bg);
   color: var(--text-muted);
   font: inherit;
@@ -107,7 +107,6 @@
 .search-trigger:hover,
 .search-trigger:focus-visible {
   border-color: var(--xs-cyan);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--xs-cyan) 10%, transparent);
   outline: none;
 }
 .search-trigger__text {
@@ -133,9 +132,9 @@
   justify-content: center;
   height: 42px;
   padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--xs-cyan) 28%, var(--field-border));
-  border-radius: 12px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--xs-cyan) 8%, transparent), transparent);
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--sidebar-bg);
   color: var(--text);
   text-decoration: none;
   line-height: 1.2;

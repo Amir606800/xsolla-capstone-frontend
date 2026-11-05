@@ -29,9 +29,9 @@
   --divider: #dcdcd8;
   --error: #d63c3c;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --sidebar-bg: #f3f3f1;
-  --main-bg: #eceeed;
-  --active-bg: #e3e4e1;
+  --sidebar-bg: #f1f1ef;
+  --main-bg: #f6f6f5;
+  --active-bg: #e4e4e1;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
