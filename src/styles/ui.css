@@ -228,3 +228,152 @@
   color: var(--danger);
   font-size: 14px;
 }
+
+/* ---------- Grades: green = above expected, yellow = as expected, red = below expected ---------- */
+.standing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.standing-pill--green {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  color: var(--ok);
+}
+.standing-pill--yellow {
+  background: color-mix(in srgb, var(--warn) 20%, transparent);
+  color: var(--warn);
+}
+.standing-pill--red {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+.standing-bar__bar {
+  display: flex;
+  gap: 3px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--divider);
+  overflow: hidden;
+}
+.standing-bar__part {
+  flex-basis: 0;
+}
+.standing-bar__part--green,
+.standing-bar__dot--green {
+  background: var(--ok);
+}
+.standing-bar__part--yellow,
+.standing-bar__dot--yellow {
+  background: var(--warn);
+}
+.standing-bar__part--red,
+.standing-bar__dot--red {
+  background: var(--danger);
+}
+.standing-bar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.standing-bar__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.standing-bar__legend strong {
+  color: var(--text);
+}
+.standing-bar__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Overall standing badge (dashboard + grades page) */
+.standing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 164px;
+  height: 164px;
+  padding: 12px;
+  border: 14px solid var(--divider);
+  border-radius: 50%;
+  text-align: center;
+}
+.standing__label {
+  font-size: var(--fs-h4);
+  line-height: 1.2;
+  font-weight: var(--fw-medium);
+}
+.standing--none {
+  color: var(--text-muted);
+}
+.standing--green {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.standing--yellow {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.standing--red {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Week-by-week squares */
+.week-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.week-tile {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--active-bg);
+  color: var(--text-muted);
+  font-weight: var(--fw-medium);
+}
+.week-tile--green {
+  background: var(--ok);
+  color: var(--on-fill);
+}
+.week-tile--yellow {
+  background: var(--warn);
+  color: var(--on-fill);
+}
+.week-tile--red {
+  background: var(--danger);
+  color: var(--on-fill);
+}
+
+/* Warning under the standing (also used on the dashboard card) */
+.standing-alert {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: var(--fs-label);
+}
+.standing-alert--warning {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+}
+.standing-alert--danger {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}

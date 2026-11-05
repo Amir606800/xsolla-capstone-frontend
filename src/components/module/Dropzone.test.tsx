@@ -10,7 +10,6 @@ const assignment: AssignmentItem = {
   type: 'assignment',
   title: 'Task',
   dueAt: new Date(2026, 10, 20).toISOString(),
-  maxPoints: 100,
 }
 
 const file = (name: string, size = 100) => {

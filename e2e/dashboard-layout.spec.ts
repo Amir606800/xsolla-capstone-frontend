@@ -24,9 +24,9 @@ test('shows header, sidebar and main section', async ({ page, isMobile }) => {
 
 test('sidebar navigation changes route', async ({ page, isMobile }) => {
   if (isMobile) await page.getByRole('button', { name: 'Open navigation' }).click()
-  await page.getByRole('link', { name: 'Grades' }).click()
+  await page.getByRole('link', { name: 'My grades' }).click()
   await expect(page).toHaveURL(/\/grades$/)
-  await expect(page.getByRole('heading', { name: 'Coming soon' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'My grades', level: 1 })).toBeVisible()
 })
 
 test('no horizontal overflow', async ({ page }) => {

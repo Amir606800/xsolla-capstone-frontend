@@ -32,11 +32,6 @@ function RecentActivityCardBase({ entries, now }: { entries: ActivityEntry[]; no
                   {VERB[e.kind]} · {e.moduleTitle} · {formatRelative(e.at, now)}
                 </p>
               </div>
-              {e.kind === 'graded' && (
-                <span className="pill pill--grade">
-                  {e.grade}/{e.maxPoints}
-                </span>
-              )}
             </li>
           ))}
         </ul>

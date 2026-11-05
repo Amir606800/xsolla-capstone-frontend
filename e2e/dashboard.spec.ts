@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('shows score, stats, 12 modules, deadlines and grades', async ({ page }) => {
-  await expect(page.getByText('My score')).toBeVisible()
+  await expect(page.getByText('My standing')).toBeVisible()
   await expect(page.getByRole('progressbar', { name: 'Modules' })).toBeVisible()
   await expect(page.getByRole('progressbar', { name: 'Tasks' })).toBeVisible()
   await expect(page.getByText('Coming soon')).toBeVisible() // quiz slot
@@ -63,8 +63,8 @@ test('works in dark theme', async ({ page }) => {
 
 test('module data is fetched once while moving between pages', async ({ page, isMobile }) => {
   if (isMobile) await page.getByRole('button', { name: 'Open navigation' }).click()
-  await page.getByRole('link', { name: 'Tasks' }).click()
-  await expect(page.getByRole('heading', { name: 'Coming soon' })).toBeVisible()
+  await page.getByRole('link', { name: 'My grades' }).click()
+  await expect(page.getByRole('heading', { name: 'My grades', level: 1 })).toBeVisible()
   if (isMobile) await page.getByRole('button', { name: 'Open navigation' }).click()
   await page.getByRole('link', { name: 'Dashboard' }).click()
   // shared context: content is there immediately, no loading flash

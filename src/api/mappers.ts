@@ -1,5 +1,7 @@
 import type { ContentItem, CourseModule, ResourceItem, Submission } from '../types/course'
-import type { ApiContentItem, ApiFileItem, ApiSubmission } from './types'
+import type { WeeklyStanding } from '../types/standing'
+import { parseStandingLevel } from '../utils/standing'
+import type { ApiContentItem, ApiFileItem, ApiSubmission, ApiWeeklyStanding } from './types'
 
 const RESOURCE_KINDS: Record<string, ResourceItem['kind']> = {
   pdf: 'pdf',
@@ -17,8 +19,7 @@ export function mapSubmission(s: ApiSubmission): Submission {
   return {
     submittedAt: s.submitted_at,
     textBody: s.text_body ?? undefined,
-    // null (not graded yet) -> undefined so `grade !== undefined` means "graded"
-    grade: s.grade ?? undefined,
+    // null (not graded yet) -> undefined so `gradedAt !== undefined` means "graded"
     feedback: s.feedback ?? undefined,
     gradedAt: s.graded_at ?? undefined,
   }
@@ -55,7 +56,6 @@ function collectItems(
         title: node.title,
         description: node.description ?? undefined,
         dueAt: node.due_at,
-        maxPoints: node.max_points,
         ...(sub ? { submission: mapSubmission(sub) } : {}),
       })
     }
@@ -91,4 +91,15 @@ export function mapContentTree(
         items: section.type === 'section' ? collectItems(section.children, id, submissionsByAssignment) : [],
       }
     })
+}
+
+/** A weekly rating from the backend. A row with a level we do not know is dropped rather than guessed. */
+export function mapWeeklyStandings(rows: ApiWeeklyStanding[]): WeeklyStanding[] {
+  const out: WeeklyStanding[] = []
+  for (const r of rows) {
+    const level = parseStandingLevel(r.level)
+    if (!level) continue
+    out.push({ week: r.week, level, assessedAt: r.assessed_at, ...(r.note ? { note: r.note } : {}) })
+  }
+  return out.sort((a, b) => a.week - b.week)
 }

@@ -13,7 +13,7 @@ export interface Submission {
   submittedAt: string // ISO
   textBody?: string
   files?: SubmissionFile[]
-  grade?: number
+  /** Set when the work was graded and given feedback. A graded submission can no longer be changed. */
   feedback?: string
   gradedAt?: string // ISO
 }
@@ -39,7 +39,6 @@ export interface AssignmentItem extends BaseItem {
   /** What the student has to hand in. */
   requirements?: string[]
   dueAt: string // ISO
-  maxPoints: number
   submission?: Submission
 }
 

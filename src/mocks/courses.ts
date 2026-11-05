@@ -106,7 +106,6 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
           'Hand in the link or files here before the deadline',
         ],
         dueAt: dayAt(now, dueDays, 18), // due at 18:00
-        maxPoints: 100,
       }
 
       let submission: Submission | undefined
@@ -117,7 +116,6 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
           const gradedRecently = idx >= currentIdx - 2 // last 2 modules graded most recently
           submission = {
             submittedAt,
-            grade: 78 + ((idx * 7 + t * 5) % 22),
             feedback: gradedRecently ? FEEDBACK[(idx + t) % FEEDBACK.length] : undefined,
             gradedAt: iso(now, dueDays + (gradedRecently ? 1 : 0)),
           }

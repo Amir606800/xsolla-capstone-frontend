@@ -22,7 +22,6 @@ const task = (id: string, due: number, submitted = false) =>
     type: 'assignment',
     title: id,
     dueAt: d(due),
-    maxPoints: 10,
     submission: submitted ? { submittedAt: d(-1) } : undefined,
   }) as const
 
@@ -36,14 +35,13 @@ describe('recentActivity', () => {
           type: 'assignment',
           title: 'Hello world',
           dueAt: d(-4),
-          maxPoints: 10,
-          submission: { submittedAt: d(-5), grade: 9, gradedAt: d(-2) },
+          submission: { submittedAt: d(-5), feedback: 'Nice', gradedAt: d(-2) },
         },
       ],
     })
     const out = recentActivity([m], now, 10)
     expect(out.map((e) => e.id)).toEqual(['graded:a1', 'submitted:a1', 'opened:m1'])
-    expect(out[0]).toMatchObject({ kind: 'graded', grade: 9, maxPoints: 10, title: 'Hello world' })
+    expect(out[0]).toMatchObject({ kind: 'graded', title: 'Hello world' })
     expect(out[2]).toMatchObject({ kind: 'opened', title: 'Module 1 opened' })
   })
 

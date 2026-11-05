@@ -31,7 +31,7 @@ describe('App routing', () => {
     expect(nav).toBeInTheDocument()
     expect(screen.getByRole('main')).toBeInTheDocument()
 
-    for (const label of ['Dashboard', 'My courses', 'Tasks', 'Calendar', 'Grades', 'My team']) {
+    for (const label of ['Dashboard', 'My courses', 'Tasks', 'Calendar', 'My grades', 'My team']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
     }
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveClass('is-active')
@@ -42,9 +42,9 @@ describe('App routing', () => {
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/dashboard' })
 
-    await user.click(await screen.findByRole('link', { name: 'Grades' }))
-    expect(await screen.findByRole('heading', { name: 'Coming soon' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Grades' })).toHaveClass('is-active')
+    await user.click(await screen.findByRole('link', { name: 'My grades' }))
+    expect(await screen.findByRole('heading', { name: 'My grades', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'My grades' })).toHaveClass('is-active')
     expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveClass('is-active')
   })
 

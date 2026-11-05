@@ -9,6 +9,7 @@
   --xs-cyan: #2aa9c2; /* fills, rings, borders */
   --danger: #b83a28;
   --ok: #15753a;
+  --warn: #8a5b00; /* "as expected" (yellow) grade */
   --glow: 8%; /* strength of glows / halos (kept subtle on purpose) */
   --on-fill: #ffffff; /* text on the solid red/green badges */
   --bg: #f3f3f1;
@@ -41,6 +42,7 @@
   --xs-cyan: #00c8f0;
   --danger: #ff6b50;
   --ok: #1fb25a;
+  --warn: #f2b94b;
   --glow: 22%;
   --on-fill: #101412;
   --bg: #1c2629;

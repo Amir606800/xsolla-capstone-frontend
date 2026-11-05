@@ -451,3 +451,15 @@
 .module__locked strong {
   color: var(--text);
 }
+
+.submission__locked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--sidebar-bg);
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}

@@ -11,13 +11,8 @@ import {
 const NOW = new Date('2026-11-04T12:00:00Z')
 const hours = (h: number) => new Date(NOW.getTime() + h * 3_600_000).toISOString()
 
-function task(
-  id: string,
-  dueInHours: number,
-  submission?: Submission,
-  maxPoints = 100,
-): AssignmentItem {
-  return { id, moduleId: 'm', type: 'assignment', title: id, dueAt: hours(dueInHours), maxPoints, submission }
+function task(id: string, dueInHours: number, submission?: Submission): AssignmentItem {
+  return { id, moduleId: 'm', type: 'assignment', title: id, dueAt: hours(dueInHours), submission }
 }
 
 const mod = (items: CourseModule['items'], id = 'm', title = 'Mod'): CourseModule => ({
@@ -28,9 +23,9 @@ const mod = (items: CourseModule['items'], id = 'm', title = 'Mod'): CourseModul
 })
 
 const submitted: Submission = { submittedAt: hours(-1) }
-const graded = (grade: number, gradedAt = hours(-1)): Submission => ({
+const graded = (gradedAt = hours(-1)): Submission => ({
   submittedAt: hours(-2),
-  grade,
+  feedback: 'ok',
   gradedAt,
 })
 
@@ -61,17 +56,17 @@ describe('moduleProgress', () => {
   })
 
   it('all submitted but not all graded -> submitted', () => {
-    const p = moduleProgress(mod([task('a', -5, graded(90)), task('b', -5, submitted)]), NOW)
+    const p = moduleProgress(mod([task('a', -5, graded()), task('b', -5, submitted)]), NOW)
     expect(p).toMatchObject({ percent: 100, status: 'submitted' })
   })
 
   it('all graded -> completed', () => {
-    const p = moduleProgress(mod([task('a', -5, graded(90)), task('b', -5, graded(80))]), NOW)
+    const p = moduleProgress(mod([task('a', -5, graded()), task('b', -5, graded())]), NOW)
     expect(p.status).toBe('completed')
   })
 
   it('an unsubmitted task past its deadline -> overdue (wins over other states)', () => {
-    const p = moduleProgress(mod([task('a', -5, graded(90)), task('b', -1)]), NOW)
+    const p = moduleProgress(mod([task('a', -5, graded()), task('b', -1)]), NOW)
     expect(p.status).toBe('overdue')
   })
 
@@ -99,30 +94,22 @@ describe('nextDeadline', () => {
 
 describe('overallStats', () => {
   const modules = [
-    mod([task('a', -5, graded(80)), task('b', -5, graded(60))], 'm1'),
+    mod([task('a', -5, graded()), task('b', -5, graded())], 'm1'),
     mod([task('c', 24, submitted), task('d', 48)], 'm2'),
     mod([], 'm3'),
   ]
 
-  it('counts modules, tasks and score', () => {
+  it('counts modules and tasks', () => {
     expect(overallStats(modules, NOW)).toEqual({
       modulesDone: 1,
       modulesTotal: 3,
       tasksSubmitted: 3,
       tasksTotal: 4,
-      scoreEarned: 140,
-      scoreMax: 200,
-      scorePercent: 70,
     })
   })
 
-  it('score only counts graded work, relative to its own max points', () => {
-    const s = overallStats([mod([task('a', -5, graded(40), 50), task('b', 10)])], NOW)
-    expect(s).toMatchObject({ scoreEarned: 40, scoreMax: 50, scorePercent: 80 })
-  })
-
   it('handles an empty course without dividing by zero', () => {
-    expect(overallStats([], NOW)).toMatchObject({ scorePercent: 0, tasksTotal: 0, modulesTotal: 0 })
+    expect(overallStats([], NOW)).toEqual({ modulesDone: 0, modulesTotal: 0, tasksSubmitted: 0, tasksTotal: 0 })
   })
 })
 
@@ -147,11 +134,11 @@ describe('upcomingDeadlines', () => {
 describe('recentGrades', () => {
   it('returns graded work, newest grading first, limited', () => {
     const modules = [
-      mod([task('old', -50, graded(70, hours(-48))), task('new', -5, graded(95, hours(-2)))]),
-      mod([task('mid', -20, graded(88, hours(-10))), task('ungraded', 5, submitted)]),
+      mod([task('old', -50, graded(hours(-48))), task('new', -5, graded(hours(-2)))]),
+      mod([task('mid', -20, graded(hours(-10))), task('ungraded', 5, submitted)]),
     ]
     const list = recentGrades(modules, 2)
     expect(list.map((e) => e.item.id)).toEqual(['new', 'mid'])
-    expect(list[0].grade).toBe(95)
+    expect(list[0].gradedAt).toBe(hours(-2))
   })
 })

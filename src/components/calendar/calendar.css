@@ -4,11 +4,13 @@
   --ev-meeting: #7556e0;
   --ev-off-campus: #c27a06;
   --ev-deadline: #c4553a;
+  --ev-availability: #14795a;
 }
 :root[data-theme='dark'] {
   --ev-meeting: #9b7bff;
   --ev-off-campus: #f5a524;
   --ev-deadline: #ff7a59;
+  --ev-availability: #4cc9a0;
 }
 
 .calendar {
@@ -176,6 +178,9 @@
 .ev--deadline {
   --c: var(--ev-deadline);
 }
+.ev--availability {
+  --c: var(--ev-availability);
+}
 .ev--deadline.is-done {
   --c: var(--ok);
 }
@@ -338,4 +343,89 @@
 }
 .event-card__link {
   margin-top: 12px;
+}
+
+/* ---------- Day pop-up: 1:1 times (book / set availability) ---------- */
+.slots {
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--divider);
+}
+.slots:first-child {
+  border-top: 0;
+}
+.slots__title {
+  margin: 0 0 6px;
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+}
+.slots__hint {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+}
+.slots__fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.slots__fields .field__label {
+  margin-top: 0;
+}
+.slots__time {
+  width: 8.5rem;
+  height: 40px;
+}
+.slots__preview {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+  font-variant-numeric: tabular-nums;
+}
+.slots__ok {
+  margin: 10px 0 0;
+  color: var(--ok);
+  font-size: var(--fs-label);
+}
+.slots__list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.slots__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+}
+.slots__item.is-booked {
+  background: var(--sidebar-bg);
+}
+.slots__item.is-mine {
+  border-color: var(--ok);
+}
+.slots__time-label {
+  flex: none;
+  min-width: 7.5rem;
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+}
+.slots__who {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+.slots__who--mine {
+  color: var(--ok);
+}
+.slots__btn {
+  padding: 6px 14px;
 }

@@ -37,7 +37,7 @@ function contrast(a: string, b: string): number {
 }
 
 const SURFACES = ['--card', '--bg', '--main-bg', '--sidebar-bg', '--header-bg'] as const
-const TEXT_TOKENS = ['--text', '--text-muted', '--link', '--danger', '--ok'] as const
+const TEXT_TOKENS = ['--text', '--text-muted', '--link', '--danger', '--ok', '--warn'] as const
 const AA = 4.5
 
 describe.each([
@@ -59,6 +59,7 @@ describe.each([
   it('text on the solid red and green badges is readable', () => {
     expect(contrast(vars['--on-fill'], vars['--danger'])).toBeGreaterThanOrEqual(AA)
     expect(contrast(vars['--on-fill'], vars['--ok'])).toBeGreaterThanOrEqual(AA)
+    expect(contrast(vars['--on-fill'], vars['--warn'])).toBeGreaterThanOrEqual(AA) // the yellow week tile
   })
 
   it('dark text on the turquoise fills (today badge, tags, icons) is readable', () => {

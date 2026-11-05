@@ -9,7 +9,9 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const CalendarPage = lazy(() => import('./pages/CalendarPage'))
 const CoursesPage = lazy(() => import('./pages/CoursesPage'))
 const ModulePage = lazy(() => import('./pages/ModulePage'))
-const ComingSoonPage = lazy(() => import('./pages/ComingSoonPage'))
+const TasksPage = lazy(() => import('./pages/TasksPage'))
+const GradesPage = lazy(() => import('./pages/GradesPage'))
+const TeamPage = lazy(() => import('./pages/TeamPage'))
 
 export default function App() {
   return (
@@ -20,13 +22,12 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            {/* Not built yet - replace one by one as modules arrive */}
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/courses/:moduleId" element={<ModulePage />} />
-            <Route path="/tasks" element={<ComingSoonPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/grades" element={<ComingSoonPage />} />
-            <Route path="/team" element={<ComingSoonPage />} />
+            <Route path="/grades" element={<GradesPage />} />
+            <Route path="/team" element={<TeamPage />} />
           </Route>
         </Route>
 

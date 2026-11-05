@@ -171,18 +171,32 @@ describe('ModulePage - submitting work', () => {
     expect(screen.getByRole('button', { name: /HTTP server/ })).not.toHaveTextContent('Submitted')
   })
 
-  it('shows grade and feedback, and resubmitting keeps the grade', async () => {
+  it('a graded task shows its feedback and can no longer be changed', async () => {
     const user = userEvent.setup()
     renderAt('/courses/m4')
     await openAssignment(user, /Typed utils/)
 
-    expect(screen.getByText(/Grade: \d+\/100/)).toBeInTheDocument()
-    expect(screen.getByText(/Resubmitting replaces your previous submission/)).toBeInTheDocument()
+    expect(screen.getAllByText('Graded').length).toBeGreaterThan(0)
+    expect(screen.getByText(/This task has been graded, so it can no longer be changed/)).toBeInTheDocument()
+    // nothing to type into or hand in
+    expect(screen.queryByLabelText(/Answer or link/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^(Submit|Resubmit)$/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Files \(/)).not.toBeInTheDocument()
+  })
 
-    await user.type(screen.getByLabelText(/Answer or link/), ' - updated')
-    await user.click(screen.getByRole('button', { name: 'Resubmit' }))
-    expect(await screen.findByText('Your work was submitted.')).toBeInTheDocument()
-    expect(screen.getByText(/Grade: \d+\/100/)).toBeInTheDocument()
+  it('shows what was handed in, but only as text, for a graded task', async () => {
+    const user = userEvent.setup()
+    renderAt('/courses/m4')
+    await openAssignment(user, /Typed utils/)
+    expect(screen.getByText(/^Submitted /)).toBeInTheDocument()
+  })
+
+  it('work that is submitted but not graded yet can still be replaced', async () => {
+    const user = userEvent.setup()
+    renderAt('/courses/m6')
+    await openAssignment(user, /CLI tool/)
+    expect(screen.getByText(/Resubmitting replaces your previous submission until it is graded/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Answer or link/)).toBeEnabled()
   })
 
   it('flags an unsubmitted past-deadline assignment as Overdue', async () => {

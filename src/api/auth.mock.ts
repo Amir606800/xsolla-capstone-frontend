@@ -1,10 +1,6 @@
 import type { User } from '../types/user'
 
-/**
- * MOCK implementation - no backend yet.
- * Keep the signatures; swap the bodies for `fetch` calls
- * (POST /auth/login, /auth/signup, /auth/logout) when the API is ready.
- */
+/** Offline mock, used when no backend URL is configured (VITE_API_URL is empty). Same signatures as auth.http.ts. */
 
 const MOCK_LATENCY_MS = 300
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))

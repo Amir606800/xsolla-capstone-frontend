@@ -37,6 +37,10 @@ const PATHS = {
   plus: 'M12 5v14M5 12h14',
   edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
   activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
+  'arrow-up': 'M12 19V5M5 12l7-7 7 7',
+  'arrow-down': 'M12 5v14M19 12l-7 7-7-7',
+  minus: 'M5 12h14',
+  mail: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6',
   reset: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
 } as const
 

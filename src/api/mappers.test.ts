@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { mapContentTree, mapSubmission } from './mappers'
-import type { ApiContentItem, ApiSubmission } from './types'
+import { mapContentTree, mapSubmission, mapWeeklyStandings } from './mappers'
+import type { ApiContentItem, ApiSubmission, ApiWeeklyStanding } from './types'
 
 const tree: ApiContentItem[] = [
   {
@@ -69,7 +69,6 @@ describe('mapContentTree', () => {
     expect(m1.items[3]).toMatchObject({ kind: 'zip' })
     expect(m1.items[2]).toMatchObject({
       dueAt: '2026-11-10T20:00:00Z',
-      maxPoints: 100,
       moduleId: '10',
     })
   })
@@ -82,10 +81,10 @@ describe('mapContentTree', () => {
   })
 
   it('attaches the student submission to its assignment (and only that one)', () => {
-    const [m1, m2] = mapContentTree(tree, { '12': submission({ grade: 90, feedback: 'Nice', graded_at: '2026-11-10T09:00:00Z' }) })
+    const [m1, m2] = mapContentTree(tree, { '12': submission({ feedback: 'Nice', graded_at: '2026-11-10T09:00:00Z' }) })
     const git = m1.items.find((i) => i.id === '12')
     expect(git).toMatchObject({
-      submission: { submittedAt: '2026-11-09T18:00:00Z', grade: 90, feedback: 'Nice', gradedAt: '2026-11-10T09:00:00Z' },
+      submission: { submittedAt: '2026-11-09T18:00:00Z', feedback: 'Nice', gradedAt: '2026-11-10T09:00:00Z' },
     })
     expect(m2.items[0]).not.toHaveProperty('submission')
   })
@@ -96,13 +95,45 @@ describe('mapContentTree', () => {
 })
 
 describe('mapSubmission', () => {
-  it('maps nulls to undefined so "graded" is grade !== undefined', () => {
+  it('maps nulls to undefined so "graded" is gradedAt !== undefined', () => {
     const s = mapSubmission(submission())
     expect(s).toEqual({ submittedAt: '2026-11-09T18:00:00Z', textBody: 'done' })
-    expect(s.grade).toBeUndefined()
+    expect(s.gradedAt).toBeUndefined()
   })
 
-  it('keeps a grade of 0 (a real grade, not "ungraded")', () => {
-    expect(mapSubmission(submission({ grade: 0, graded_at: '2026-11-10T09:00:00Z' })).grade).toBe(0)
+  it('maps feedback and the time it was graded', () => {
+    const s = mapSubmission(submission({ feedback: 'Nice', graded_at: '2026-11-10T09:00:00Z' }))
+    expect(s).toMatchObject({ feedback: 'Nice', gradedAt: '2026-11-10T09:00:00Z' })
+  })
+
+  it('has no grade value: the rating is given per week, not per task', () => {
+    const s = mapSubmission(submission({ grade: 'green', graded_at: '2026-11-10T09:00:00Z' }))
+    expect(s).not.toHaveProperty('grade')
+  })
+})
+
+describe('mapWeeklyStandings', () => {
+  const row = (over: Partial<ApiWeeklyStanding> = {}): ApiWeeklyStanding => ({
+    week: 1,
+    level: 'green',
+    assessed_at: '2026-11-07T18:00:00Z',
+    note: null,
+    ...over,
+  })
+
+  it('maps rows, sorted by week, and keeps the mentor note', () => {
+    const out = mapWeeklyStandings([row({ week: 2, level: 'yellow', note: 'Catch up' }), row({ week: 1 })])
+    expect(out).toEqual([
+      { week: 1, level: 'green', assessedAt: '2026-11-07T18:00:00Z' },
+      { week: 2, level: 'yellow', assessedAt: '2026-11-07T18:00:00Z', note: 'Catch up' },
+    ])
+  })
+
+  it('accepts any letter case', () => {
+    expect(mapWeeklyStandings([row({ level: 'RED' })])[0].level).toBe('red')
+  })
+
+  it('drops a row with a level it does not know instead of guessing', () => {
+    expect(mapWeeklyStandings([row({ level: 'blue' }), row({ week: 2, level: '90' })])).toEqual([])
   })
 })

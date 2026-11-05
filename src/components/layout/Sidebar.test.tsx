@@ -41,7 +41,7 @@ describe('Sidebar collapse', () => {
   it('keeps every link reachable by name and shows a tooltip only while collapsed', async () => {
     const user = userEvent.setup()
     renderApp()
-    const labels = ['Dashboard', 'My courses', 'Tasks', 'Calendar', 'Grades', 'My team']
+    const labels = ['Dashboard', 'My courses', 'Tasks', 'Calendar', 'My grades', 'My team']
 
     for (const l of labels) {
       expect(await screen.findByRole('link', { name: l })).not.toHaveAttribute('title')
@@ -57,10 +57,10 @@ describe('Sidebar collapse', () => {
     const user = userEvent.setup()
     renderApp()
     await user.click(await screen.findByRole('button', { name: 'Collapse sidebar' }))
-    await user.click(screen.getByRole('link', { name: 'Grades' }))
+    await user.click(screen.getByRole('link', { name: 'My grades' }))
 
-    expect(await screen.findByRole('heading', { name: 'Coming soon' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Grades' })).toHaveClass('is-active')
+    expect(await screen.findByRole('heading', { name: 'My grades', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'My grades' })).toHaveClass('is-active')
     expect(sidebar()).toHaveClass('is-collapsed')
   })
 

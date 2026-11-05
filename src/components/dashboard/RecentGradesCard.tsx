@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { formatShortDate } from '../../utils/date'
 import type { GradeEntry } from '../../utils/progress'
+import { GradedPill } from '../GradedPill'
 import { Icon } from '../Icon'
 
 function RecentGradesCardBase({ entries }: { entries: GradeEntry[] }) {
@@ -17,7 +18,7 @@ function RecentGradesCardBase({ entries }: { entries: GradeEntry[] }) {
         <p className="card__empty">No graded work yet.</p>
       ) : (
         <ul className="list">
-          {entries.map(({ item, moduleTitle, grade, feedback, gradedAt }) => (
+          {entries.map(({ item, moduleTitle, feedback, gradedAt }) => (
             <li key={item.id} className="list__row">
               <div>
                 <p className="list__title">{item.title}</p>
@@ -26,9 +27,7 @@ function RecentGradesCardBase({ entries }: { entries: GradeEntry[] }) {
                 </p>
                 {feedback && <p className="list__feedback">&ldquo;{feedback}&rdquo;</p>}
               </div>
-              <span className="pill pill--grade">
-                {grade}/{item.maxPoints}
-              </span>
+              <GradedPill />
             </li>
           ))}
         </ul>

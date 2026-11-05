@@ -12,7 +12,7 @@ const everyone = () => false
 describe('buildSearchItems', () => {
   it('includes every page from the navigation', () => {
     const pages = buildSearchItems(STUDENT_NAV, modules, student).filter((i) => i.group === 'Pages')
-    expect(pages.map((p) => p.label)).toEqual(['Dashboard', 'My courses', 'Tasks', 'Calendar', 'Grades', 'My team'])
+    expect(pages.map((p) => p.label)).toEqual(['Dashboard', 'My courses', 'Tasks', 'Calendar', 'My grades', 'My team'])
     expect(pages.find((p) => p.label === 'Calendar')?.to).toBe('/calendar')
   })
 

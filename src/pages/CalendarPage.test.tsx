@@ -72,8 +72,8 @@ describe('CalendarPage - month view', () => {
     expect(lecture).toHaveTextContent('Lecture')
 
     const mentor = day('Thursday, November 5, 1 event')
-    expect(mentor).toHaveTextContent('15:00')
-    expect(mentor).toHaveTextContent('1:1 with mentor')
+    expect(mentor).toHaveTextContent('15:30') // the first time that is still free
+    expect(mentor).toHaveTextContent('5 free 1:1 times')
   })
 
   it('keeps the calendar uncluttered: at most 2 events on any day of the month', async () => {
@@ -122,7 +122,7 @@ describe('CalendarPage - month view', () => {
     renderCalendar()
     await ready()
     const legend = screen.getByRole('list', { name: 'Legend' })
-    for (const t of ['Lecture', 'Meeting', 'Off-campus', 'Deadline']) {
+    for (const t of ['Lecture', 'Meeting', 'Off-campus', 'Deadline', '1:1 times']) {
       expect(within(legend).getByText(t)).toBeInTheDocument()
     }
   })
@@ -196,14 +196,13 @@ describe('CalendarPage - day pop-up', () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
-    await user.click(day(/^Thursday, November 5/)) // mentor 1:1
+    await user.click(day(/^Monday, November 2,/)) // the lecture
 
     const card = within(within(dialog()).getByRole('list', { name: 'Events' })).getByRole('listitem')
-    expect(card).toHaveTextContent('1:1 with mentor')
-    expect(card).toHaveTextContent('Meeting')
-    expect(card).toHaveTextContent('15:00 - 15:30 (30 min)')
-    expect(card).toHaveTextContent('Mentor room')
-    expect(card).toHaveTextContent('Check-in on your progress')
+    expect(card).toHaveTextContent('Lecture')
+    expect(card).toHaveTextContent('10:00 - 12:00 (2 h)')
+    expect(card).toHaveTextContent('Main hall')
+    expect(card).toHaveTextContent('Weekly lecture')
   })
 
   it('lists several events in time order, with deadline status and a link to the module', async () => {

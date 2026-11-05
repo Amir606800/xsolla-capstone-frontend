@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildMockModules } from './courses'
-import { moduleProgress, overallStats } from '../utils/progress'
+import { moduleProgress } from '../utils/progress'
 
 const NOW = new Date('2026-11-04T12:00:00Z')
 
@@ -34,9 +34,9 @@ describe('buildMockModules', () => {
     expect(status(11)).toBe('not-started')
   })
 
-  it('has graded work so the score is non-zero and never above 100%', () => {
-    const { scorePercent } = overallStats(modules, NOW)
-    expect(scorePercent).toBeGreaterThan(0)
-    expect(scorePercent).toBeLessThanOrEqual(100)
+  it('has graded work with feedback, so the grades screens have something to show', () => {
+    const graded = modules.flatMap((m) => m.items).filter((i) => i.type === 'assignment' && i.submission?.gradedAt)
+    expect(graded.length).toBeGreaterThan(0)
+    expect(graded.some((i) => i.type === 'assignment' && i.submission?.feedback)).toBe(true)
   })
 })

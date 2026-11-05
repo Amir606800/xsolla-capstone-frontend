@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useCourses } from '../hooks/useCourses'
 import { useDashboardLayout } from '../hooks/useDashboardLayout'
 import { useModuleAccess } from '../hooks/useModuleAccess'
+import { useStandings } from '../hooks/useStandings'
 import { hiddenWidgets } from '../utils/dashboardLayout'
 import { overallStats, recentActivity, recentGrades, upcomingDeadlines } from '../utils/progress'
 import '../styles/ui.css'
@@ -17,6 +18,7 @@ export default function DashboardPage() {
   const { status, modules, now, reload } = useCourses()
   const isLocked = useModuleAccess()
   const { layout, reset } = useDashboardLayout()
+  const { summary: standing } = useStandings()
   const [editing, setEditing] = useState(false)
   const [adding, setAdding] = useState(false)
 
@@ -28,11 +30,12 @@ export default function DashboardPage() {
       now,
       isLocked,
       stats: overallStats(modules, now),
+      standing,
       deadlines: upcomingDeadlines(open, now, 5),
       grades: recentGrades(modules, 4),
       activity: recentActivity(open, now, 6),
     }
-  }, [modules, now, isLocked])
+  }, [modules, now, isLocked, standing])
 
   const openAdd = useCallback(() => setAdding(true), [])
   const hiddenCount = hiddenWidgets(layout).length

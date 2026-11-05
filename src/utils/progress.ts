@@ -23,10 +23,6 @@ export interface OverallStats {
   modulesTotal: number
   tasksSubmitted: number
   tasksTotal: number
-  scoreEarned: number
-  scoreMax: number
-  /** 0-100, graded work only */
-  scorePercent: number
 }
 
 export interface DeadlineEntry {
@@ -38,7 +34,6 @@ export interface DeadlineEntry {
 export interface GradeEntry {
   item: AssignmentItem
   moduleTitle: string
-  grade: number
   feedback?: string
   gradedAt: string
 }
@@ -68,7 +63,7 @@ export function isActiveModule(module: CourseModule, now: Date): boolean {
 export type AssignmentStatus = 'open' | 'overdue' | 'submitted' | 'graded'
 
 export function assignmentStatus(a: AssignmentItem, now: Date): AssignmentStatus {
-  if (a.submission?.grade !== undefined) return 'graded'
+  if (a.submission?.gradedAt !== undefined) return 'graded'
   if (a.submission) return 'submitted'
   return new Date(a.dueAt) < now ? 'overdue' : 'open'
 }
@@ -88,7 +83,7 @@ export function moduleProgress(module: CourseModule, now: Date): ModuleProgress 
   const assignments = assignmentsOf(module)
   const total = assignments.length
   const submitted = assignments.filter((a) => a.submission).length
-  const graded = assignments.filter((a) => a.submission?.grade !== undefined).length
+  const graded = assignments.filter((a) => a.submission?.gradedAt !== undefined).length
   const percent = total === 0 ? 0 : Math.round((submitted / total) * 100)
   const overdue = assignments.some((a) => !a.submission && new Date(a.dueAt) < now)
 
@@ -115,8 +110,6 @@ export function nextDeadline(module: CourseModule, now: Date): NextDeadline | nu
 export function overallStats(modules: CourseModule[], now: Date): OverallStats {
   let tasksTotal = 0
   let tasksSubmitted = 0
-  let scoreEarned = 0
-  let scoreMax = 0
   let modulesDone = 0
 
   for (const m of modules) {
@@ -124,12 +117,6 @@ export function overallStats(modules: CourseModule[], now: Date): OverallStats {
     tasksTotal += p.total
     tasksSubmitted += p.submitted
     if (p.total > 0 && p.submitted === p.total) modulesDone += 1
-    for (const a of assignmentsOf(m)) {
-      if (a.submission?.grade !== undefined) {
-        scoreEarned += a.submission.grade
-        scoreMax += a.maxPoints
-      }
-    }
   }
 
   return {
@@ -137,9 +124,6 @@ export function overallStats(modules: CourseModule[], now: Date): OverallStats {
     modulesTotal: modules.length,
     tasksSubmitted,
     tasksTotal,
-    scoreEarned,
-    scoreMax,
-    scorePercent: scoreMax === 0 ? 0 : Math.round((scoreEarned / scoreMax) * 100),
   }
 }
 
@@ -162,11 +146,10 @@ export function recentGrades(modules: CourseModule[], limit: number): GradeEntry
   for (const m of modules) {
     for (const item of assignmentsOf(m)) {
       const s = item.submission
-      if (s?.grade !== undefined && s.gradedAt) {
+      if (s?.gradedAt !== undefined) {
         entries.push({
           item,
           moduleTitle: m.title,
-          grade: s.grade,
           feedback: s.feedback,
           gradedAt: s.gradedAt,
         })
@@ -194,8 +177,6 @@ export interface ActivityEntry {
   moduleId: string
   moduleTitle: string
   at: string // ISO
-  grade?: number
-  maxPoints?: number
 }
 
 /**
@@ -220,8 +201,8 @@ export function recentActivity(modules: CourseModule[], now: Date, limit: number
       if (!s) continue
       const base = { title: a.title, moduleId: m.id, moduleTitle: m.title }
       entries.push({ ...base, id: `submitted:${a.id}`, kind: 'submitted', at: s.submittedAt })
-      if (s.grade !== undefined && s.gradedAt) {
-        entries.push({ ...base, id: `graded:${a.id}`, kind: 'graded', at: s.gradedAt, grade: s.grade, maxPoints: a.maxPoints })
+      if (s.gradedAt !== undefined) {
+        entries.push({ ...base, id: `graded:${a.id}`, kind: 'graded', at: s.gradedAt })
       }
     }
   }

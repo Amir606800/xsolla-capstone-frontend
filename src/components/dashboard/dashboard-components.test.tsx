@@ -7,6 +7,8 @@ import { isModuleLocked, overallStats, recentGrades, upcomingDeadlines } from '.
 import { DeadlinesCard } from './DeadlinesCard'
 import { JourneyPath } from './JourneyPath'
 import { RecentGradesCard } from './RecentGradesCard'
+import type { WeeklyStanding } from '../../types/standing'
+import { analyseStandings } from '../../utils/standing'
 import { ScoreCard } from './ScoreCard'
 import { StatBar } from './StatBar'
 
@@ -163,17 +165,38 @@ describe('StatBar', () => {
 })
 
 describe('ScoreCard', () => {
-  it('shows the score percent, module/task counts and the quiz slot', () => {
+  const rated = (levels: WeeklyStanding['level'][]) =>
+    analyseStandings(levels.map((level, i) => ({ week: i + 1, level, assessedAt: '2026-03-01T00:00:00Z' })))
+
+  it('shows where the student stands, the weekly split, module/task counts and the quiz slot', () => {
     const stats = overallStats(modules, NOW)
-    render(<ScoreCard stats={stats} />)
-    expect(screen.getByText(`${stats.scorePercent}%`)).toBeInTheDocument()
-    expect(screen.getByText('My score')).toBeInTheDocument()
+    render(<ScoreCard stats={stats} standing={rated(['green', 'green', 'yellow'])} />)
+    expect(screen.getByText('My standing')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Current standing: Falling behind' })).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Weeks by level' })).toHaveTextContent('2 On track')
+    expect(screen.queryByText(/%$/)).not.toBeInTheDocument() // no percentage
     expect(screen.getByRole('progressbar', { name: 'Modules' })).toHaveAttribute('aria-valuemax', '12')
     expect(screen.getByRole('progressbar', { name: 'Tasks' })).toHaveAttribute(
       'aria-valuemax',
       String(stats.tasksTotal),
     )
     expect(screen.getByText('Coming soon')).toBeInTheDocument()
+  })
+
+  it('says so when no week has been rated yet', () => {
+    render(<ScoreCard stats={overallStats(modules, NOW)} standing={rated([])} />)
+    expect(screen.getByRole('img', { name: 'Current standing: not rated yet' })).toBeInTheDocument()
+    expect(screen.queryByText(/in a row/)).not.toBeInTheDocument()
+  })
+
+  it('warns about a run of yellow weeks', () => {
+    render(<ScoreCard stats={overallStats(modules, NOW)} standing={rated(['green', 'yellow', 'yellow'])} />)
+    expect(screen.getByText(/2 yellow weeks in a row\. At 4 in a row it counts as red/)).toBeInTheDocument()
+  })
+
+  it('warns that one more red week means removal', () => {
+    render(<ScoreCard stats={overallStats(modules, NOW)} standing={rated(['green', 'red'])} />)
+    expect(screen.getByText(/One more red week in a row means removal from the program/)).toBeInTheDocument()
   })
 })
 
@@ -200,10 +223,10 @@ describe('DeadlinesCard', () => {
 })
 
 describe('RecentGradesCard', () => {
-  it('lists grades with max points and feedback', () => {
+  it('lists graded tasks with their feedback', () => {
     render(<RecentGradesCard entries={recentGrades(modules, 4)} />)
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
-    expect(screen.getAllByText(/\/100$/).length).toBe(4)
+    expect(screen.getAllByText('Graded')).toHaveLength(4)
     expect(screen.getAllByText(/^“.+”$/).length).toBeGreaterThan(0)
   })
 

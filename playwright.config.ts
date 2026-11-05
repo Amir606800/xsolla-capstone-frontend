@@ -21,5 +21,7 @@ export default defineConfig({
     command: `npm run dev -- --port ${PORT} --strictPort`,
     url: URL,
     reuseExistingServer: true,
+    // the tests always run against the offline mock API, even when .env.local points at a real backend
+    env: { VITE_API_URL: process.env.E2E_API_URL ?? '' },
   },
 })

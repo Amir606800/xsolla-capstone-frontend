@@ -13,7 +13,7 @@ export function buildMockNotifications(now: Date = new Date()): AppNotification[
     {
       id: 'n1',
       type: 'graded',
-      message: 'Your task "Routing app" was graded: 94/100',
+      message: 'Your task "Routing app" was graded: Above expected',
       link: '/courses/m5',
       createdAt: ago(2 * HOUR),
       readAt: null,

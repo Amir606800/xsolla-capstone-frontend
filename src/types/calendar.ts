@@ -1,4 +1,5 @@
-export type EventKind = 'lecture' | 'meeting' | 'off-campus' | 'deadline'
+/** `availability` = open mentor 1:1 times; derived from the slots API, like deadlines from assignments. */
+export type EventKind = 'lecture' | 'meeting' | 'off-campus' | 'deadline' | 'availability'
 
 /**
  * One entry on the calendar. Events with a start and an end (lectures, mentor

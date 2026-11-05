@@ -2,8 +2,7 @@ import type { CalendarEvent } from '../types/calendar'
 
 /**
  * Mock calendar events, built around `now`. Deliberately sparse so the
- * calendar stays readable: one lecture on Monday each week, a mentor 1:1
- * every second Thursday, one team sync and one off-campus day. Times are local.
+ * calendar stays readable: one lecture on Monday each week, one team sync and one off-campus day. Times are local.
  */
 export function buildMockEvents(now: Date = new Date()): CalendarEvent[] {
   const day = (offset: number, h = 0, m = 0) =>
@@ -24,19 +23,6 @@ export function buildMockEvents(now: Date = new Date()): CalendarEvent[] {
       endsAt: day(mondayOffset + week * 7, 12),
       location: 'Main hall',
       description: 'Weekly lecture for the current module.',
-    })
-  }
-
-  // Mentor 1:1: Thursday 15:00-15:30, every second week
-  for (const week of [-2, 0, 2, 4]) {
-    events.push({
-      id: `one-${week}`,
-      title: '1:1 with mentor',
-      kind: 'meeting',
-      startsAt: day(mondayOffset + week * 7 + 3, 15),
-      endsAt: day(mondayOffset + week * 7 + 3, 15, 30),
-      location: 'Mentor room',
-      description: 'Check-in on your progress and next steps.',
     })
   }
 

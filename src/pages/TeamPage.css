@@ -1,0 +1,83 @@
+.team__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 20px;
+  align-items: start;
+}
+.team__person {
+  align-items: center;
+  justify-content: flex-start;
+}
+.team__info {
+  min-width: 0;
+}
+.team__info p {
+  overflow-wrap: anywhere;
+}
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--active-bg);
+  color: var(--text);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.5px;
+}
+.avatar--mentor {
+  background: var(--xs-cyan);
+  color: #06232b;
+}
+.team__you {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--xs-cyan) 20%, transparent);
+  color: var(--link);
+  font-size: var(--fs-minor);
+  font-weight: var(--fw-medium);
+}
+.team__mail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: var(--link);
+  font-size: var(--fs-label);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.team__mail:hover {
+  text-decoration: underline;
+}
+.team__mentor {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+}
+.team__meeting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 20px;
+  border-top: 1px solid var(--divider);
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.team__meeting strong {
+  color: var(--text);
+}
+.team__note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+@media (max-width: 800px) {
+  .team__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

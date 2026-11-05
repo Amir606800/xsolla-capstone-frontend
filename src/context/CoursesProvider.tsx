@@ -65,6 +65,11 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       if (role === 'student' && owner && isModuleLocked(owner, new Date())) {
         throw new Error('This module is not open yet')
       }
+      // Graded work is final. The backend must refuse it too.
+      const target = owner?.items.find((i) => i.id === assignmentId)
+      if (target?.type === 'assignment' && target.submission?.gradedAt !== undefined) {
+        throw new Error('This task has already been graded')
+      }
       const result = await submitWork(assignmentId, payload)
       setModules((prev) => withSubmission(prev, assignmentId, result))
       setNow(new Date())

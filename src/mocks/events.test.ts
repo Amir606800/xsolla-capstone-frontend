@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateKey, groupByDay } from '../utils/calendar'
+import { groupByDay } from '../utils/calendar'
 import { buildMockEvents } from './events'
 
 const NOW = new Date(2026, 10, 4, 12) // Wed 4 Nov 2026
@@ -24,11 +24,8 @@ describe('buildMockEvents', () => {
     }
   })
 
-  it('has a mentor 1:1 only every second week, on Thursdays', () => {
-    const mentor = events.filter((e) => e.title === '1:1 with mentor')
-    expect(mentor).toHaveLength(4)
-    expect(dateKey(new Date(mentor[1].startsAt))).toBe('2026-11-05')
-    for (const m of mentor) expect(new Date(m.startsAt).getDay()).toBe(4)
+  it('has no mentor 1:1s: those come from the bookable slots', () => {
+    expect(events.some((e) => e.title.includes('1:1'))).toBe(false)
   })
 
   it('has exactly one all-day off-campus day and one team sync', () => {

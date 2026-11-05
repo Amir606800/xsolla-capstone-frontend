@@ -282,10 +282,6 @@
   align-items: center;
   gap: 12px;
 }
-.score__percent {
-  font-size: 30px;
-  font-weight: 700;
-}
 .score__label {
   padding: 6px 22px;
   border-radius: 8px;

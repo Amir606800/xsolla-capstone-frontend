@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import type { CalendarEvent, EventKind } from '../../types/calendar'
 import { formatDuration, formatEventTime, fullDateLabel } from '../../utils/calendar'
@@ -11,6 +11,7 @@ const KIND_LABEL: Record<EventKind, string> = {
   meeting: 'Meeting',
   'off-campus': 'Off-campus',
   deadline: 'Deadline',
+  availability: '1:1 times',
 }
 
 interface DayModalProps {
@@ -19,6 +20,8 @@ interface DayModalProps {
   events: CalendarEvent[]
   now: Date
   onClose: () => void
+  /** Extra content under the events, e.g. the 1:1 slots. */
+  children?: ReactNode
 }
 
 function deadlineStatus(e: CalendarEvent, now: Date): string {
@@ -78,18 +81,21 @@ function EventDetails({ event, now }: { event: CalendarEvent; now: Date }) {
   )
 }
 
-function DayModalBase({ date, events, now, onClose }: DayModalProps) {
+function DayModalBase({ date, events, now, onClose, children }: DayModalProps) {
+  // open 1:1 times are handled by the slots panel (children), not by a card of their own
+  const cards = events.filter((e) => e.kind !== 'availability')
   return (
     <Modal open={date !== null} onClose={onClose} title={date ? fullDateLabel(date) : ''}>
-      {events.length === 0 ? (
-        <p className="card__empty">No events on this day.</p>
-      ) : (
+      {cards.length > 0 ? (
         <ul className="event-cards" aria-label="Events">
-          {events.map((e) => (
+          {cards.map((e) => (
             <EventDetails key={e.id} event={e} now={now} />
           ))}
         </ul>
+      ) : (
+        !children && <p className="card__empty">No events on this day.</p>
       )}
+      {children}
     </Modal>
   )
 }

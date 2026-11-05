@@ -19,7 +19,7 @@ export const STUDENT_NAV: NavGroup[] = [
       { to: '/courses', label: 'My courses', icon: 'courses' },
       { to: '/tasks', label: 'Tasks', icon: 'tasks' },
       { to: '/calendar', label: 'Calendar', icon: 'calendar' },
-      { to: '/grades', label: 'Grades', icon: 'grades' },
+      { to: '/grades', label: 'My grades', icon: 'grades' },
     ],
   },
   {

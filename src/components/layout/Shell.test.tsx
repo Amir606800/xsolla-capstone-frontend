@@ -77,7 +77,7 @@ describe('Sidebar links', () => {
     renderApp()
     const link = await screen.findByRole('link', { name: 'Calendar' })
     expect(link.querySelector('.sidebar__icon svg')).not.toBeNull()
-    for (const name of ['Dashboard', 'My courses', 'Tasks', 'Calendar', 'Grades', 'My team']) {
+    for (const name of ['Dashboard', 'My courses', 'Tasks', 'Calendar', 'My grades', 'My team']) {
       expect(within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('link', { name })).toBeInTheDocument()
     }
   })

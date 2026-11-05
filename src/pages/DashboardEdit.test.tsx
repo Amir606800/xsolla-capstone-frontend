@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { CoursesProvider } from '../context/CoursesProvider'
 import { DashboardLayoutProvider } from '../context/DashboardLayoutProvider'
+import { StandingsProvider } from '../context/StandingsProvider'
 import { renderWithProviders } from '../test/renderWithProviders'
 import DashboardPage from './DashboardPage'
 
@@ -13,7 +14,9 @@ function renderDashboard() {
   return renderWithProviders(
     <CoursesProvider>
       <DashboardLayoutProvider>
-        <DashboardPage />
+        <StandingsProvider>
+          <DashboardPage />
+        </StandingsProvider>
       </DashboardLayoutProvider>
     </CoursesProvider>,
   )

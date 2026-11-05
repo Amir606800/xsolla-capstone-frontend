@@ -42,7 +42,8 @@ export interface ApiFileItem extends ApiContentItemBase {
 export interface ApiAssignmentItem extends ApiContentItemBase {
   type: 'assignment'
   due_at: string
-  max_points: number
+  /** Not used: work is rated green/yellow/red, not with points. */
+  max_points?: number
 }
 
 export type ApiContentItem = ApiSection | ApiFileItem | ApiAssignmentItem
@@ -53,7 +54,18 @@ export interface ApiSubmission {
   assignment_id: ApiId
   text_body: string | null
   submitted_at: string
-  grade: number | null
+  /** Not used: the green/yellow/red rating is given per week (see ApiWeeklyStanding), not per task. */
+  grade?: unknown
   feedback: string | null
   graded_at: string | null
+}
+
+/** GET /standings/me (inferred, the backend has no such endpoint yet): the mentor's rating of each finished week */
+export interface ApiWeeklyStanding {
+  /** Module position (1-12): a module is a week */
+  week: number
+  /** 'green' | 'yellow' | 'red' */
+  level: string
+  assessed_at: string
+  note?: string | null
 }

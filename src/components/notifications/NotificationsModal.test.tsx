@@ -68,7 +68,7 @@ describe('Notifications modal', () => {
 
     const rows = items()
     expect(rows).toHaveLength(8)
-    expect(rows[0]).toHaveTextContent('Your task "Routing app" was graded: 94/100')
+    expect(rows[0]).toHaveTextContent('Your task "Routing app" was graded: Above expected')
     expect(rows[0]).toHaveTextContent('2 hours ago')
     expect(rows[1]).toHaveTextContent('3 hours ago')
     expect(rows[7]).toHaveTextContent(/[A-Z][a-z]{2} \d+/) // older than a week: a date

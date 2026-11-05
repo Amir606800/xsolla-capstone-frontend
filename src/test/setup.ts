@@ -44,6 +44,30 @@ vi.mock('../api/events', async () => {
   return { fetchEvents: vi.fn(async () => buildMockEvents(new Date())) }
 })
 
+vi.mock('../api/standings', async () => {
+  const { buildMockStandings } = await import('../mocks/standings')
+  return { fetchStandings: vi.fn(async () => buildMockStandings(new Date())) }
+})
+
+vi.mock('../api/teams', async () => {
+  const { buildMockTeam } = await import('../mocks/teams')
+  return { fetchMyTeam: vi.fn(async (user: { id: number; name: string; email: string }) => buildMockTeam(user)) }
+})
+
+// the slot store lives in localStorage, which is cleared after each test
+type Actor = import('../mocks/slots').Actor
+type Win = import('../types/slots').AvailabilityWindow
+vi.mock('../api/slots', async () => {
+  const m = await import('../mocks/slots')
+  return {
+    fetchSlots: vi.fn(async (a: Actor) => m.listSlots(a)),
+    createAvailability: vi.fn(async (a: Actor, w: Win) => m.addWindow(a, w)),
+    removeSlot: vi.fn(async (a: Actor, id: string) => m.deleteSlot(a, id)),
+    bookSlot: vi.fn(async (a: Actor, id: string) => m.reserve(a, id)),
+    cancelBooking: vi.fn(async (a: Actor, id: string) => m.release(a, id)),
+  }
+})
+
 vi.mock('../api/notifications', async () => {
   const { buildMockNotifications } = await import('../mocks/notifications')
   return {

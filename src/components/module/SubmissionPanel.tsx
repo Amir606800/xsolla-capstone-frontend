@@ -4,6 +4,7 @@ import type { SubmitPayload } from '../../api/courses'
 import type { AssignmentItem } from '../../types/course'
 import { formatDateTime } from '../../utils/date'
 import { ALLOWED_EXTENSIONS, formatBytes, validateFile } from '../../utils/files'
+import { GradedPill } from '../GradedPill'
 import { Icon } from '../Icon'
 
 interface SubmissionPanelProps {
@@ -25,7 +26,8 @@ export function SubmissionPanel({ assignment, onSubmit }: SubmissionPanelProps) 
   const [dragging, setDragging] = useState(false)
   const dragDepth = useRef(0)
 
-  const canSubmit = (text.trim().length > 0 || files.length > 0) && !busy
+  const graded = submission?.gradedAt !== undefined
+  const canSubmit = (text.trim().length > 0 || files.length > 0) && !busy && !graded
 
   function handleFiles(e: ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(e.target.files ?? [])
@@ -112,21 +114,28 @@ export function SubmissionPanel({ assignment, onSubmit }: SubmissionPanelProps) 
               ))}
             </ul>
           )}
-          {submission.grade !== undefined && (
+          {graded && (
             <div className="submission__grade">
-              <strong>
-                Grade: {submission.grade}/{assignment.maxPoints}
-              </strong>
+              <GradedPill />
               {submission.feedback && <p>&ldquo;{submission.feedback}&rdquo;</p>}
             </div>
           )}
         </div>
       )}
 
+      {/* Graded work is final: no form, nothing to change. */}
+      {graded && (
+        <p className="submission__locked">
+          <Icon name="lock" size={16} />
+          This task has been graded, so it can no longer be changed.
+        </p>
+      )}
+
+      {!graded && (
       <form onSubmit={handleSubmit} noValidate>
         <h4 className="submission__title">{submission ? 'Resubmit your work' : 'Submit your work'}</h4>
         {submission && (
-          <p className="submission__hint">Resubmitting replaces your previous submission. Your grade is kept.</p>
+          <p className="submission__hint">Resubmitting replaces your previous submission until it is graded.</p>
         )}
 
         <label className="field__label" htmlFor={`${uid}-text`}>
@@ -213,6 +222,7 @@ export function SubmissionPanel({ assignment, onSubmit }: SubmissionPanelProps) 
           {busy ? 'Submitting…' : submission ? 'Resubmit' : 'Submit'}
         </button>
       </form>
+      )}
     </div>
   )
 }

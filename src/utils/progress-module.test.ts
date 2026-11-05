@@ -11,7 +11,6 @@ const task = (id: string, dueIn: number, submission?: AssignmentItem['submission
   type: 'assignment',
   title: id,
   dueAt: h(dueIn),
-  maxPoints: 100,
   submission,
 })
 
@@ -25,8 +24,8 @@ describe('assignmentStatus', () => {
   it('submitted wins over overdue (late work is still submitted)', () => {
     expect(assignmentStatus(task('a', -5, { submittedAt: h(-1) }), NOW)).toBe('submitted')
   })
-  it('graded once a grade exists, including 0', () => {
-    expect(assignmentStatus(task('a', -5, { submittedAt: h(-3), grade: 0, gradedAt: h(-1) }), NOW)).toBe('graded')
+  it('graded once the lecturer has graded it', () => {
+    expect(assignmentStatus(task('a', -5, { submittedAt: h(-3), feedback: 'ok', gradedAt: h(-1) }), NOW)).toBe('graded')
   })
 })
 

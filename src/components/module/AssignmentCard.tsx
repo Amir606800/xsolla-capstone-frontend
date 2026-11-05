@@ -3,6 +3,7 @@ import type { SubmitPayload } from '../../api/courses'
 import type { AssignmentItem } from '../../types/course'
 import { formatDateTime, formatTimeLeft } from '../../utils/date'
 import { assignmentStatus } from '../../utils/progress'
+import { GradedPill } from '../GradedPill'
 import { Icon } from '../Icon'
 import { SubmissionPanel } from './SubmissionPanel'
 
@@ -10,17 +11,15 @@ interface AssignmentCardProps {
   assignment: AssignmentItem
   now: Date
   onSubmit: (assignmentId: string, payload: SubmitPayload) => Promise<void>
+  /** Where the task belongs (e.g. "Module 6 · Go Basics"), shown in lists that mix several modules. */
+  context?: string
 }
 
 function StatusPill({ assignment, now }: { assignment: AssignmentItem; now: Date }) {
   const status = assignmentStatus(assignment, now)
   switch (status) {
     case 'graded':
-      return (
-        <span className="pill pill--grade">
-          {assignment.submission?.grade}/{assignment.maxPoints}
-        </span>
-      )
+      return <GradedPill />
     case 'submitted':
       return <span className="pill pill--ok">Submitted</span>
     case 'overdue':
@@ -30,7 +29,7 @@ function StatusPill({ assignment, now }: { assignment: AssignmentItem; now: Date
   }
 }
 
-function AssignmentCardBase({ assignment, now, onSubmit }: AssignmentCardProps) {
+function AssignmentCardBase({ assignment, now, onSubmit, context }: AssignmentCardProps) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
 
@@ -45,7 +44,9 @@ function AssignmentCardBase({ assignment, now, onSubmit }: AssignmentCardProps) 
       >
         <span className="assignment__title-wrap">
           <span className="list__title">{assignment.title}</span>
-          <span className="list__meta">Due {formatDateTime(assignment.dueAt)}</span>
+          <span className="list__meta">
+            {context ? `${context} · ` : ''}Due {formatDateTime(assignment.dueAt)}
+          </span>
         </span>
         <StatusPill assignment={assignment} now={now} />
         <Icon name="chevron" size={18} />
@@ -64,7 +65,6 @@ function AssignmentCardBase({ assignment, now, onSubmit }: AssignmentCardProps) 
               </ul>
             </>
           )}
-          <p className="list__meta">Max points: {assignment.maxPoints}</p>
           <SubmissionPanel assignment={assignment} onSubmit={onSubmit} />
         </div>
       )}

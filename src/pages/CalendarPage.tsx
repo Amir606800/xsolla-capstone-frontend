@@ -1,11 +1,15 @@
 import { useCallback, useMemo, useState } from 'react'
 import { DayModal } from '../components/calendar/DayModal'
 import { MonthGrid } from '../components/calendar/MonthGrid'
+import { SlotsPanel } from '../components/calendar/SlotsPanel'
 import { Icon } from '../components/Icon'
+import { useAuth } from '../hooks/useAuth'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
+import { useMeetingSlots } from '../hooks/useMeetingSlots'
 import { useCourses } from '../hooks/useCourses'
 import { useModuleAccess } from '../hooks/useModuleAccess'
 import { addMonths, dateKey, deadlineEvents, groupByDay, monthLabel, startOfMonth } from '../utils/calendar'
+import { myNextBooking, slotEvents, slotsOnDay } from '../utils/slots'
 import '../styles/ui.css'
 import '../components/calendar/calendar.css'
 
@@ -13,6 +17,9 @@ export default function CalendarPage() {
   const courses = useCourses()
   const calendar = useCalendarEvents()
   const isLocked = useModuleAccess()
+  const { user } = useAuth()
+  const meetings = useMeetingSlots()
+  const isStaff = user?.role === 'teacher' || user?.role === 'admin'
 
   const [today] = useState(() => new Date())
   const [month, setMonth] = useState(() => startOfMonth(today))
@@ -21,10 +28,29 @@ export default function CalendarPage() {
   const [openDay, setOpenDay] = useState<string | null>(null)
 
   // deadlines of modules that are not open yet stay hidden from students
+  // the 1:1 times are optional: if they can't be loaded the rest of the calendar still works
   const eventsByDay = useMemo(
-    () => groupByDay([...calendar.events, ...deadlineEvents(courses.modules.filter((m) => !isLocked(m)))]),
-    [calendar.events, courses.modules, isLocked],
+    () =>
+      groupByDay([
+        ...calendar.events,
+        ...deadlineEvents(courses.modules.filter((m) => !isLocked(m))),
+        ...(user ? slotEvents(meetings.slots, { id: user.id, isStaff }, today) : []),
+      ]),
+    [calendar.events, courses.modules, isLocked, meetings.slots, user, isStaff, today],
   )
+
+  const booking = useMemo(() => (user ? myNextBooking(meetings.slots, user.id, today) : undefined), [meetings.slots, user, today])
+  const daySlots = useMemo(() => {
+    if (!openDay) return []
+    const all = slotsOnDay(meetings.slots, openDay)
+    // students only see times they can still use, or their own booking
+    return isStaff ? all : all.filter((s) => new Date(s.startsAt) > today || s.bookedBy?.id === user?.id)
+  }, [openDay, meetings.slots, isStaff, today, user?.id])
+  const actions = useMemo(
+    () => ({ addWindow: meetings.addWindow, remove: meetings.remove, book: meetings.book, cancel: meetings.cancel }),
+    [meetings.addWindow, meetings.remove, meetings.book, meetings.cancel],
+  )
+  const showSlots = user && meetings.status === 'ready' && (isStaff || daySlots.length > 0)
 
   const goToMonth = useCallback(
     (next: Date) => {
@@ -110,6 +136,7 @@ export default function CalendarPage() {
             <li><span className="dot ev ev--meeting" /> Meeting</li>
             <li><span className="dot ev ev--off-campus" /> Off-campus</li>
             <li><span className="dot ev ev--deadline" /> Deadline</li>
+            <li><span className="dot ev ev--availability" /> 1:1 times</li>
           </ul>
 
           <MonthGrid
@@ -125,7 +152,19 @@ export default function CalendarPage() {
             events={openDay ? (eventsByDay[openDay] ?? []) : []}
             now={today}
             onClose={closeDay}
-          />
+          >
+            {showSlots && openDay && (
+              <SlotsPanel
+                dayKey={openDay}
+                slots={daySlots}
+                isStaff={isStaff}
+                userId={user.id}
+                booking={booking}
+                now={today}
+                actions={actions}
+              />
+            )}
+          </DayModal>
         </>
       )}
     </section>

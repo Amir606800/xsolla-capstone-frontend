@@ -1,6 +1,7 @@
 import type { WidgetId } from '../../config/dashboardWidgets'
 import type { CourseModule } from '../../types/course'
 import type { ActivityEntry, DeadlineEntry, GradeEntry, OverallStats } from '../../utils/progress'
+import type { StandingSummary } from '../../utils/standing'
 import { CurrentTaskCard } from './CurrentTaskCard'
 import { DeadlinesCard } from './DeadlinesCard'
 import { ProgressCard } from './ProgressCard'
@@ -12,6 +13,7 @@ export interface DashboardData {
   modules: CourseModule[]
   now: Date
   stats: OverallStats
+  standing: StandingSummary
   deadlines: DeadlineEntry[]
   grades: GradeEntry[]
   activity: ActivityEntry[]
@@ -22,7 +24,7 @@ export interface DashboardData {
 export function DashboardWidgetBody({ id, data }: { id: WidgetId; data: DashboardData }) {
   switch (id) {
     case 'progress':
-      return <ProgressCard stats={data.stats} modules={data.modules} now={data.now} isLocked={data.isLocked} />
+      return <ProgressCard stats={data.stats} standing={data.standing} modules={data.modules} now={data.now} isLocked={data.isLocked} />
     case 'current-task':
       return <CurrentTaskCard />
     case 'deadlines':
