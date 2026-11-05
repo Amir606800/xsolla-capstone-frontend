@@ -254,3 +254,33 @@
     align-items: flex-start;
   }
 }
+
+/* Offline demo accounts (only without a backend) */
+.auth__demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--field-border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.auth__demo-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.auth__demo-btn:hover {
+  background: var(--active-bg);
+}
+.auth__demo-btn:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}

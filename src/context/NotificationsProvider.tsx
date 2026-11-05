@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from '../api/notifications'
+import { isStaff } from '../config/nav'
+import { useAuth } from '../hooks/useAuth'
 import type { AppNotification } from '../types/notification'
 import type { LoadStatus } from './courses'
 import { NotificationsContext } from './notifications'
@@ -16,8 +18,21 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [attempt, setAttempt] = useState(0)
 
+  // the demo notifications are a student's ("your task was graded"); lecturers get their own later
+  const staff = isStaff(useAuth().user?.role)
+
   useEffect(() => {
     let cancelled = false
+    if (staff) {
+      Promise.resolve().then(() => {
+        if (cancelled) return
+        setNotifications([])
+        setStatus('ready')
+      })
+      return () => {
+        cancelled = true
+      }
+    }
     fetchNotifications()
       .then((data) => {
         if (cancelled) return
@@ -30,7 +45,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [attempt])
+  }, [attempt, staff])
 
   const reload = useCallback(() => {
     setStatus('loading')

@@ -1,0 +1,233 @@
+/* ---------- module phase pills (shared by the lecturer pages) ---------- */
+.phase--running {
+  background: color-mix(in srgb, var(--xs-cyan) 22%, transparent);
+}
+.phase--done {
+  color: var(--text-muted);
+}
+.pill--warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+}
+
+/* ---------- course content: one row per module ---------- */
+.content-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.content-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  text-decoration: none;
+}
+:root[data-theme='dark'] .content-row {
+  border-color: var(--field-border);
+}
+.content-row:hover {
+  border-color: var(--field-border);
+}
+.content-row:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.content-row--done {
+  opacity: 0.8;
+}
+.content-row__num {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--active-bg);
+  font-weight: var(--fw-medium);
+}
+.content-row--running .content-row__num {
+  background: var(--xs-cyan);
+  color: #06232b;
+}
+.content-row__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.content-row__title {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.content-row__meta {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.content-row__tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+@media (max-width: 640px) {
+  .content-row {
+    flex-wrap: wrap;
+  }
+  .content-row__main {
+    flex-basis: calc(100% - 52px);
+  }
+  .content-row__tags {
+    justify-content: flex-start;
+    padding-left: 52px;
+  }
+  .content-row > svg {
+    display: none;
+  }
+}
+
+/* ---------- module editor ---------- */
+.editor__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.editor__add,
+.card__action {
+  margin-left: auto;
+}
+.editor__status:empty {
+  display: none;
+}
+.editor__status {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+  color: var(--ok);
+}
+.editor__gaps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editor__gaps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  color: var(--warn);
+  font-size: 14px;
+}
+
+/* ---------- lecturer dashboard ---------- */
+.lect__shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lect__shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: var(--fw-medium);
+}
+.lect__shortcut:hover {
+  background: var(--active-bg);
+}
+.lect__shortcut:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.lect__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .lect__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.lect__focus {
+  padding: 16px 20px 20px;
+}
+.lect__focus-title {
+  margin: 0;
+  font-size: var(--fs-h4);
+  font-weight: 500;
+}
+.lect__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 16px 0 0;
+}
+.lect__counts div {
+  display: flex;
+  flex-direction: column;
+}
+.lect__counts dt {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.lect__counts dd {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.lect__row-link {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.lect__row-link:hover .list__title {
+  text-decoration: underline;
+}
+.lect__row-link:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.lect__row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.lect__dot {
+  flex: none;
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--c);
+}
+.lect__more {
+  color: var(--link);
+}

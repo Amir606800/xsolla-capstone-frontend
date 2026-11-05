@@ -429,3 +429,33 @@
 .slots__btn {
   padding: 6px 14px;
 }
+
+/* ---------- Day pop-up: lecturer tools ---------- */
+.event-card__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.event-card__link + .event-card__tools {
+  margin-top: 8px;
+}
+.day-tools {
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--divider);
+}
+.day-tools:first-child {
+  border-top: 0;
+}
+.day-tools__title {
+  margin: 0 0 4px;
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+}
+.day-tools__ok {
+  margin: 0 0 10px;
+  color: var(--ok);
+  font-size: var(--fs-label);
+}

@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchEvents } from '../api/events'
+import { deleteEvent, fetchEvents, saveEvent } from '../api/events'
 import type { LoadStatus } from '../context/courses'
 import type { CalendarEvent } from '../types/calendar'
 
-/** Loads calendar events once per mount. Only the Calendar page needs them for now. */
+/**
+ * Loads calendar events once per mount. Lecturers can also add, change and delete them;
+ * the screen then shows the list the server returns.
+ */
 export function useCalendarEvents() {
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [events, setEvents] = useState<CalendarEvent[]>([])
@@ -30,5 +33,8 @@ export function useCalendarEvents() {
     setAttempt((a) => a + 1)
   }, [])
 
-  return { status, events, reload }
+  const save = useCallback(async (event: CalendarEvent) => setEvents(await saveEvent(event)), [])
+  const remove = useCallback(async (id: string) => setEvents(await deleteEvent(id)), [])
+
+  return { status, events, reload, save, remove }
 }

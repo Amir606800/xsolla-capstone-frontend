@@ -1,0 +1,139 @@
+import type { CalendarEvent } from '../types/calendar'
+import type { ContentItem, CourseModule } from '../types/course'
+import { buildMockEvents } from './events'
+import { buildMockModules } from './courses'
+
+/**
+ * Stand-in for the backend while there is none: what a lecturer changes (modules, materials, tasks,
+ * quizzes, calendar events) is kept in localStorage as a list of edits on top of the generated demo
+ * data. The demo stays "live" (dates follow today) and a lecturer and a student who use the same
+ * browser see each other's changes.
+ */
+
+export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt'>>
+
+interface CourseEdits {
+  modules: Record<string, ModulePatch>
+  /** A changed or new item, or null when it was deleted. */
+  items: Record<string, ContentItem | null>
+}
+
+const COURSE_KEY = 'course_edits'
+const EVENTS_KEY = 'event_edits'
+
+function read<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function write(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    /* storage blocked or full: the change lasts until the page reloads */
+  }
+}
+
+let seq = 0
+/** A new id that cannot clash with the generated demo ids. */
+export const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}${(seq++).toString(36)}`
+
+const loadCourseEdits = (): CourseEdits => read<CourseEdits>(COURSE_KEY, { modules: {}, items: {} })
+
+/** Students' work stays with the task when the lecturer edits it. */
+function merge(base: ContentItem | undefined, edited: ContentItem): ContentItem {
+  if (base?.type === 'assignment' && edited.type === 'assignment' && base.submission) {
+    return { ...edited, submission: base.submission }
+  }
+  return edited
+}
+
+export function applyCourseEdits(base: CourseModule[], edits: CourseEdits): CourseModule[] {
+  const baseItems = new Map<string, ContentItem>()
+  for (const m of base) for (const i of m.items) baseItems.set(i.id, i)
+
+  return base.map((m) => {
+    const items: ContentItem[] = []
+    for (const item of m.items) {
+      const edited = edits.items[item.id]
+      if (edited === null) continue // deleted
+      if (edited === undefined) items.push(item)
+      else if (edited.moduleId === m.id) items.push(merge(item, edited))
+      // else: moved to another module, added there below
+    }
+    for (const [id, edited] of Object.entries(edits.items)) {
+      if (!edited || edited.moduleId !== m.id) continue
+      const original = baseItems.get(id)
+      if (original && original.moduleId === m.id) continue // already placed above
+      items.push(merge(original, edited))
+    }
+    return { ...m, ...edits.modules[m.id], items }
+  })
+}
+
+export function listModules(now: Date = new Date()): CourseModule[] {
+  return applyCourseEdits(buildMockModules(now), loadCourseEdits())
+}
+
+export function putModule(id: string, patch: ModulePatch, now: Date = new Date()): CourseModule[] {
+  const edits = loadCourseEdits()
+  if (!buildMockModules(now).some((m) => m.id === id)) throw new Error('This module does not exist')
+  edits.modules[id] = { ...edits.modules[id], ...patch }
+  write(COURSE_KEY, edits)
+  return listModules(now)
+}
+
+/** Creates or replaces an item. Students' submissions are never part of what the lecturer saves. */
+export function putItem(item: ContentItem, now: Date = new Date()): CourseModule[] {
+  const edits = loadCourseEdits()
+  if (!buildMockModules(now).some((m) => m.id === item.moduleId)) throw new Error('This module does not exist')
+  const clean: ContentItem = item.type === 'assignment' ? { ...item, submission: undefined } : item
+  edits.items[item.id] = clean
+  write(COURSE_KEY, edits)
+  return listModules(now)
+}
+
+export function removeItem(id: string, now: Date = new Date()): CourseModule[] {
+  const edits = loadCourseEdits()
+  edits.items[id] = null
+  write(COURSE_KEY, edits)
+  return listModules(now)
+}
+
+// ---------- calendar events ----------
+
+type EventEdits = Record<string, CalendarEvent | null>
+
+export function applyEventEdits(base: CalendarEvent[], edits: EventEdits): CalendarEvent[] {
+  const out: CalendarEvent[] = []
+  for (const e of base) {
+    const edited = edits[e.id]
+    if (edited === null) continue
+    out.push(edited ?? e)
+  }
+  const baseIds = new Set(base.map((e) => e.id))
+  for (const [id, edited] of Object.entries(edits)) if (edited && !baseIds.has(id)) out.push(edited)
+  return out
+}
+
+export function listEvents(now: Date = new Date()): CalendarEvent[] {
+  return applyEventEdits(buildMockEvents(now), read<EventEdits>(EVENTS_KEY, {}))
+}
+
+export function putEvent(event: CalendarEvent, now: Date = new Date()): CalendarEvent[] {
+  const edits = read<EventEdits>(EVENTS_KEY, {})
+  edits[event.id] = event
+  write(EVENTS_KEY, edits)
+  return listEvents(now)
+}
+
+export function removeEvent(id: string, now: Date = new Date()): CalendarEvent[] {
+  const edits = read<EventEdits>(EVENTS_KEY, {})
+  edits[id] = null
+  write(EVENTS_KEY, edits)
+  return listEvents(now)
+}

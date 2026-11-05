@@ -1,0 +1,98 @@
+import { useState } from 'react'
+import type { CalendarEvent } from '../../types/calendar'
+import type { CourseModule } from '../../types/course'
+import { EVENT_KINDS, eventToDraft, hasErrors, validateEvent } from '../../utils/authoring'
+import type { EditableKind, EventDraft } from '../../utils/authoring'
+import { Field, FormActions } from './Field'
+import { useSave } from './useSave'
+
+/** Lecturer: add or change a lecture, meeting or off-campus day. */
+export function EventForm({
+  event,
+  dayKey,
+  modules,
+  onSave,
+  onCancel,
+}: {
+  event?: CalendarEvent
+  dayKey: string
+  modules: CourseModule[]
+  onSave: (draft: EventDraft) => Promise<void>
+  onCancel: () => void
+}) {
+  const [d, setD] = useState<EventDraft>(() => eventToDraft(event, dayKey))
+  const { touched, busy, error, submit } = useSave()
+  const errors = validateEvent(d)
+  const set = (patch: Partial<EventDraft>) => setD((prev) => ({ ...prev, ...patch }))
+
+  return (
+    <form
+      className="form form--inset"
+      noValidate
+      aria-label={event ? 'Edit event' : 'New event'}
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit(hasErrors(errors), () => onSave(d))
+      }}
+    >
+      <div className="form__row">
+        <Field label="Title" error={touched ? errors.title : undefined}>
+          {(p) => <input {...p} className="field__input form__input" value={d.title} onChange={(e) => set({ title: e.target.value })} />}
+        </Field>
+        <Field label="Type">
+          {(p) => (
+            <select {...p} className="field__input form__input" value={d.kind} onChange={(e) => set({ kind: e.target.value as EditableKind })}>
+              {EVENT_KINDS.map((k) => (
+                <option key={k.value} value={k.value}>
+                  {k.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+      </div>
+
+      <div className="form__row">
+        <Field label="Day" error={touched ? errors.date : undefined}>
+          {(p) => <input {...p} type="date" className="field__input form__input" value={d.date} onChange={(e) => set({ date: e.target.value })} />}
+        </Field>
+        <label className="form__check">
+          <input type="checkbox" checked={d.allDay} onChange={(e) => set({ allDay: e.target.checked })} /> All day
+        </label>
+      </div>
+
+      {!d.allDay && (
+        <div className="form__row">
+          <Field label="Starts" error={touched ? errors.time : undefined}>
+            {(p) => <input {...p} type="time" className="field__input form__input" value={d.start} onChange={(e) => set({ start: e.target.value })} />}
+          </Field>
+          <Field label="Ends">
+            {(p) => <input {...p} type="time" className="field__input form__input" value={d.end} onChange={(e) => set({ end: e.target.value })} />}
+          </Field>
+        </div>
+      )}
+
+      <Field label="Where" optional>
+        {(p) => <input {...p} className="field__input form__input" value={d.location} onChange={(e) => set({ location: e.target.value })} />}
+      </Field>
+      <Field label="Module" optional hint="Students get a link to the module's materials.">
+        {(p) => (
+          <select {...p} className="field__input form__input" value={d.moduleId} onChange={(e) => set({ moduleId: e.target.value })}>
+            <option value="">No module</option>
+            {modules.map((m) => (
+              <option key={m.id} value={m.id}>
+                Module {m.position} · {m.title}
+              </option>
+            ))}
+          </select>
+        )}
+      </Field>
+      <Field label="Details" optional>
+        {(p) => (
+          <textarea {...p} className="field__input form__textarea" rows={2} value={d.description} onChange={(e) => set({ description: e.target.value })} />
+        )}
+      </Field>
+      <FormActions submitLabel={event ? 'Save event' : 'Add event'} busy={busy} error={error} onCancel={onCancel} />
+    </form>
+  )
+}

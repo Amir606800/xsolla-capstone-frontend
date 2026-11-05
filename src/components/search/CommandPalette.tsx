@@ -1,7 +1,8 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { STUDENT_NAV } from '../../config/nav'
+import { navFor } from '../../config/nav'
+import { useAuth } from '../../hooks/useAuth'
 import { useCourses } from '../../hooks/useCourses'
 import { useModuleAccess } from '../../hooks/useModuleAccess'
 import { buildSearchItems, filterSearchItems } from '../../utils/search'
@@ -13,6 +14,7 @@ import './search.css'
 function PaletteBody({ onClose }: { onClose: () => void }) {
   const { modules } = useCourses()
   const isLocked = useModuleAccess()
+  const role = useAuth().user?.role
   const navigate = useNavigate()
   const listId = useId()
   const listRef = useRef<HTMLUListElement>(null)
@@ -20,7 +22,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
 
-  const all = useMemo(() => buildSearchItems(STUDENT_NAV, modules, isLocked), [modules, isLocked])
+  const all = useMemo(() => buildSearchItems(navFor(role), modules, isLocked), [role, modules, isLocked])
   const results = useMemo(() => filterSearchItems(all, query), [all, query])
   const current = results[Math.min(active, results.length - 1)]
 

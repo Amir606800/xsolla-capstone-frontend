@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { fetchModules, submitWork } from '../api/courses'
-import type { SubmitPayload } from '../api/courses'
+import { deleteItem as apiDeleteItem, fetchModules, saveItem as apiSaveItem, saveModule as apiSaveModule, submitWork } from '../api/courses'
+import type { ModulePatch, SubmitPayload } from '../api/courses'
 import { useAuth } from '../hooks/useAuth'
-import type { CourseModule, Submission } from '../types/course'
+import type { ContentItem, CourseModule, Submission } from '../types/course'
+import type { Role } from '../types/user'
 import { isModuleLocked } from '../utils/progress'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
@@ -24,11 +25,29 @@ function withSubmission(modules: CourseModule[], assignmentId: string, result: S
   )
 }
 
+/** Students never get quiz answers (the backend must strip them too). */
+function forRole(modules: CourseModule[], role: Role | undefined): CourseModule[] {
+  if (role !== 'student') return modules
+  return modules.map((m) =>
+    m.items.some((i) => i.type === 'quiz')
+      ? {
+          ...m,
+          items: m.items.map((i) =>
+            i.type === 'quiz' && i.questions ? { ...i, questions: i.questions.map((q) => ({ ...q, correct: undefined })) } : i,
+          ),
+        }
+      : m,
+  )
+}
+
+const isStaffRole = (role: Role | undefined) => role === 'teacher' || role === 'admin'
+
 /**
  * Loads the course once for the signed-in shell, so the Dashboard, Courses,
  * Tasks and Grades pages share one fetch instead of each refetching.
  */
 export function CoursesProvider({ children }: { children: ReactNode }) {
+  const role = useAuth().user?.role
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [modules, setModules] = useState<CourseModule[]>([])
   const [now, setNow] = useState(() => new Date())
@@ -39,7 +58,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     fetchModules()
       .then((data) => {
         if (cancelled) return
-        setModules(data)
+        setModules(forRole(data, role))
         setNow(new Date())
         setStatus('ready')
       })
@@ -49,14 +68,12 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [attempt])
+  }, [attempt, role])
 
   const reload = useCallback(() => {
     setStatus('loading')
     setAttempt((a) => a + 1)
   }, [])
-
-  const role = useAuth().user?.role
 
   const submitAssignment = useCallback(
     async (assignmentId: string, payload: SubmitPayload) => {
@@ -77,9 +94,23 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     [modules, role],
   )
 
+  // Lecturer authoring: the server has the final say (and checks the role); the screen shows what it returns.
+  const author = useCallback(
+    async (run: () => Promise<CourseModule[]>) => {
+      if (!isStaffRole(role)) throw new Error('Only lecturers can change the course')
+      const next = await run()
+      setModules(forRole(next, role))
+      setNow(new Date())
+    },
+    [role],
+  )
+  const saveModule = useCallback((id: string, patch: ModulePatch) => author(() => apiSaveModule(id, patch)), [author])
+  const saveItem = useCallback((item: ContentItem) => author(() => apiSaveItem(item)), [author])
+  const deleteItem = useCallback((id: string) => author(() => apiDeleteItem(id)), [author])
+
   const value = useMemo(
-    () => ({ status, modules, now, reload, submitAssignment }),
-    [status, modules, now, reload, submitAssignment],
+    () => ({ status, modules, now, reload, submitAssignment, saveModule, saveItem, deleteItem }),
+    [status, modules, now, reload, submitAssignment, saveModule, saveItem, deleteItem],
   )
 
   return <CoursesContext.Provider value={value}>{children}</CoursesContext.Provider>

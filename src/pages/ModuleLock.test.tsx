@@ -45,11 +45,11 @@ describe('Locked (future) modules', () => {
     expect(screen.queryByText(/This module opens on/)).not.toBeInTheDocument()
   })
 
-  it('teachers and admins can open future modules', async () => {
+  it('teachers and admins can open future modules (in the editor)', async () => {
     for (const role of ['teacher', 'admin'] as const) {
       signIn(role)
       const { unmount } = renderWithProviders(<App />, { route: '/courses/m9' })
-      expect(await screen.findByRole('region', { name: 'Assignments' })).toBeInTheDocument()
+      expect(await screen.findByRole('region', { name: 'Tasks' })).toBeInTheDocument()
       expect(screen.queryByText(/This module opens on/)).not.toBeInTheDocument()
       unmount()
     }

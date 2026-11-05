@@ -31,6 +31,8 @@ export interface ResourceItem extends BaseItem {
   description?: string
   /** External link target (kind === 'link'). Files are downloaded through the API instead. */
   url?: string
+  /** Uploaded file (name and size only in the mock; the real file goes through POST /files). */
+  file?: SubmissionFile
 }
 
 export interface AssignmentItem extends BaseItem {
@@ -42,9 +44,24 @@ export interface AssignmentItem extends BaseItem {
   submission?: Submission
 }
 
-/** Placeholder: quizzes (AI-generated, later) are not designed yet; the slot is reserved in the UI. */
+/** One multiple-choice question. `correct` is the index of the right option. */
+export interface QuizQuestion {
+  id: string
+  prompt: string
+  options: string[]
+  /** Only ever sent to lecturers: the backend must strip it from what students receive. */
+  correct?: number
+}
+
+/**
+ * A short multiple-choice quiz written by the lecturer (optional; AI-generated quizzes may come later).
+ * Taking a quiz is not built yet: students only see that it exists.
+ */
 export interface QuizItem extends BaseItem {
   type: 'quiz'
+  description?: string
+  dueAt?: string // ISO
+  questions?: QuizQuestion[]
 }
 
 export type ContentItem = ResourceItem | AssignmentItem | QuizItem

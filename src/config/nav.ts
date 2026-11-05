@@ -1,4 +1,5 @@
 import type { IconName } from '../components/Icon'
+import type { Role } from '../types/user'
 
 export interface NavItem {
   to: string
@@ -27,3 +28,20 @@ export const STUDENT_NAV: NavGroup[] = [
     items: [{ to: '/team', label: 'My team', icon: 'team' }],
   },
 ]
+
+/** Lecturers (and admins) run the course: no student pages like Tasks, My grades or My team. */
+export const LECTURER_NAV: NavGroup[] = [
+  {
+    items: [
+      { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { to: '/courses', label: 'Course content', icon: 'courses' },
+      { to: '/calendar', label: 'Calendar', icon: 'calendar' },
+    ],
+  },
+]
+
+export const isStaff = (role: Role | undefined) => role === 'teacher' || role === 'admin'
+
+export function navFor(role: Role | undefined): NavGroup[] {
+  return isStaff(role) ? LECTURER_NAV : STUDENT_NAV
+}

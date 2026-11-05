@@ -7,6 +7,7 @@ import { ResourceList } from '../components/module/ResourceList'
 import { useCourses } from '../hooks/useCourses'
 import { useModuleAccess } from '../hooks/useModuleAccess'
 import { formatDateTime } from '../utils/date'
+import { quizzesOf } from '../utils/content'
 import { assignmentsOf, resourcesOf } from '../utils/progress'
 import '../styles/ui.css'
 import '../components/module/module.css'
@@ -93,7 +94,7 @@ export default function ModulePage() {
 
         <div className="module__side">
           <ResourceList resources={resources} />
-          <QuizzesCard />
+          <QuizzesCard quizzes={quizzesOf(module)} />
         </div>
       </div>
     </div>

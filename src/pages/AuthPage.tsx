@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
+import { DEMO_ACCOUNTS } from '../api/auth.mock'
+import { hasBackend } from '../api/http'
 import officePhoto from '../assets/images/CrescentOfficesPhoto.webp'
 import { XsollaLogo } from '../components/XsollaLogo'
 import { useAuth } from '../hooks/useAuth'
@@ -102,6 +104,26 @@ export default function AuthPage() {
               Sign up
             </button>
           </div>
+
+          {!isSignup && !hasBackend() && (
+            <div className="auth__demo" role="group" aria-label="Demo accounts">
+              <span>Offline demo, sign in as:</span>
+              {Object.values(DEMO_ACCOUNTS).map((a) => (
+                <button
+                  key={a.email}
+                  type="button"
+                  className="auth__demo-btn"
+                  onClick={() => {
+                    setEmail(a.email)
+                    setPassword('demo')
+                    setFormError('')
+                  }}
+                >
+                  {a.role === 'student' ? 'Student' : 'Lecturer'}
+                </button>
+              ))}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} noValidate>
             {isSignup && (

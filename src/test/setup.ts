@@ -18,30 +18,41 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // Make the mock API instant so tests don't wait on simulated latency
-vi.mock('../api/auth', () => ({
+vi.mock('../api/auth', async () => {
+  const { DEMO_ACCOUNTS } = await import('../api/auth.mock')
+  return {
   login: vi.fn(async (email: string, password: string) => {
     if (!password) throw new Error('Invalid email or password')
-    return { id: 1, name: 'Tester', email, role: 'student' }
+    return DEMO_ACCOUNTS[email.toLowerCase()] ?? { id: 1, name: 'Tester', email, role: 'student' }
   }),
   signup: vi.fn(async (email: string, name: string) => ({ id: 1, name, email, role: 'student' })),
   logout: vi.fn(async () => undefined),
-}))
+  }
+})
 
+// lecturer edits live in localStorage, which is cleared after each test
 vi.mock('../api/courses', async () => {
-  const { buildMockModules } = await import('../mocks/courses')
+  const store = await import('../mocks/contentEdits')
   return {
-    fetchModules: vi.fn(async () => buildMockModules(new Date())),
+    fetchModules: vi.fn(async () => store.listModules(new Date())),
     submitWork: vi.fn(async (_id: string, p: { textBody: string; files: File[] }) => ({
       submittedAt: new Date().toISOString(),
       textBody: p.textBody || undefined,
       files: p.files.map((f) => ({ name: f.name, sizeBytes: f.size })),
     })),
+    saveModule: vi.fn(async (id: string, patch: import('../mocks/contentEdits').ModulePatch) => store.putModule(id, patch)),
+    saveItem: vi.fn(async (item: import('../types/course').ContentItem) => store.putItem(item)),
+    deleteItem: vi.fn(async (id: string) => store.removeItem(id)),
   }
 })
 
 vi.mock('../api/events', async () => {
-  const { buildMockEvents } = await import('../mocks/events')
-  return { fetchEvents: vi.fn(async () => buildMockEvents(new Date())) }
+  const store = await import('../mocks/contentEdits')
+  return {
+    fetchEvents: vi.fn(async () => store.listEvents(new Date())),
+    saveEvent: vi.fn(async (e: import('../types/calendar').CalendarEvent) => store.putEvent(e)),
+    deleteEvent: vi.fn(async (id: string) => store.removeEvent(id)),
+  }
 })
 
 vi.mock('../api/standings', async () => {

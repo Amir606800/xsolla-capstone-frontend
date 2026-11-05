@@ -4,9 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from '../api/notifications'
 import { useNotifications } from '../hooks/useNotifications'
 import { buildMockNotifications } from '../mocks/notifications'
+import { AuthProvider } from './AuthProvider'
 import { NotificationsProvider } from './NotificationsProvider'
 
-const wrapper = ({ children }: { children: ReactNode }) => <NotificationsProvider>{children}</NotificationsProvider>
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <AuthProvider>
+    <NotificationsProvider>{children}</NotificationsProvider>
+  </AuthProvider>
+)
 
 async function loaded() {
   const hook = renderHook(() => useNotifications(), { wrapper })
@@ -15,6 +20,14 @@ async function loaded() {
 }
 
 describe('NotificationsProvider', () => {
+  it('a lecturer gets none of the demo (student) notifications and nothing is fetched', async () => {
+    localStorage.setItem('auth_user', JSON.stringify({ id: 900, name: 'Rashad', email: 'l@x.co', role: 'teacher' }))
+    vi.mocked(fetchNotifications).mockClear()
+    const { result } = await loaded()
+    expect(result.current.notifications).toEqual([])
+    expect(fetchNotifications).not.toHaveBeenCalled()
+  })
+
   it('starts loading, then exposes the notifications newest first', async () => {
     const hook = renderHook(() => useNotifications(), { wrapper })
     expect(hook.result.current.status).toBe('loading')

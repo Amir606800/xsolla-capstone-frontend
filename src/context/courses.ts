@@ -1,6 +1,6 @@
 import { createContext } from 'react'
-import type { SubmitPayload } from '../api/courses'
-import type { CourseModule } from '../types/course'
+import type { ModulePatch, SubmitPayload } from '../api/courses'
+import type { ContentItem, CourseModule } from '../types/course'
 
 export type LoadStatus = 'loading' | 'ready' | 'error'
 
@@ -12,6 +12,11 @@ export interface CoursesContextValue {
   reload: () => void
   /** Submits (or resubmits) work and updates the shared course state. Rejects on failure. */
   submitAssignment: (assignmentId: string, payload: SubmitPayload) => Promise<void>
+  /** Lecturer authoring (teachers and admins only). Each rejects on failure. */
+  saveModule: (moduleId: string, patch: ModulePatch) => Promise<void>
+  /** Creates the item, or replaces the one with the same id. */
+  saveItem: (item: ContentItem) => Promise<void>
+  deleteItem: (itemId: string) => Promise<void>
 }
 
 export const CoursesContext = createContext<CoursesContextValue | null>(null)

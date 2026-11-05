@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { DayModal } from '../components/calendar/DayModal'
+import type { EventEditing } from '../components/calendar/DayModal'
+import { EventForm } from '../components/authoring/EventForm'
 import { MonthGrid } from '../components/calendar/MonthGrid'
 import { SlotsPanel } from '../components/calendar/SlotsPanel'
 import { Icon } from '../components/Icon'
@@ -10,6 +12,9 @@ import { useCourses } from '../hooks/useCourses'
 import { useModuleAccess } from '../hooks/useModuleAccess'
 import { addMonths, dateKey, deadlineEvents, groupByDay, monthLabel, startOfMonth } from '../utils/calendar'
 import { myNextBooking, slotEvents, slotsOnDay } from '../utils/slots'
+import { draftToEvent, isEditableEvent } from '../utils/authoring'
+import { newId } from '../mocks/contentEdits'
+import type { CalendarEvent } from '../types/calendar'
 import '../styles/ui.css'
 import '../components/calendar/calendar.css'
 
@@ -26,6 +31,9 @@ export default function CalendarPage() {
   const [selected, setSelected] = useState(() => dateKey(today))
   // the day whose details pop-up is open (null = closed)
   const [openDay, setOpenDay] = useState<string | null>(null)
+  // lecturers: the event form inside the day pop-up (null = closed, {} = a new event)
+  const [eventForm, setEventForm] = useState<{ event?: CalendarEvent } | null>(null)
+  const [eventMsg, setEventMsg] = useState('')
 
   // deadlines of modules that are not open yet stay hidden from students
   // the 1:1 times are optional: if they can't be loaded the rest of the calendar still works
@@ -71,8 +79,33 @@ export default function CalendarPage() {
   const selectDay = useCallback((key: string) => {
     setSelected(key)
     setOpenDay(key)
+    setEventForm(null)
+    setEventMsg('')
   }, [])
-  const closeDay = useCallback(() => setOpenDay(null), [])
+  const closeDay = useCallback(() => {
+    setOpenDay(null)
+    setEventForm(null)
+    setEventMsg('')
+  }, [])
+  const { save: saveEvent, remove: removeEvent } = calendar
+  const editing = useMemo<EventEditing | undefined>(
+    () =>
+      isStaff
+        ? {
+            canEdit: isEditableEvent,
+            onEdit: (event) => {
+              setEventMsg('')
+              setEventForm({ event })
+            },
+            onDelete: async (event) => {
+              await removeEvent(event.id)
+              setEventForm(null)
+              setEventMsg('Event deleted.')
+            },
+          }
+        : undefined,
+    [isStaff, removeEvent],
+  )
 
   const loading = calendar.status === 'loading' || courses.status === 'loading'
   const failed = calendar.status === 'error' || courses.status === 'error'
@@ -152,7 +185,45 @@ export default function CalendarPage() {
             events={openDay ? (eventsByDay[openDay] ?? []) : []}
             now={today}
             onClose={closeDay}
+            editing={editing}
           >
+            {isStaff && openDay && (
+              <section className="day-tools" aria-labelledby="day-tools-title">
+                <h3 id="day-tools-title" className="day-tools__title">
+                  {eventForm?.event ? 'Edit event' : 'Lectures and events'}
+                </h3>
+                {eventMsg && (
+                  <p className="day-tools__ok" role="status">
+                    {eventMsg}
+                  </p>
+                )}
+                {eventForm ? (
+                  <EventForm
+                    key={eventForm.event?.id ?? 'new'}
+                    event={eventForm.event}
+                    dayKey={openDay}
+                    modules={courses.modules}
+                    onCancel={() => setEventForm(null)}
+                    onSave={async (d) => {
+                      await saveEvent(draftToEvent(d, eventForm.event?.id ?? newId('ev')))
+                      setEventForm(null)
+                      setEventMsg(eventForm.event ? 'Event saved.' : 'Event added. Students can see it now.')
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--small"
+                    onClick={() => {
+                      setEventMsg('')
+                      setEventForm({})
+                    }}
+                  >
+                    <Icon name="plus" size={16} /> Add a lecture or event
+                  </button>
+                )}
+              </section>
+            )}
             {showSlots && openDay && (
               <SlotsPanel
                 dayKey={openDay}

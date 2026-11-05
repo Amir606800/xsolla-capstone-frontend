@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { NavLink } from 'react-router'
-import { STUDENT_NAV } from '../../config/nav'
+import { navFor } from '../../config/nav'
+import { useAuth } from '../../hooks/useAuth'
 import { useCourses } from '../../hooks/useCourses'
 import { isModuleLocked } from '../../utils/progress'
 import { Icon } from '../Icon'
@@ -46,6 +47,7 @@ function ProgramProgress() {
 }
 
 function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarProps) {
+  const nav = navFor(useAuth().user?.role)
   return (
     <>
       <div
@@ -63,7 +65,7 @@ function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarPro
         </button>
 
         <nav aria-label="Main navigation">
-          {STUDENT_NAV.map((group, i) => (
+          {nav.map((group, i) => (
             <div className="sidebar__group" key={group.heading ?? i}>
               {group.heading && <p className="sidebar__heading">{group.heading}</p>}
               <ul>

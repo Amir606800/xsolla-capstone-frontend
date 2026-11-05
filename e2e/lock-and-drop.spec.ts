@@ -50,12 +50,13 @@ test.describe('future modules are locked for students', () => {
     await expect(page.getByRole('region', { name: 'Assignments' })).toBeVisible()
   })
 
-  test('teachers are not locked out', async ({ page }) => {
+  test('teachers are not locked out: they edit every module, also future ones', async ({ page }) => {
     await signInAs(page, 'teacher')
     await page.goto('/courses/m9')
-    await expect(page.getByRole('region', { name: 'Assignments' })).toBeVisible()
-    await page.goto('/dashboard')
-    await expect(page.getByRole('link', { name: /^Module 12:/ })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Tasks' })).toBeVisible()
+    await page.goto('/courses')
+    await page.getByRole('link', { name: /Module 12 · Capstone/ }).click()
+    await expect(page).toHaveURL(/\/courses\/m12$/)
   })
 })
 
