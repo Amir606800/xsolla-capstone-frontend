@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import type { MeetingSlot } from '../../../types/slots'
 import type { Team } from '../../../types/team'
 import { formatDateTime } from '../../../utils/date'
+import type { GradeDue } from '../../../utils/review'
 import { myNextBooking } from '../../../utils/slots'
 import { Avatar } from '../../team/People'
 import { StaffCard } from '../StaffCard'
@@ -74,6 +75,83 @@ export function MyTeamCard({ team, slots, now }: { team: Team; slots: MeetingSlo
           </>
         )}
       </p>
+    </StaffCard>
+  )
+}
+
+const MAX_DUE = 6
+
+/** Tile: week grades the mentor still owes for finished weeks. */
+export function WeekGradesTile({ due }: { due: GradeDue[] }) {
+  const oldest = due[0]?.module
+  const inOldest = oldest ? due.filter((d) => d.module.id === oldest.id).length : 0
+  return (
+    <StatTile
+      id="mentor-grades-tile"
+      label="Week grades"
+      value={due.length === 0 ? 'All given' : `${due.length} to give`}
+      tone={due.length === 0 ? 'ok' : 'warn'}
+      sub={
+        oldest
+          ? `Week ${oldest.position}: ${inOldest} ${inOldest === 1 ? 'student' : 'students'}`
+          : 'Every finished week is graded'
+      }
+      to={oldest ? `/grading?week=${oldest.id}` : '/grading'}
+    />
+  )
+}
+
+/** Tile: work handed in that the mentor has not looked at / commented on yet. */
+export function NewWorkTile({ count }: { count: number }) {
+  return (
+    <StatTile
+      id="mentor-new-work"
+      label="New work"
+      value={count === 0 ? 'None' : `${count} hand-in${count === 1 ? '' : 's'}`}
+      sub={count === 0 ? 'Everything has a comment' : 'Without a comment yet'}
+      to="/grading"
+    />
+  )
+}
+
+/** Card: who still needs a grade for a finished week; each row opens that grade on the grading page. */
+export function GradesDueCard({ due }: { due: GradeDue[] }) {
+  return (
+    <StaffCard
+      id="mentor-grades-due"
+      icon="grades"
+      title="Week grades to give"
+      action={
+        <Link to="/grading" className="btn btn--ghost btn--small card__action">
+          Grading
+        </Link>
+      }
+    >
+      {due.length === 0 ? (
+        <p className="card__empty">All finished weeks are graded.</p>
+      ) : (
+        <>
+          <ul className="list" aria-label="Week grades to give">
+            {due.slice(0, MAX_DUE).map((d) => (
+              <li key={`${d.module.id}-${d.student.id}`} className="person-row">
+                <Avatar name={d.student.name} small />
+                <Link className="lect__row-link" to={`/grading?week=${d.module.id}&grade=${d.student.id}`}>
+                  <span className="list__title">{d.student.name}</span>
+                  <span className="list__meta">
+                    Week {d.module.position} · {d.module.title}
+                  </span>
+                </Link>
+                <span className="chip">Not graded</span>
+              </li>
+            ))}
+          </ul>
+          {due.length > MAX_DUE && (
+            <p className="card__foot">
+              <Link to="/grading">{due.length - MAX_DUE} more on the grading page</Link>
+            </p>
+          )}
+        </>
+      )}
     </StaffCard>
   )
 }

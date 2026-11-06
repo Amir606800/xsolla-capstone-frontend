@@ -18,3 +18,275 @@
 .mentor__student .team__mail {
   overflow-wrap: anywhere;
 }
+
+/* ---------- grading ---------- */
+.grading {
+  gap: 20px;
+}
+.grading__weeks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.grading__week {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.grading__week:hover {
+  background: var(--active-bg);
+}
+.grading__week[aria-pressed='true'] {
+  border-color: var(--xs-cyan);
+  background: color-mix(in srgb, var(--xs-cyan) 14%, var(--card));
+  font-weight: 500;
+}
+.grading__week:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.grading__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--xs-cyan);
+  color: #06232b;
+  font-size: 12px;
+  font-weight: 600;
+}
+.grading__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.grading__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+}
+.grading__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+.grading__task {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+}
+
+/* one student under a task */
+.review + .review {
+  border-top: 1px solid var(--divider);
+}
+.review__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+}
+.review__row .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.review__row .btn svg {
+  transition: transform 0.15s;
+}
+.review.is-open .review__row .btn svg {
+  transform: rotate(180deg);
+}
+.review__late {
+  color: var(--danger);
+}
+.review__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 20px 16px 64px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--main-bg);
+}
+.review__text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.review__files {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.review__files li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.review__feedback {
+  padding: 12px 14px;
+  border-left: 3px solid var(--ok);
+  border-radius: 4px;
+  background: var(--card);
+}
+.review__feedback-head {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.review__form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.review__form .form__textarea {
+  background: var(--card);
+}
+.review__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+@media (max-width: 600px) {
+  /* a phone scrolls the weeks sideways instead of stacking four rows */
+  .grading__weeks {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .review__row {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  /* name on the first line; status and button on the second, under the name */
+  .review__row .person-row__main {
+    flex-basis: calc(100% - 44px);
+  }
+  .review__row .chip {
+    margin-left: 44px;
+  }
+  .review__row .btn {
+    margin-left: auto;
+  }
+  .review__panel {
+    margin-left: 20px;
+  }
+}
+
+/* ---------- week grades ---------- */
+.grading__hint {
+  margin: 0;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--divider);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.grading__hint--plain {
+  margin-top: -12px;
+  padding: 0;
+  border: 0;
+}
+.grading__section {
+  margin: 8px 0 0;
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+}
+.grade-pick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.grade-pick legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+.grade-pick__option {
+  --c: var(--ok);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  background: var(--card);
+  cursor: pointer;
+}
+.grade-pick__option--yellow {
+  --c: var(--warn);
+}
+.grade-pick__option--red {
+  --c: var(--danger);
+}
+.grade-pick__option input {
+  position: absolute;
+  opacity: 0;
+}
+.grade-pick__option:has(input:checked) {
+  border-color: var(--c);
+  box-shadow: inset 0 0 0 1px var(--c);
+  background: color-mix(in srgb, var(--c) 10%, var(--card));
+}
+.grade-pick__option:has(input:focus-visible) {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.grade-pick__head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--c);
+  font-weight: 600;
+}
+.grade-pick__meaning {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+.grade-pick__warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+  font-size: 14px;
+}
+.review__edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+@media (max-width: 700px) {
+  .grade-pick {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

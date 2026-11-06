@@ -1,4 +1,5 @@
 import { listModules, type ModulePatch, putItem, putModule, removeItem } from '../mocks/contentEdits'
+import { handIn, submissionsOf } from '../mocks/submissions'
 import type { ContentItem, CourseModule, Submission } from '../types/course'
 import * as http from './courses.http'
 import { ApiError, hasBackend } from './http'
@@ -20,11 +21,25 @@ export type { ModulePatch }
 const notYet = () =>
   new ApiError(501, 'not_implemented', 'The backend cannot store this yet. Lecturer editing works in the offline demo only.')
 
-/** `student`: also load the student's own hand-ins. */
-export async function fetchModules(opts: { student?: boolean } = {}): Promise<CourseModule[]> {
+/** Puts this student's own work (from the submissions store) on the tasks; nobody else's. */
+function withWork(modules: CourseModule[], mine: Record<string, Submission>): CourseModule[] {
+  return modules.map((m) => ({
+    ...m,
+    items: m.items.map((i) => {
+      if (i.type !== 'assignment') return i
+      const { submission: _demo, ...task } = i
+      void _demo
+      return mine[i.id] ? { ...task, submission: mine[i.id] } : task
+    }),
+  }))
+}
+
+/** `student` + `userId`: also load the student's own hand-ins. Staff get the course without anyone's work. */
+export async function fetchModules(opts: { student?: boolean; userId?: number } = {}): Promise<CourseModule[]> {
   if (hasBackend()) return http.fetchModules(opts.student ?? false)
   await wait()
-  return listModules()
+  const modules = listModules()
+  return withWork(modules, opts.student && opts.userId !== undefined ? submissionsOf(opts.userId) : {})
 }
 
 export interface SubmitPayload {
@@ -32,14 +47,16 @@ export interface SubmitPayload {
   files: File[]
 }
 
-export async function submitWork(assignmentId: string, payload: SubmitPayload): Promise<Submission> {
+export async function submitWork(assignmentId: string, payload: SubmitPayload, studentId?: number): Promise<Submission> {
   if (hasBackend()) return http.submitWork(assignmentId, payload)
   await wait()
-  return {
+  const submission: Submission = {
     submittedAt: new Date().toISOString(),
     textBody: payload.textBody || undefined,
     files: payload.files.map((f) => ({ name: f.name, sizeBytes: f.size })),
   }
+  // kept so the student's mentor can review it
+  return studentId === undefined ? submission : handIn(studentId, assignmentId, submission)
 }
 
 export async function saveModule(id: string, patch: ModulePatch): Promise<CourseModule[]> {

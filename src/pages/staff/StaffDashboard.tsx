@@ -4,13 +4,16 @@ import { Icon } from '../../components/Icon'
 import type { IconName } from '../../components/Icon'
 import { ComingUpCard } from '../../components/staff/ComingUpCard'
 import { DeadlinesCard, GapsTile, NeedsAttentionCard, NextDeadlineTile, ThisWeekTile } from '../../components/staff/lecturer/LecturerCards'
-import { MyTeamCard, OneOnOnesTile } from '../../components/staff/mentor/MentorCards'
+import { GradesDueCard, MyTeamCard, NewWorkTile, OneOnOnesTile, WeekGradesTile } from '../../components/staff/mentor/MentorCards'
 import { useAuth } from '../../hooks/useAuth'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents'
 import { useCourses } from '../../hooks/useCourses'
 import { useMeetingSlots } from '../../hooks/useMeetingSlots'
 import { useMyTeam } from '../../hooks/useMyTeam'
+import { useTeamStandings } from '../../hooks/useTeamStandings'
+import { useTeamSubmissions } from '../../hooks/useTeamSubmissions'
 import { contentGaps, focusModule, modulePhase, nextDueTasks } from '../../utils/content'
+import { gradesDue, indexStandings, newWork } from '../../utils/review'
 import { canAuthor, canMentor, roleLabel } from '../../utils/roles'
 import { slotEvents } from '../../utils/slots'
 import '../../styles/ui.css'
@@ -29,7 +32,8 @@ interface Shortcut {
 /**
  * One dashboard for every staff member. Its parts come from the roles:
  * - lecturer: This week / Next deadline / Needs attention tiles, Teaching shortcuts, deadlines (and missing content)
- * - mentor:   1:1s tile, Mentoring shortcut, My team card, booked 1:1s in Coming up
+ * - mentor:   Week grades / New work / 1:1 tiles, Mentoring shortcuts, Week grades to give and My team cards,
+ *             booked 1:1s in Coming up
  * - everyone: Coming up
  * Layout: summary tiles, shortcuts, then two columns whose cards stack (the wide one is the
  * lecturer's work, the narrow one the team and the calendar).
@@ -42,6 +46,8 @@ export default function StaffDashboard() {
   const calendar = useCalendarEvents()
   const meetings = useMeetingSlots()
   const myTeam = useMyTeam()
+  const work = useTeamSubmissions()
+  const weekGrades = useTeamStandings()
 
   const focus = useMemo(() => focusModule(modules, now), [modules, now])
   const gaps = useMemo(() => contentGaps(modules, now), [modules, now])
@@ -63,8 +69,23 @@ export default function StaffDashboard() {
     { to: `${editor}?add=quiz`, icon: 'sparkle', label: 'New quiz' },
     { to: '/calendar', icon: 'calendar', label: 'Schedule a lecture' },
   ]
-  const mentoring: Shortcut[] = [{ to: '/calendar', icon: 'clock', label: 'Set 1:1 times' }]
+  const mentoring: Shortcut[] = [
+    { to: '/grading', icon: 'grades', label: 'Grade the week' },
+    { to: '/calendar', icon: 'clock', label: 'Set 1:1 times' },
+  ]
   const team = mentor && myTeam.status === 'ready' ? myTeam.team : null
+  // mentor: week grades still owed for finished weeks, and work without a comment
+  const gradesOwed = useMemo(
+    () =>
+      team && weekGrades.status === 'ready'
+        ? gradesDue(modules, team.members, indexStandings(weekGrades.standings), now)
+        : null,
+    [team, weekGrades.status, weekGrades.standings, modules, now],
+  )
+  const unread = useMemo(
+    () => (team && work.status === 'ready' ? newWork(modules, team.members, work.submissions, now).length : null),
+    [team, work.status, work.submissions, modules, now],
+  )
 
   const subtitle = author && mentor ? 'Your course and your team at a glance' : author ? 'Your course at a glance' : 'Your team at a glance'
 
@@ -114,6 +135,8 @@ export default function StaffDashboard() {
             {author && focus && <ThisWeekTile module={focus} running={modulePhase(focus, now) === 'running'} />}
             {author && <NextDeadlineTile next={due[0]} now={now} />}
             {author && <GapsTile count={gaps.length} />}
+            {gradesOwed && <WeekGradesTile due={gradesOwed} />}
+            {unread !== null && <NewWorkTile count={unread} />}
             {team && <OneOnOnesTile team={team} slots={meetings.slots} now={now} />}
           </div>
 
@@ -124,6 +147,8 @@ export default function StaffDashboard() {
 
           <div className="staff__cols">
             <div className="staff__col">
+              {/* the week grades are the mentor's main job: they lead the wide column */}
+              {gradesOwed && <GradesDueCard due={gradesOwed} />}
               {author && <DeadlinesCard due={due} now={now} />}
               {author && gaps.length > 0 && <NeedsAttentionCard gaps={gaps} />}
               {/* a mentor without the lecturer role: the team takes the wide column */}

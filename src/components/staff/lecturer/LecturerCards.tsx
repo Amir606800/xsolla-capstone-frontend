@@ -54,7 +54,7 @@ export function GapsTile({ count }: { count: number }) {
       label="Needs attention"
       value={count === 0 ? 'All set' : plural(count, 'gap')}
       tone={count === 0 ? 'ok' : 'warn'}
-      sub={count === 0 ? 'Everything for the coming weeks is in place.' : 'Modules missing content'}
+      sub={count === 0 ? 'The coming weeks are ready' : 'Modules missing content'}
       to={count === 0 ? undefined : '/courses'}
     />
   )

@@ -19,8 +19,8 @@ async function navLinks(page: Page, isMobile: boolean) {
 }
 
 const cases: { button: string; nav: string[]; team: boolean; authoring: boolean }[] = [
-  { button: 'Mentor & lecturer', nav: ['Dashboard', 'Course content', 'Calendar', 'My team'], team: true, authoring: true },
-  { button: 'Mentor', nav: ['Dashboard', 'Calendar', 'My team'], team: true, authoring: false },
+  { button: 'Mentor & lecturer', nav: ['Dashboard', 'Course content', 'Calendar', 'My team', 'Grading'], team: true, authoring: true },
+  { button: 'Mentor', nav: ['Dashboard', 'Calendar', 'My team', 'Grading'], team: true, authoring: false },
   { button: 'Lecturer', nav: ['Dashboard', 'Course content', 'Calendar'], team: false, authoring: true },
 ]
 

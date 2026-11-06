@@ -103,10 +103,12 @@ describe('ModulePage - submitting work', () => {
     await user.click(screen.getByRole('button', { name: 'Submit' }))
 
     expect(await screen.findByText('Your work was submitted.')).toBeInTheDocument()
-    expect(submitWork).toHaveBeenLastCalledWith('m6-a2', {
-      textBody: 'https://github.com/me/http-server',
-      files: [],
-    })
+    // handed in as this student (id 1), so their mentor can review it
+    expect(submitWork).toHaveBeenLastCalledWith(
+      'm6-a2',
+      { textBody: 'https://github.com/me/http-server', files: [] },
+      1,
+    )
     expect(screen.getByRole('button', { name: /HTTP server/ })).toHaveTextContent('Submitted')
     expect(screen.getByText('https://github.com/me/http-server', { selector: 'p' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Resubmit' })).toBeInTheDocument()

@@ -55,7 +55,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
-    fetchModules({ student })
+    fetchModules({ student, userId: user?.id })
       .then((data) => {
         if (cancelled) return
         setModules(forRole(data, student))
@@ -68,7 +68,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [attempt, student])
+  }, [attempt, student, user?.id])
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -87,11 +87,11 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       if (target?.type === 'assignment' && target.submission?.gradedAt !== undefined) {
         throw new Error('This task has already been graded')
       }
-      const result = await submitWork(assignmentId, payload)
+      const result = await submitWork(assignmentId, payload, user?.id)
       setModules((prev) => withSubmission(prev, assignmentId, result))
       setNow(new Date())
     },
-    [modules, student],
+    [modules, student, user?.id],
   )
 
   // Lecturer authoring: the server has the final say (and checks the role); the screen shows what it returns.

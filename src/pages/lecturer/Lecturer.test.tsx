@@ -45,6 +45,7 @@ describe('Lecturer account', () => {
       'Course content',
       'Calendar',
       'My team', // the demo lecturer is also Team 3's mentor
+      'Grading',
     ])
   })
 
@@ -81,7 +82,7 @@ describe('Lecturer dashboard', () => {
 
   it('says everything is in place, or lists what is missing', async () => {
     const { unmount } = renderAs(LECTURER, '/dashboard')
-    expect(await screen.findByText('Everything for the coming weeks is in place.')).toBeInTheDocument()
+    expect(await screen.findByText('The coming weeks are ready')).toBeInTheDocument()
     unmount()
 
     removeItem('m7-a1')

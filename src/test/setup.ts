@@ -56,8 +56,15 @@ vi.mock('../api/events', async () => {
 })
 
 vi.mock('../api/standings', async () => {
-  const { buildMockStandings } = await import('../mocks/standings')
-  return { fetchStandings: vi.fn(async () => buildMockStandings(new Date())) }
+  const m = await import('../mocks/standings')
+  type M = import('../mocks/standings').Mentor
+  return {
+    fetchStandings: vi.fn(async (id = 1) => m.standingsOf(id)),
+    fetchTeamStandings: vi.fn(async (g: M) => m.teamStandings(g)),
+    saveWeekGrade: vi.fn(async (g: M, id: number, week: number, level: 'green' | 'yellow' | 'red', note: string) =>
+      m.gradeWeek(g, id, week, level, note),
+    ),
+  }
 })
 
 vi.mock('../api/teams', async () => {
@@ -80,6 +87,18 @@ vi.mock('../api/slots', async () => {
     removeSlot: vi.fn(async (a: Actor, id: string) => m.deleteSlot(a, id)),
     bookSlot: vi.fn(async (a: Actor, id: string) => m.reserve(a, id)),
     cancelBooking: vi.fn(async (a: Actor, id: string) => m.release(a, id)),
+  }
+})
+
+// every student's work lives in localStorage, which is cleared after each test
+vi.mock('../api/reviews', async () => {
+  const m = await import('../mocks/submissions')
+  type G = import('../mocks/submissions').Grader
+  return {
+    fetchTeamSubmissions: vi.fn(async (g: G) => m.teamSubmissions(g)),
+    commentOnSubmission: vi.fn(async (g: G, studentId: number, assignmentId: string, text: string) =>
+      m.comment(g, studentId, assignmentId, text),
+    ),
   }
 })
 

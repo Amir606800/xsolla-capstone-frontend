@@ -463,3 +463,21 @@
   color: var(--text-muted);
   font-size: var(--fs-label);
 }
+.submission__comment {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--xs-cyan);
+  border-radius: 4px;
+  background: var(--main-bg);
+}
+.submission__comment-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.submission__comment p:last-child {
+  margin: 4px 0 0;
+}

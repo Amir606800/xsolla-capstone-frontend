@@ -120,6 +120,15 @@ export function SubmissionPanel({ assignment, onSubmit }: SubmissionPanelProps) 
               {submission.feedback && <p>&ldquo;{submission.feedback}&rdquo;</p>}
             </div>
           )}
+          {/* tasks are not graded any more: the mentor may simply leave a comment */}
+          {!graded && submission.feedback && (
+            <div className="submission__comment">
+              <p className="submission__comment-head">
+                <Icon name="user" size={14} /> Comment from your mentor
+              </p>
+              <p>&ldquo;{submission.feedback}&rdquo;</p>
+            </div>
+          )}
         </div>
       )}
 

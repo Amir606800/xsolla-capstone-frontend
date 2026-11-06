@@ -21,6 +21,7 @@ const ContentPage = lazy(() => import('./pages/lecturer/ContentPage'))
 const ModuleEditorPage = lazy(() => import('./pages/lecturer/ModuleEditorPage'))
 // mentor role
 const MentorTeamPage = lazy(() => import('./pages/mentor/MentorTeamPage'))
+const GradingPage = lazy(() => import('./pages/mentor/GradingPage'))
 
 export default function App() {
   return (
@@ -43,6 +44,10 @@ export default function App() {
             <Route
               path="/team"
               element={<ByRole student={<TeamPage />} staff={<Allow when={canMentor}><MentorTeamPage /></Allow>} />}
+            />
+            <Route
+              path="/grading"
+              element={<Allow when={canMentor}><GradingPage /></Allow>}
             />
             <Route element={<StudentOnly />}>
               <Route path="/tasks" element={<TasksPage />} />
