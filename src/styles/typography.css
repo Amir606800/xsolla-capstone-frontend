@@ -21,8 +21,34 @@
     local('Sharp Grotesk Book 20'),
     local('SharpGroteskBook20'),
     url('/fonts/sharp-grotesk/SharpGroteskBook20.woff2') format('woff2'),
+    url('/fonts/sharp-grotesk/Sharp Grotesk Book 20 Regular.woff2') format('woff2'),
     url('/fonts/sharp-grotesk/SharpGroteskBook20.woff') format('woff');
   font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+ * Sharp Grotesk 15 - the distinctive headline cut Xsolla uses for titles on developers.xsolla.com
+ * (SmBold 600 for h2-h4, Bold 700 for h1). Same files as that site, in public/fonts/sharp-grotesk/.
+ */
+@font-face {
+  font-family: 'SharpGrotesk15';
+  src:
+    local('SharpGrotesk15 SmBold'),
+    local('Sharp Grotesk SmBold 15'),
+    url('/fonts/sharp-grotesk/SharpGroteskSmBold15.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SharpGrotesk15';
+  src:
+    local('SharpGrotesk15 Bold'),
+    local('Sharp Grotesk Bold 15'),
+    url('/fonts/sharp-grotesk/SharpGroteskBold15.woff2') format('woff2');
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
@@ -30,7 +56,8 @@
 :root {
   --font-fallback: 'Hanken Grotesk Variable', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-body: 'SharpGrotesk20', 'GraphikLC', var(--font-fallback);
-  --font-display: 'SharpGrotesk20', 'Pilat', var(--font-body);
+  /* titles: the Xsolla headline cut; falls back to the body font if its files are missing */
+  --font-display: 'SharpGrotesk15', 'SharpGrotesk20', 'Pilat', var(--font-body);
   --font-label: 'SharpGrotesk20', 'Aktiv Grotesk', var(--font-body);
 
   --fs-display: clamp(32px, 4vw, 48px);
@@ -81,18 +108,25 @@ h4 {
 }
 h1 {
   font-family: var(--font-display);
+  font-weight: 700;
   font-size: var(--fs-h1);
   line-height: var(--lh-h1);
 }
 h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: var(--fs-h2);
   line-height: var(--lh-h2);
 }
 h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: var(--fs-h3);
   line-height: var(--lh-h3);
 }
 h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: var(--fs-h4);
   line-height: var(--lh-h4);
 }
@@ -107,7 +141,7 @@ b {
   font-family: var(--font-display);
   font-size: var(--fs-display);
   line-height: var(--lh-display);
-  font-weight: var(--fw-medium);
+  font-weight: 700;
 }
 .page-subtitle {
   margin: 0;

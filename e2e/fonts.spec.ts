@@ -20,6 +20,7 @@ test('SharpGrotesk20 comes first in the font stack', async ({ page }) => {
 test('without the font files the page still renders with the stand-in font', async ({ page }) => {
   await page.route(FONT_URL, (route) => route.fulfill({ status: 404 }))
   await page.route('**/fonts/sharp-grotesk/SharpGroteskBook20.woff', (route) => route.fulfill({ status: 404 }))
+  await page.route('**/fonts/sharp-grotesk/Sharp*Grotesk*Book*', (route) => route.fulfill({ status: 404 }))
   await page.goto('/login')
   await expect(page.getByRole('tab', { name: 'Sign in' })).toBeVisible()
 
@@ -57,4 +58,25 @@ test('layout does not break with the font loaded (no horizontal overflow)', asyn
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   )
   expect(overflow).toBe(false)
+})
+
+test('titles use the headline font: h1 is Bold (700), card titles SemiBold (600)', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem('auth_user', JSON.stringify({ id: 1, name: 'Sam', email: 's@x.co', role: 'student' })),
+  )
+  await page.goto('/dashboard')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  const info = await page.evaluate(async () => {
+    await document.fonts.load('700 40px SharpGrotesk15')
+    await document.fonts.load('600 20px SharpGrotesk15')
+    const h1 = getComputedStyle(document.querySelector('h1')!)
+    return {
+      first: h1.fontFamily.split(',')[0].trim().replace(/["']/g, ''),
+      weight: h1.fontWeight,
+      loaded: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => `${f.family} ${f.weight}`),
+    }
+  })
+  expect(info.first).toBe('SharpGrotesk15')
+  expect(info.weight).toBe('700')
+  expect(info.loaded).toEqual(expect.arrayContaining(['SharpGrotesk15 700', 'SharpGrotesk15 600']))
 })
