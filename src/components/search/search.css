@@ -147,7 +147,7 @@
   outline-offset: 2px;
 }
 .now-chip__label {
-  font-size: var(--fs-label);
+  font-size: 13px;
   font-weight: var(--fw-medium);
   white-space: nowrap;
 }

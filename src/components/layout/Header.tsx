@@ -150,7 +150,7 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
             aria-label="Account menu"
           >
             <Icon name="user" />
-            <span className="header__user-name">{user?.name}</span>
+            <span className="header__user-name" title={user?.name}>{user?.name}</span>
             <Icon name="chevron" size={16} />
           </button>
 

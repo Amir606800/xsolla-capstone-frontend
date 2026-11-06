@@ -126,6 +126,39 @@ describe('CalendarPage - month view', () => {
       expect(within(legend).getByText(t)).toBeInTheDocument()
     }
   })
+
+  it('legend items filter the calendar and the choice is remembered', async () => {
+    const user = userEvent.setup()
+    renderCalendar()
+    await ready()
+    const legend = screen.getByRole('list', { name: 'Legend' })
+    const total = () => grid().querySelectorAll('.ev:not(.dot)').length
+    const before = total()
+    expect(before).toBeGreaterThan(0)
+    for (const name of ['Lecture', 'Meeting', 'Off-campus', 'Deadline', '1:1 times']) {
+      const b = within(legend).getByRole('button', { name })
+      expect(b).toHaveAttribute('aria-pressed', 'true')
+      await user.click(b)
+      expect(b).toHaveAttribute('aria-pressed', 'false')
+    }
+    expect(total()).toBe(0)
+    expect(JSON.parse(localStorage.getItem('calendar_hidden_kinds')!)).toHaveLength(5)
+    await user.click(within(legend).getByRole('button', { name: 'Lecture' }))
+    expect(total()).toBeGreaterThan(0)
+  })
+
+  it('a hidden type is still listed when you open the day', async () => {
+    const user = userEvent.setup()
+    renderCalendar()
+    await ready()
+    const legend = screen.getByRole('list', { name: 'Legend' })
+    for (const name of ['Lecture', 'Meeting', 'Off-campus', 'Deadline', '1:1 times']) {
+      await user.click(within(legend).getByRole('button', { name }))
+    }
+    await user.click(day(/^Monday, November 2(,|$)/))
+    const cards = within(screen.getByRole('dialog')).getByRole('list', { name: 'Events' })
+    expect(within(cards).getAllByRole('listitem').length).toBeGreaterThan(0)
+  })
 })
 
 describe('CalendarPage - navigation', () => {
@@ -196,7 +229,7 @@ describe('CalendarPage - day pop-up', () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
-    await user.click(day(/^Monday, November 2,/)) // the lecture
+    await user.click(day(/^Monday, November 2(,|$)/)) // the lecture
 
     const card = within(within(dialog()).getByRole('list', { name: 'Events' })).getByRole('listitem')
     expect(card).toHaveTextContent('Lecture')

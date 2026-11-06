@@ -14,9 +14,28 @@ import { addMonths, dateKey, deadlineEvents, groupByDay, monthLabel, startOfMont
 import { myNextBooking, slotEvents, slotsOnDay } from '../utils/slots'
 import { draftToEvent, isEditableEvent } from '../utils/authoring'
 import { newId } from '../mocks/contentEdits'
-import type { CalendarEvent } from '../types/calendar'
+import type { CalendarEvent, EventKind } from '../types/calendar'
 import '../styles/ui.css'
 import '../components/calendar/calendar.css'
+
+const LEGEND: [EventKind, string][] = [
+  ['lecture', 'Lecture'],
+  ['meeting', 'Meeting'],
+  ['off-campus', 'Off-campus'],
+  ['deadline', 'Deadline'],
+  ['availability', '1:1 times'],
+]
+const HIDDEN_KEY = 'calendar_hidden_kinds'
+
+function readHidden(): EventKind[] {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? '[]')
+    const known = LEGEND.map(([k]) => k)
+    return Array.isArray(raw) ? raw.filter((k): k is EventKind => known.includes(k)) : []
+  } catch {
+    return []
+  }
+}
 
 export default function CalendarPage() {
   const courses = useCourses()
@@ -35,9 +54,24 @@ export default function CalendarPage() {
   const [eventForm, setEventForm] = useState<{ event?: CalendarEvent } | null>(null)
   const [eventMsg, setEventMsg] = useState('')
 
+  // event types switched off in the legend (remembered in this browser)
+  const [hidden, setHidden] = useState<EventKind[]>(readHidden)
+  const toggleKind = useCallback((kind: EventKind) => {
+    setHidden((prev) => {
+      const next = prev.includes(kind) ? prev.filter((k) => k !== kind) : [...prev, kind]
+      try {
+        localStorage.setItem(HIDDEN_KEY, JSON.stringify(next))
+      } catch {
+        /* storage unavailable: the filter just isn't remembered */
+      }
+      return next
+    })
+  }, [])
+
   // deadlines of modules that are not open yet stay hidden from students
   // the 1:1 times are optional: if they can't be loaded the rest of the calendar still works
-  const eventsByDay = useMemo(
+  // everything, for the day pop-up: the legend filter only changes what the grid shows
+  const allByDay = useMemo(
     () =>
       groupByDay([
         ...calendar.events,
@@ -46,6 +80,12 @@ export default function CalendarPage() {
       ]),
     [calendar.events, courses.modules, isLocked, meetings.slots, user, isStaff, today],
   )
+  const eventsByDay = useMemo(() => {
+    if (hidden.length === 0) return allByDay
+    return Object.fromEntries(
+      Object.entries(allByDay).map(([day, list]) => [day, list.filter((e) => !hidden.includes(e.kind))]),
+    )
+  }, [allByDay, hidden])
 
   const booking = useMemo(() => (user ? myNextBooking(meetings.slots, user.id, today) : undefined), [meetings.slots, user, today])
   const daySlots = useMemo(() => {
@@ -165,11 +205,19 @@ export default function CalendarPage() {
       {!loading && !failed && (
         <>
           <ul className="legend" aria-label="Legend">
-            <li><span className="dot ev ev--lecture" /> Lecture</li>
-            <li><span className="dot ev ev--meeting" /> Meeting</li>
-            <li><span className="dot ev ev--off-campus" /> Off-campus</li>
-            <li><span className="dot ev ev--deadline" /> Deadline</li>
-            <li><span className="dot ev ev--availability" /> 1:1 times</li>
+            {LEGEND.map(([kind, label]) => (
+              <li key={kind}>
+                <button
+                  type="button"
+                  className="legend__item"
+                  aria-pressed={!hidden.includes(kind)}
+                  onClick={() => toggleKind(kind)}
+                >
+                  <span className={`dot ev ev--${kind}`} aria-hidden="true" />
+                  {label}
+                </button>
+              </li>
+            ))}
           </ul>
 
           <MonthGrid
@@ -182,7 +230,7 @@ export default function CalendarPage() {
 
           <DayModal
             date={openDate}
-            events={openDay ? (eventsByDay[openDay] ?? []) : []}
+            events={openDay ? (allByDay[openDay] ?? []) : []}
             now={today}
             onClose={closeDay}
             editing={editing}

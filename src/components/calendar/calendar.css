@@ -72,8 +72,34 @@
 }
 .legend li {
   display: inline-flex;
+}
+.legend__item {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.legend__item:hover {
+  background: var(--active-bg);
+}
+.legend__item:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+/* switched off: faded, strikethrough */
+.legend__item[aria-pressed='false'] {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+.legend__item[aria-pressed='false'] .dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
 }
 
 /* ---------- Month grid ---------- */
