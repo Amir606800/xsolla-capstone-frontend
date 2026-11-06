@@ -1,10 +1,12 @@
 import type { Role, User } from '../types/user'
+import { authedRequest } from './authed'
 import { apiRequest } from './http'
 import { clearTokens, getTokens, saveTokens } from './session'
 
 /** Wire formats from the backend's Swagger (`dto.UserResponse`, `dto.AuthResponse`). */
 interface UserDto {
-  id: number
+  /** API_CONTRACT.md sends ids as strings ("1"); older builds sent numbers. */
+  id: number | string
   email: string
   name: string
   role: string
@@ -27,7 +29,7 @@ export function mapRole(role: string): Role {
 }
 
 export function mapUser(dto: UserDto): User {
-  return { id: dto.id, name: dto.name, email: dto.email, role: mapRole(dto.role) }
+  return { id: Number(dto.id), name: dto.name, email: dto.email, role: mapRole(dto.role) }
 }
 
 function startSession(res: AuthResponse): User {
@@ -61,4 +63,9 @@ export async function logout(): Promise<void> {
   } catch {
     // already signed out on this device; the refresh token simply expires on the server
   }
+}
+
+/** GET /users/me - the signed-in user as the server sees them. */
+export async function fetchMe(): Promise<User> {
+  return mapUser(await authedRequest<UserDto>('/users/me'))
 }

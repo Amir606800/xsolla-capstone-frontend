@@ -35,6 +35,7 @@ const sentence = (text: string) => (text ? text.charAt(0).toUpperCase() + text.s
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  /** JSON-encoded, except FormData (file uploads), which is sent as multipart and lets the browser set the boundary. */
   body?: unknown
   /** Sent as `Authorization: Bearer <token>`. */
   token?: string | null
@@ -42,7 +43,8 @@ interface RequestOptions {
 
 export async function apiRequest<T>(path: string, { method = 'GET', body, token }: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
 
   let res: Response
@@ -50,7 +52,7 @@ export async function apiRequest<T>(path: string, { method = 'GET', body, token 
     res = await fetch(`${apiBaseUrl()}${path}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
     })
   } catch {
     throw new ApiError(0, 'network_error', "Can't reach the server. Check your connection and try again.")

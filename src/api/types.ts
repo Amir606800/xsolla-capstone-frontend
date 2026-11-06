@@ -48,7 +48,15 @@ export interface ApiAssignmentItem extends ApiContentItemBase {
 
 export type ApiContentItem = ApiSection | ApiFileItem | ApiAssignmentItem
 
-/** GET /content-items/:id/submissions/me */
+/** POST /files, GET /files/:id */
+export interface ApiFile {
+  id: ApiId
+  original_name: string
+  mime_type: string
+  size_bytes: number
+}
+
+/** GET /content-items/:id/submissions/me, POST .../submissions */
 export interface ApiSubmission {
   id: ApiId
   assignment_id: ApiId
@@ -58,6 +66,7 @@ export interface ApiSubmission {
   grade?: unknown
   feedback: string | null
   graded_at: string | null
+  files?: { id: ApiId; original_name: string }[] | null
 }
 
 /** GET /standings/me (inferred, the backend has no such endpoint yet): the mentor's rating of each finished week */

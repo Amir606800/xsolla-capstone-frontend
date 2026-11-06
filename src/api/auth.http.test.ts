@@ -153,6 +153,10 @@ describe('mapRole / mapUser', () => {
     expect(mapRole('')).toBe('student')
   })
 
+  it('accepts string ids, as in API_CONTRACT.md', () => {
+    expect(mapUser({ id: '12', email: 'x@y.co', name: 'X', role: 'student' }).id).toBe(12)
+  })
+
   it('maps the user and drops fields the UI does not use', () => {
     expect(mapUser({ id: 3, email: 'x@y.co', name: 'X', role: 'teacher', created_at: 'now' })).toEqual({
       id: 3,

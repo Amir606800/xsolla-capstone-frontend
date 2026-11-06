@@ -55,7 +55,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
-    fetchModules()
+    fetchModules({ student: role === 'student' })
       .then((data) => {
         if (cancelled) return
         setModules(forRole(data, role))

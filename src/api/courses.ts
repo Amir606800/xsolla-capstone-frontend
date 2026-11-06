@@ -1,27 +1,28 @@
 import { listModules, type ModulePatch, putItem, putModule, removeItem } from '../mocks/contentEdits'
 import type { ContentItem, CourseModule, Submission } from '../types/course'
+import * as http from './courses.http'
+import { ApiError, hasBackend } from './http'
 
 /**
- * MOCK implementation - no backend yet.
- * Real versions:
- *  - fetchModules: GET /courses/:id/content-items merged with the student's
- *    submissions, run through `mapContentTree` (see ./mappers). Students must never
- *    receive quiz answers (`correct`) or items of modules that have not opened.
- *  - submitWork: upload each file via POST /files, then
- *    POST /content-items/:id/submissions { text_body, file_ids }.
- *  - Lecturer authoring (teacher/admin only, the server checks the role):
- *      PATCH  /content-items/:moduleId             module title, description, open/close dates
- *      POST   /content-items {parent_id, type, ...} new material / task / quiz
- *      PATCH  /content-items/:id                   edit one
- *      DELETE /content-items/:id                   delete one
- *    Each authoring call here returns the whole updated course, like a refetch would.
+ * Real backend when VITE_API_URL is set (./courses.http), the offline mock otherwise.
+ * Real now (API_CONTRACT.md): loading the course, handing in work, deleting an item.
+ * Mock only, because the contract has no place for them yet: creating/editing materials, tasks and quizzes,
+ * and module details/dates. With a backend, lecturers get a clear error instead of a silent browser-only save.
+ * Missing from the contract: quizzes, link materials, module open/close dates, per-task requirements, and
+ * `max_points` (required there when creating a task, while the app rates weekly, not per task).
+ * Each authoring call returns the whole updated course, like a refetch would.
  */
 const MOCK_LATENCY_MS = 300
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
 
 export type { ModulePatch }
 
-export async function fetchModules(): Promise<CourseModule[]> {
+const notYet = () =>
+  new ApiError(501, 'not_implemented', 'The backend cannot store this yet. Lecturer editing works in the offline demo only.')
+
+/** `student`: also load the student's own hand-ins. */
+export async function fetchModules(opts: { student?: boolean } = {}): Promise<CourseModule[]> {
+  if (hasBackend()) return http.fetchModules(opts.student ?? false)
   await wait()
   return listModules()
 }
@@ -31,7 +32,8 @@ export interface SubmitPayload {
   files: File[]
 }
 
-export async function submitWork(_assignmentId: string, payload: SubmitPayload): Promise<Submission> {
+export async function submitWork(assignmentId: string, payload: SubmitPayload): Promise<Submission> {
+  if (hasBackend()) return http.submitWork(assignmentId, payload)
   await wait()
   return {
     submittedAt: new Date().toISOString(),
@@ -41,16 +43,19 @@ export async function submitWork(_assignmentId: string, payload: SubmitPayload):
 }
 
 export async function saveModule(id: string, patch: ModulePatch): Promise<CourseModule[]> {
+  if (hasBackend()) throw notYet()
   await wait()
   return putModule(id, patch)
 }
 
 export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
+  if (hasBackend()) throw notYet()
   await wait()
   return putItem(item)
 }
 
 export async function deleteItem(id: string): Promise<CourseModule[]> {
+  if (hasBackend()) return http.deleteItem(id)
   await wait()
   return removeItem(id)
 }
