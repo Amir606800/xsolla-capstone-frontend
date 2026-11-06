@@ -77,3 +77,13 @@ export function nextDueTasks(modules: CourseModule[], now: Date, limit: number):
     .sort((a, b) => a.task.dueAt.localeCompare(b.task.dueAt))
     .slice(0, limit)
 }
+
+/** The module running now, else the next one to open, else the last one. */
+export function focusModule(modules: CourseModule[], now: Date): CourseModule | undefined {
+  const sorted = [...modules].sort((a, b) => a.position - b.position)
+  return (
+    sorted.find((m) => modulePhase(m, now) === 'running') ??
+    sorted.find((m) => modulePhase(m, now) === 'upcoming') ??
+    sorted[sorted.length - 1]
+  )
+}

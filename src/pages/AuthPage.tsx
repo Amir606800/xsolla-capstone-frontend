@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { DEMO_ACCOUNTS } from '../api/auth.mock'
 import { hasBackend } from '../api/http'
+import { roleLabel } from '../utils/roles'
 import officePhoto from '../assets/images/CrescentOfficesPhoto.webp'
 import { XsollaLogo } from '../components/XsollaLogo'
 import { useAuth } from '../hooks/useAuth'
@@ -119,7 +120,7 @@ export default function AuthPage() {
                     setFormError('')
                   }}
                 >
-                  {a.role === 'student' ? 'Student' : 'Lecturer'}
+                  {roleLabel(a)}
                 </button>
               ))}
             </div>

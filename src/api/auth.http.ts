@@ -1,4 +1,5 @@
-import type { Role, User } from '../types/user'
+import type { User } from '../types/user'
+import { rolesFrom } from '../utils/roles'
 import { authedRequest } from './authed'
 import { apiRequest } from './http'
 import { clearTokens, getTokens, saveTokens } from './session'
@@ -9,7 +10,10 @@ interface UserDto {
   id: number | string
   email: string
   name: string
-  role: string
+  /** Today: one of student | teacher | admin. */
+  role?: string
+  /** Planned (user-roles table): e.g. ["mentor", "lecturer"]. Wins over `role` when present. */
+  roles?: string[]
   created_at?: string
 }
 
@@ -19,17 +23,9 @@ interface AuthResponse {
   user: UserDto
 }
 
-const ROLES: readonly Role[] = ['student', 'teacher', 'admin']
-
-/** Backend role -> UI role. "lecturer" is accepted as an alias of "teacher"; anything unknown gets the least access. */
-export function mapRole(role: string): Role {
-  const r = role.toLowerCase()
-  if (r === 'lecturer') return 'teacher'
-  return (ROLES as readonly string[]).includes(r) ? (r as Role) : 'student'
-}
-
+/** Backend user -> app user. See `rolesFrom` for how role names are read. */
 export function mapUser(dto: UserDto): User {
-  return { id: Number(dto.id), name: dto.name, email: dto.email, role: mapRole(dto.role) }
+  return { id: Number(dto.id), name: dto.name, email: dto.email, roles: rolesFrom(dto.roles ?? dto.role) }
 }
 
 function startSession(res: AuthResponse): User {

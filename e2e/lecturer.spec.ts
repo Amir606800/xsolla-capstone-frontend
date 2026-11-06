@@ -17,7 +17,7 @@ const overflow = (page: Page) =>
 
 test('signs in with the lecturer demo account and gets the lecturer navigation', async ({ page, isMobile }) => {
   await page.goto('/login')
-  await page.getByRole('group', { name: 'Demo accounts' }).getByRole('button', { name: 'Lecturer' }).click()
+  await page.getByRole('group', { name: 'Demo accounts' }).getByRole('button', { name: 'Mentor & lecturer' }).click()
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByRole('heading', { name: 'Welcome, Rashad Aliyev', level: 1 })).toBeVisible()
 

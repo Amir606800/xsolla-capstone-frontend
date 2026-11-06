@@ -1,5 +1,6 @@
 import type { IconName } from '../components/Icon'
-import type { Role } from '../types/user'
+import type { User } from '../types/user'
+import { canAuthor, canMentor, isStaff } from '../utils/roles'
 
 export interface NavItem {
   to: string
@@ -29,19 +30,19 @@ export const STUDENT_NAV: NavGroup[] = [
   },
 ]
 
-/** Lecturers (and admins) run the course: no student pages like Tasks, My grades or My team. */
-export const LECTURER_NAV: NavGroup[] = [
-  {
-    items: [
-      { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-      { to: '/courses', label: 'Course content', icon: 'courses' },
-      { to: '/calendar', label: 'Calendar', icon: 'calendar' },
-    ],
-  },
-]
+/**
+ * Staff navigation, built from what the person can do: every staff member gets the dashboard and
+ * the calendar, lecturers add Course content, mentors add their team.
+ */
+function staffNav(user: Pick<User, 'roles'>): NavGroup[] {
+  const main: NavItem[] = [{ to: '/dashboard', label: 'Dashboard', icon: 'dashboard' }]
+  if (canAuthor(user)) main.push({ to: '/courses', label: 'Course content', icon: 'courses' })
+  main.push({ to: '/calendar', label: 'Calendar', icon: 'calendar' })
+  const groups: NavGroup[] = [{ items: main }]
+  if (canMentor(user)) groups.push({ heading: 'MENTORING', items: [{ to: '/team', label: 'My team', icon: 'team' }] })
+  return groups
+}
 
-export const isStaff = (role: Role | undefined) => role === 'teacher' || role === 'admin'
-
-export function navFor(role: Role | undefined): NavGroup[] {
-  return isStaff(role) ? LECTURER_NAV : STUDENT_NAV
+export function navFor(user: Pick<User, 'roles'> | null | undefined): NavGroup[] {
+  return user && isStaff(user) ? staffNav(user) : STUDENT_NAV
 }

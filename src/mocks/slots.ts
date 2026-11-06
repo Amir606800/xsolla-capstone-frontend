@@ -1,5 +1,6 @@
 import type { AvailabilityWindow, MeetingSlot } from '../types/slots'
 import type { User } from '../types/user'
+import { canMentor, hasRole, isStudent } from '../utils/roles'
 import { sortSlots, upcomingSlotTimes, withoutClashes } from '../utils/slots'
 import { MENTOR } from './teams'
 
@@ -8,10 +9,12 @@ import { MENTOR } from './teams'
  * who use the same browser see each other's changes. Every rule below is a rule the real backend
  * must enforce too (the client checks are only for nice error messages).
  */
-export type Actor = Pick<User, 'id' | 'name' | 'role'>
+export type Actor = Pick<User, 'id' | 'name' | 'roles'>
 
 const KEY = 'mentor_slots'
-const isStaff = (a: Actor) => a.role === 'teacher' || a.role === 'admin'
+const isAdmin = (a: Actor) => hasRole(a, 'admin')
+/** A mentor manages their OWN times; an admin may fix anyone's. */
+const manages = (a: Actor, s: MeetingSlot) => isAdmin(a) || (canMentor(a) && s.mentorId === a.id)
 
 let seq = 0
 const newId = () => `s-${Date.now().toString(36)}-${(seq++).toString(36)}`
@@ -62,10 +65,22 @@ function save(slots: MeetingSlot[]): void {
   }
 }
 
-/** What this person is allowed to see: students never learn who booked another student's time. */
+/**
+ * What this person is allowed to see:
+ * - a mentor: only their own times, with who booked them
+ * - a student: their own mentor's times (every demo student is in Rashad's team); never who booked another's
+ * - an admin: everything; anyone else (a lecturer who is no mentor): nothing
+ */
 function view(slots: MeetingSlot[], actor: Actor): MeetingSlot[] {
-  const own = (s: MeetingSlot) => (isStaff(actor) || s.bookedBy?.id === actor.id ? s : { ...s, bookedBy: undefined })
-  return sortSlots(slots.map(own))
+  let visible: MeetingSlot[]
+  if (isAdmin(actor)) visible = slots
+  else if (canMentor(actor)) visible = slots.filter((s) => s.mentorId === actor.id)
+  else if (isStudent(actor))
+    visible = slots
+      .filter((s) => s.mentorId === MENTOR.id)
+      .map((s) => (s.bookedBy?.id === actor.id ? s : { ...s, bookedBy: undefined }))
+  else visible = []
+  return sortSlots(visible)
 }
 
 export function listSlots(actor: Actor, now: Date = new Date()): MeetingSlot[] {
@@ -74,7 +89,7 @@ export function listSlots(actor: Actor, now: Date = new Date()): MeetingSlot[] {
 
 /** Mentor: opens a window; it is cut into 30-minute slots. Slots that clash with existing ones are skipped. */
 export function addWindow(actor: Actor, window: AvailabilityWindow, now: Date = new Date()): MeetingSlot[] {
-  if (!isStaff(actor)) throw new Error('Only mentors can add 1:1 times')
+  if (!canMentor(actor)) throw new Error('Only mentors can add 1:1 times')
   const all = load(now)
   const mine = all.filter((s) => s.mentorId === actor.id)
   const fresh = withoutClashes(upcomingSlotTimes(window, now), mine).map(
@@ -89,7 +104,7 @@ export function deleteSlot(actor: Actor, id: string, now: Date = new Date()): Me
   const all = load(now)
   const slot = all.find((s) => s.id === id)
   if (!slot) throw new Error('This time no longer exists')
-  if (!isStaff(actor) || (actor.role === 'teacher' && slot.mentorId !== actor.id)) {
+  if (!manages(actor, slot)) {
     throw new Error('You cannot change this time')
   }
   if (slot.booked) throw new Error('A student booked this time. Cancel the booking first.')
@@ -100,10 +115,11 @@ export function deleteSlot(actor: Actor, id: string, now: Date = new Date()): Me
 
 /** Student: locks a time. One upcoming booking at a time; two students can never get the same slot. */
 export function reserve(actor: Actor, id: string, now: Date = new Date()): MeetingSlot[] {
-  if (actor.role !== 'student') throw new Error('Only students can book a 1:1')
+  if (!isStudent(actor)) throw new Error('Only students can book a 1:1')
   const all = load(now)
   const slot = all.find((s) => s.id === id)
-  if (!slot) throw new Error('This time no longer exists')
+  // students can only book their own mentor's times
+  if (!slot || slot.mentorId !== MENTOR.id) throw new Error('This time no longer exists')
   if (slot.booked) throw new Error('Sorry, someone just took this time. Please pick another one.')
   if (new Date(slot.startsAt) <= now) throw new Error('This time has already started')
   const has = all.some((s) => s.bookedBy?.id === actor.id && new Date(s.startsAt) > now)
@@ -119,7 +135,7 @@ export function release(actor: Actor, id: string, now: Date = new Date()): Meeti
   const slot = all.find((s) => s.id === id)
   if (!slot || !slot.booked) throw new Error('This time is not booked')
   const mine = slot.bookedBy?.id === actor.id
-  if (!mine && !isStaff(actor)) throw new Error('You cannot change this booking')
+  if (!mine && !manages(actor, slot)) throw new Error('You cannot change this booking')
   if (new Date(slot.startsAt) <= now) throw new Error('This 1:1 has already started')
   const next = all.map((s) => (s.id === id ? { ...s, booked: false, bookedBy: undefined } : s))
   save(next)

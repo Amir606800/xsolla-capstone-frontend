@@ -6,6 +6,7 @@ import { MonthGrid } from '../components/calendar/MonthGrid'
 import { SlotsPanel } from '../components/calendar/SlotsPanel'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
+import { canAuthor, canMentor, isStudent } from '../utils/roles'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
 import { useMeetingSlots } from '../hooks/useMeetingSlots'
 import { useCourses } from '../hooks/useCourses'
@@ -43,7 +44,10 @@ export default function CalendarPage() {
   const isLocked = useModuleAccess()
   const { user } = useAuth()
   const meetings = useMeetingSlots()
-  const isStaff = user?.role === 'teacher' || user?.role === 'admin'
+  // mentor part: 1:1 times. lecturer part: lectures and events. students: book a 1:1.
+  const mentor = canMentor(user)
+  const author = canAuthor(user)
+  const student = isStudent(user)
 
   const [today] = useState(() => new Date())
   const [month, setMonth] = useState(() => startOfMonth(today))
@@ -76,9 +80,9 @@ export default function CalendarPage() {
       groupByDay([
         ...calendar.events,
         ...deadlineEvents(courses.modules.filter((m) => !isLocked(m))),
-        ...(user ? slotEvents(meetings.slots, { id: user.id, isStaff }, today) : []),
+        ...(user && (mentor || student) ? slotEvents(meetings.slots, { id: user.id, isMentor: mentor }, today) : []),
       ]),
-    [calendar.events, courses.modules, isLocked, meetings.slots, user, isStaff, today],
+    [calendar.events, courses.modules, isLocked, meetings.slots, user, mentor, student, today],
   )
   const eventsByDay = useMemo(() => {
     if (hidden.length === 0) return allByDay
@@ -92,13 +96,14 @@ export default function CalendarPage() {
     if (!openDay) return []
     const all = slotsOnDay(meetings.slots, openDay)
     // students only see times they can still use, or their own booking
-    return isStaff ? all : all.filter((s) => new Date(s.startsAt) > today || s.bookedBy?.id === user?.id)
-  }, [openDay, meetings.slots, isStaff, today, user?.id])
+    if (!mentor && !student) return []
+    return mentor ? all : all.filter((s) => new Date(s.startsAt) > today || s.bookedBy?.id === user?.id)
+  }, [openDay, meetings.slots, mentor, student, today, user?.id])
   const actions = useMemo(
     () => ({ addWindow: meetings.addWindow, remove: meetings.remove, book: meetings.book, cancel: meetings.cancel }),
     [meetings.addWindow, meetings.remove, meetings.book, meetings.cancel],
   )
-  const showSlots = user && meetings.status === 'ready' && (isStaff || daySlots.length > 0)
+  const showSlots = user && meetings.status === 'ready' && (mentor || daySlots.length > 0)
 
   const goToMonth = useCallback(
     (next: Date) => {
@@ -130,7 +135,7 @@ export default function CalendarPage() {
   const { save: saveEvent, remove: removeEvent } = calendar
   const editing = useMemo<EventEditing | undefined>(
     () =>
-      isStaff
+      author
         ? {
             canEdit: isEditableEvent,
             onEdit: (event) => {
@@ -144,7 +149,7 @@ export default function CalendarPage() {
             },
           }
         : undefined,
-    [isStaff, removeEvent],
+    [author, removeEvent],
   )
 
   const loading = calendar.status === 'loading' || courses.status === 'loading'
@@ -235,7 +240,7 @@ export default function CalendarPage() {
             onClose={closeDay}
             editing={editing}
           >
-            {isStaff && openDay && (
+            {author && openDay && (
               <section className="day-tools" aria-labelledby="day-tools-title">
                 <h3 id="day-tools-title" className="day-tools__title">
                   {eventForm?.event ? 'Edit event' : 'Lectures and events'}
@@ -276,7 +281,7 @@ export default function CalendarPage() {
               <SlotsPanel
                 dayKey={openDay}
                 slots={daySlots}
-                isStaff={isStaff}
+                isMentor={mentor}
                 userId={user.id}
                 booking={booking}
                 now={today}

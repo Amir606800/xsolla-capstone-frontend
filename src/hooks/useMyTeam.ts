@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchMyTeam } from '../api/teams'
+import { fetchMentorTeam, fetchMyTeam } from '../api/teams'
 import type { LoadStatus } from '../context/courses'
 import type { Team } from '../types/team'
+import { canMentor } from '../utils/roles'
 import { useAuth } from './useAuth'
 
-/** Loads the signed-in user's team once per visit to the Team page. */
+/**
+ * The signed-in user's team: a student's own team, or the team a mentor looks after.
+ * Anyone else (e.g. a lecturer who is not a mentor) has no team: status 'ready', team null.
+ */
 export function useMyTeam() {
   const { user } = useAuth()
   const [status, setStatus] = useState<LoadStatus>('loading')
@@ -14,7 +18,13 @@ export function useMyTeam() {
   useEffect(() => {
     if (!user) return
     let cancelled = false
-    fetchMyTeam(user)
+    const isMentor = canMentor(user)
+    const load = isMentor
+      ? fetchMentorTeam(user)
+      : user.roles.includes('student')
+        ? fetchMyTeam(user)
+        : Promise.resolve(null)
+    load
       .then((data) => {
         if (cancelled) return
         setTeam(data)

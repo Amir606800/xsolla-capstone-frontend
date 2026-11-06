@@ -1,0 +1,20 @@
+/* Mentor screens. Shares the card, list, team and staff styles; only the small extras live here. */
+.mentor__student {
+  align-items: center;
+}
+@media (max-width: 600px) {
+  /* the 1:1 chip goes under the name on a phone */
+  .mentor__student {
+    flex-wrap: wrap;
+  }
+  .mentor__student .chip {
+    margin-left: 56px;
+  }
+}
+.mentor__student .team__info {
+  flex: 1;
+  min-width: 0;
+}
+.mentor__student .team__mail {
+  overflow-wrap: anywhere;
+}

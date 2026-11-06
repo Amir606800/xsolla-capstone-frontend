@@ -18,7 +18,7 @@ interface SlotsPanelProps {
   dayKey: string
   /** The slots that start on this day, in time order. */
   slots: MeetingSlot[]
-  isStaff: boolean
+  isMentor: boolean
   userId: number
   /** The student's next booked 1:1 (on any day), if any. */
   booking?: MeetingSlot
@@ -112,7 +112,7 @@ function AvailabilityForm({
   )
 }
 
-export function SlotsPanel({ dayKey, slots, isStaff, userId, booking, now, actions }: SlotsPanelProps) {
+export function SlotsPanel({ dayKey, slots, isMentor, userId, booking, now, actions }: SlotsPanelProps) {
   const [message, setMessage] = useState<Message | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
 
@@ -134,10 +134,10 @@ export function SlotsPanel({ dayKey, slots, isStaff, userId, booking, now, actio
   return (
     <section className="slots" aria-labelledby="slots-title">
       <h3 id="slots-title" className="slots__title">
-        {isStaff ? '1:1 availability' : `1:1 with ${mentorName ?? 'your mentor'}`}
+        {isMentor ? '1:1 availability' : `1:1 with ${mentorName ?? 'your mentor'}`}
       </h3>
 
-      {isStaff ? (
+      {isMentor ? (
         <AvailabilityForm dayKey={dayKey} now={now} actions={actions} onMessage={setMessage} />
       ) : booking ? (
         <p className="slots__hint">
@@ -154,7 +154,7 @@ export function SlotsPanel({ dayKey, slots, isStaff, userId, booking, now, actio
       )}
 
       {slots.length === 0 ? (
-        isStaff && <p className="card__empty">No 1:1 times on this day yet.</p>
+        isMentor && <p className="card__empty">No 1:1 times on this day yet.</p>
       ) : (
         <ul className="slots__list" aria-label="1:1 times">
           {slots.map((s) => {
@@ -165,7 +165,7 @@ export function SlotsPanel({ dayKey, slots, isStaff, userId, booking, now, actio
               <li key={s.id} className={`slots__item${s.booked ? ' is-booked' : ''}${mine ? ' is-mine' : ''}`}>
                 <span className="slots__time-label">{slotLabel(s)}</span>
 
-                {isStaff ? (
+                {isMentor ? (
                   <>
                     <span className="slots__who">{s.booked ? (s.bookedBy?.name ?? 'Booked') : 'Free'}</span>
                     {!started && (

@@ -14,7 +14,7 @@ import './search.css'
 function PaletteBody({ onClose }: { onClose: () => void }) {
   const { modules } = useCourses()
   const isLocked = useModuleAccess()
-  const role = useAuth().user?.role
+  const { user } = useAuth()
   const navigate = useNavigate()
   const listId = useId()
   const listRef = useRef<HTMLUListElement>(null)
@@ -22,7 +22,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
 
-  const all = useMemo(() => buildSearchItems(navFor(role), modules, isLocked), [role, modules, isLocked])
+  const all = useMemo(() => buildSearchItems(navFor(user), modules, isLocked), [user, modules, isLocked])
   const results = useMemo(() => filterSearchItems(all, query), [all, query])
   const current = results[Math.min(active, results.length - 1)]
 

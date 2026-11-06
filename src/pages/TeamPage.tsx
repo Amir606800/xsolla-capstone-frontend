@@ -1,34 +1,16 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { Icon } from '../components/Icon'
+import { Avatar, Contact } from '../components/team/People'
 import { useAuth } from '../hooks/useAuth'
 import { useCourses } from '../hooks/useCourses'
 import { useMeetingSlots } from '../hooks/useMeetingSlots'
 import { useMyTeam } from '../hooks/useMyTeam'
-import type { Person } from '../types/team'
 import { formatDateTime } from '../utils/date'
-import { initials } from '../utils/people'
 import { myNextBooking } from '../utils/slots'
 import '../styles/ui.css'
 import '../components/module/module.css'
 import './TeamPage.css'
-
-function Avatar({ name, mentor = false }: { name: string; mentor?: boolean }) {
-  return (
-    <span className={`avatar${mentor ? ' avatar--mentor' : ''}`} aria-hidden="true">
-      {initials(name)}
-    </span>
-  )
-}
-
-function Contact({ person }: { person: Person }) {
-  return (
-    <a className="team__mail" href={`mailto:${person.email}`}>
-      <Icon name="mail" size={14} />
-      {person.email}
-    </a>
-  )
-}
 
 /**
  * "My team": the student's own team (4-5 students from a cohort of about 30) and the one mentor

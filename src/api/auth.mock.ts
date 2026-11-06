@@ -6,13 +6,21 @@ const MOCK_LATENCY_MS = 300
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
- * Demo accounts for working offline; any password works. The lecturer is also the mentor of
- * Team 3 (same id as in the team and 1:1 mocks), so what they change is what the student sees.
- * Any other e-mail signs in as a student.
+ * Demo accounts for working offline; any password works. Any other e-mail signs in as a student.
+ * - Rashad (900) mentors Team 3, Sam's team, and was also given the lecturer role, so what he
+ *   changes is what Sam sees (same ids as in the team and 1:1 mocks).
+ * - Aysel (901) is only a mentor (Team 4); Elvin (902) is only a lecturer, with no team.
  */
 export const DEMO_ACCOUNTS: Record<string, User> = {
-  'student@xsolla.school': { id: 1, name: 'Sam Student', email: 'student@xsolla.school', role: 'student' },
-  'lecturer@xsolla.school': { id: 900, name: 'Rashad Aliyev', email: 'lecturer@xsolla.school', role: 'teacher' },
+  'student@xsolla.school': { id: 1, name: 'Sam Student', email: 'student@xsolla.school', roles: ['student'] },
+  'lecturer@xsolla.school': {
+    id: 900,
+    name: 'Rashad Aliyev',
+    email: 'lecturer@xsolla.school',
+    roles: ['mentor', 'lecturer'],
+  },
+  'mentor@xsolla.school': { id: 901, name: 'Aysel Mammadova', email: 'mentor@xsolla.school', roles: ['mentor'] },
+  'teacher@xsolla.school': { id: 902, name: 'Elvin Huseynov', email: 'teacher@xsolla.school', roles: ['lecturer'] },
 }
 
 function nameFromEmail(email: string): string {
@@ -25,13 +33,13 @@ export async function login(email: string, password: string): Promise<User> {
   if (!password) throw new Error('Invalid email or password')
   const demo = DEMO_ACCOUNTS[email.trim().toLowerCase()]
   if (demo) return demo
-  return { id: 1, name: nameFromEmail(email), email, role: 'student' }
+  return { id: 1, name: nameFromEmail(email), email, roles: ['student'] }
 }
 
 export async function signup(email: string, name: string, password: string): Promise<User> {
   await wait(MOCK_LATENCY_MS)
   if (!password) throw new Error('Invalid sign up data')
-  return { id: 1, name, email, role: 'student' }
+  return { id: 1, name, email, roles: ['student'] }
 }
 
 export async function logout(): Promise<void> {

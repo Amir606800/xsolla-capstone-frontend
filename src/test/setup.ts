@@ -23,9 +23,9 @@ vi.mock('../api/auth', async () => {
   return {
   login: vi.fn(async (email: string, password: string) => {
     if (!password) throw new Error('Invalid email or password')
-    return DEMO_ACCOUNTS[email.toLowerCase()] ?? { id: 1, name: 'Tester', email, role: 'student' }
+    return DEMO_ACCOUNTS[email.toLowerCase()] ?? { id: 1, name: 'Tester', email, roles: ['student'] }
   }),
-  signup: vi.fn(async (email: string, name: string) => ({ id: 1, name, email, role: 'student' })),
+  signup: vi.fn(async (email: string, name: string) => ({ id: 1, name, email, roles: ['student'] })),
   logout: vi.fn(async () => undefined),
   }
 })
@@ -61,8 +61,12 @@ vi.mock('../api/standings', async () => {
 })
 
 vi.mock('../api/teams', async () => {
-  const { buildMockTeam } = await import('../mocks/teams')
-  return { fetchMyTeam: vi.fn(async (user: { id: number; name: string; email: string }) => buildMockTeam(user)) }
+  const { buildMentorTeam, buildMockTeam } = await import('../mocks/teams')
+  type P = { id: number; name: string; email: string }
+  return {
+    fetchMyTeam: vi.fn(async (user: P) => buildMockTeam(user)),
+    fetchMentorTeam: vi.fn(async (user: P) => buildMentorTeam(user)),
+  }
 })
 
 // the slot store lives in localStorage, which is cleared after each test

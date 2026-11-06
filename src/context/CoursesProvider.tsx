@@ -4,8 +4,8 @@ import { deleteItem as apiDeleteItem, fetchModules, saveItem as apiSaveItem, sav
 import type { ModulePatch, SubmitPayload } from '../api/courses'
 import { useAuth } from '../hooks/useAuth'
 import type { ContentItem, CourseModule, Submission } from '../types/course'
-import type { Role } from '../types/user'
 import { isModuleLocked } from '../utils/progress'
+import { canAuthor, isStudent } from '../utils/roles'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
 
@@ -26,8 +26,8 @@ function withSubmission(modules: CourseModule[], assignmentId: string, result: S
 }
 
 /** Students never get quiz answers (the backend must strip them too). */
-function forRole(modules: CourseModule[], role: Role | undefined): CourseModule[] {
-  if (role !== 'student') return modules
+function forRole(modules: CourseModule[], student: boolean): CourseModule[] {
+  if (!student) return modules
   return modules.map((m) =>
     m.items.some((i) => i.type === 'quiz')
       ? {
@@ -40,14 +40,14 @@ function forRole(modules: CourseModule[], role: Role | undefined): CourseModule[
   )
 }
 
-const isStaffRole = (role: Role | undefined) => role === 'teacher' || role === 'admin'
-
 /**
  * Loads the course once for the signed-in shell, so the Dashboard, Courses,
  * Tasks and Grades pages share one fetch instead of each refetching.
  */
 export function CoursesProvider({ children }: { children: ReactNode }) {
-  const role = useAuth().user?.role
+  const { user } = useAuth()
+  const student = isStudent(user)
+  const mayAuthor = canAuthor(user)
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [modules, setModules] = useState<CourseModule[]>([])
   const [now, setNow] = useState(() => new Date())
@@ -55,10 +55,10 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
-    fetchModules({ student: role === 'student' })
+    fetchModules({ student })
       .then((data) => {
         if (cancelled) return
-        setModules(forRole(data, role))
+        setModules(forRole(data, student))
         setNow(new Date())
         setStatus('ready')
       })
@@ -68,7 +68,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [attempt, role])
+  }, [attempt, student])
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -79,7 +79,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     async (assignmentId: string, payload: SubmitPayload) => {
       // Defence in depth: the UI hides locked modules, but never accept work for one.
       const owner = modules.find((m) => m.items.some((i) => i.id === assignmentId))
-      if (role === 'student' && owner && isModuleLocked(owner, new Date())) {
+      if (student && owner && isModuleLocked(owner, new Date())) {
         throw new Error('This module is not open yet')
       }
       // Graded work is final. The backend must refuse it too.
@@ -91,18 +91,18 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       setModules((prev) => withSubmission(prev, assignmentId, result))
       setNow(new Date())
     },
-    [modules, role],
+    [modules, student],
   )
 
   // Lecturer authoring: the server has the final say (and checks the role); the screen shows what it returns.
   const author = useCallback(
     async (run: () => Promise<CourseModule[]>) => {
-      if (!isStaffRole(role)) throw new Error('Only lecturers can change the course')
+      if (!mayAuthor) throw new Error('Only lecturers can change the course')
       const next = await run()
-      setModules(forRole(next, role))
+      setModules(forRole(next, student))
       setNow(new Date())
     },
-    [role],
+    [mayAuthor, student],
   )
   const saveModule = useCallback((id: string, patch: ModulePatch) => author(() => apiSaveModule(id, patch)), [author])
   const saveItem = useCallback((item: ContentItem) => author(() => apiSaveItem(item)), [author])

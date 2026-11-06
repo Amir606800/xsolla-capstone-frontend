@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import type { CourseModule } from '../types/course'
 import { isModuleLocked } from '../utils/progress'
+import { isStudent } from '../utils/roles'
 import { useAuth } from './useAuth'
 import { useCourses } from './useCourses'
 
@@ -12,10 +13,10 @@ import { useCourses } from './useCourses'
 export function useModuleAccess() {
   const { user } = useAuth()
   const { now } = useCourses()
-  const role = user?.role
+  const student = isStudent(user)
 
   return useCallback(
-    (module: CourseModule) => role === 'student' && isModuleLocked(module, now),
-    [role, now],
+    (module: CourseModule) => student && isModuleLocked(module, now),
+    [student, now],
   )
 }

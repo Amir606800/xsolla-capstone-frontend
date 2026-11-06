@@ -15,7 +15,7 @@ export function useMeetingSlots() {
   const [slots, setSlots] = useState<MeetingSlot[]>([])
   const [attempt, setAttempt] = useState(0)
 
-  const actor = useMemo(() => (user ? { id: user.id, name: user.name, role: user.role } : null), [user])
+  const actor = useMemo(() => (user ? { id: user.id, name: user.name, roles: user.roles } : null), [user])
 
   useEffect(() => {
     if (!actor) return

@@ -47,7 +47,7 @@ function ProgramProgress() {
 }
 
 function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarProps) {
-  const nav = navFor(useAuth().user?.role)
+  const nav = navFor(useAuth().user)
   return (
     <>
       <div

@@ -10,7 +10,7 @@ import { initials } from '../utils/people'
 import TeamPage from './TeamPage'
 
 function renderTeam() {
-  localStorage.setItem('auth_user', JSON.stringify({ id: 1, name: 'Sam', email: 'sam@example.com', role: 'student' }))
+  localStorage.setItem('auth_user', JSON.stringify({ id: 1, name: 'Sam', email: 'sam@example.com', roles: ['student'] }))
   return renderWithProviders(
     <CoursesProvider>
       <TeamPage />
@@ -68,8 +68,8 @@ describe('TeamPage', () => {
   })
 
   it('shows the 1:1 the student booked', async () => {
-    const free = listSlots({ id: 1, name: 'Sam', role: 'student' }).find((s) => !s.booked)!
-    reserve({ id: 1, name: 'Sam', role: 'student' }, free.id)
+    const free = listSlots({ id: 1, name: 'Sam', roles: ['student'] }).find((s) => !s.booked)!
+    reserve({ id: 1, name: 'Sam', roles: ['student'] }, free.id)
     renderTeam()
     expect(await screen.findByText(/Next 1:1:/)).toBeInTheDocument()
     expect(screen.queryByText(/No 1:1 booked yet/)).not.toBeInTheDocument()

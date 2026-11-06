@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from '../api/notifications'
-import { isStaff } from '../config/nav'
+import { isStaff } from '../utils/roles'
 import { useAuth } from '../hooks/useAuth'
 import type { AppNotification } from '../types/notification'
 import type { LoadStatus } from './courses'
@@ -19,7 +19,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [attempt, setAttempt] = useState(0)
 
   // the demo notifications are a student's ("your task was graded"); lecturers get their own later
-  const staff = isStaff(useAuth().user?.role)
+  const staff = isStaff(useAuth().user)
 
   useEffect(() => {
     let cancelled = false

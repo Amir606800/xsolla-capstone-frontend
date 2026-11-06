@@ -100,7 +100,7 @@ export function previewText(times: SlotTime[]): string {
 
 interface Viewer {
   id: number
-  isStaff: boolean
+  isMentor: boolean
 }
 
 /**
@@ -114,7 +114,7 @@ export function slotEvents(slots: MeetingSlot[], viewer: Viewer, now: Date): Cal
 
   for (const s of sortSlots(slots)) {
     const future = new Date(s.startsAt) > now
-    if (viewer.isStaff) {
+    if (viewer.isMentor) {
       const list = days.get(dateKey(new Date(s.startsAt))) ?? []
       list.push(s)
       days.set(dateKey(new Date(s.startsAt)), list)
@@ -146,7 +146,7 @@ export function slotEvents(slots: MeetingSlot[], viewer: Viewer, now: Date): Cal
 
   for (const [key, list] of days) {
     const free = list.filter((s) => !s.booked).length
-    const title = viewer.isStaff
+    const title = viewer.isMentor
       ? `1:1 times: ${free} of ${list.length} free`
       : `${free} free 1:1 ${free === 1 ? 'time' : 'times'}`
     events.push({

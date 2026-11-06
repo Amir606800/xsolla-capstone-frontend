@@ -160,7 +160,7 @@ describe('slots on the calendar', () => {
   })
 
   it('a student gets their booking as a meeting and one summary of the free times', () => {
-    const events = slotEvents(slots, { id: 1, isStaff: false }, NOW)
+    const events = slotEvents(slots, { id: 1, isMentor: false }, NOW)
     const meeting = events.find((e) => e.kind === 'meeting')!
     expect(meeting.title).toBe('1:1 with Rashad')
     const free = events.find((e) => e.kind === 'availability')!
@@ -170,17 +170,17 @@ describe('slots on the calendar', () => {
 
   it('does not offer times that already started', () => {
     const late = new Date(2026, 10, 5, 16, 10)
-    const events = slotEvents(slots, { id: 2, isStaff: false }, late)
+    const events = slotEvents(slots, { id: 2, isMentor: false }, late)
     expect(events.find((e) => e.kind === 'availability')?.title).toBe('1 free 1:1 time')
   })
 
   it('a mentor gets a summary of the day and every booked slot as a meeting', () => {
-    const events = slotEvents(slots, { id: 900, isStaff: true }, NOW)
+    const events = slotEvents(slots, { id: 900, isMentor: true }, NOW)
     expect(events.find((e) => e.kind === 'availability')?.title).toBe('1:1 times: 2 of 4 free')
     expect(events.filter((e) => e.kind === 'meeting').map((e) => e.title)).toEqual(['1:1 with Sam'])
   })
 
   it('no slots, no events', () => {
-    expect(slotEvents([], { id: 1, isStaff: false }, NOW)).toEqual([])
+    expect(slotEvents([], { id: 1, isMentor: false }, NOW)).toEqual([])
   })
 })

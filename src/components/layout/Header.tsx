@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { isStaff } from '../../config/nav'
+import { isStaff } from '../../utils/roles'
 import { useAuth } from '../../hooks/useAuth'
 import { useDashboardLayout } from '../../hooks/useDashboardLayout'
 import { useNotifications } from '../../hooks/useNotifications'
@@ -26,7 +26,7 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
   const { isShown } = useDashboardLayout()
   // the dashboard's own "Current task" widget shows the same thing, so the header chip steps aside there
   // (lecturers have their own dashboard without that widget)
-  const showChip = isStaff(user?.role) || !(pathname === '/dashboard' && isShown('current-task'))
+  const showChip = isStaff(user) || !(pathname === '/dashboard' && isShown('current-task'))
   const { unreadCount } = useNotifications()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)

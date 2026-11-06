@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { slotLabel } from '../utils/slots'
 import { addWindow, buildMockSlots, deleteSlot, listSlots, release, reserve } from './slots'
+import type { Actor } from './slots'
 
 const NOW = new Date(2026, 10, 4, 12, 0) // Wed 4 Nov 2026
-const mentor = { id: 900, name: 'Rashad Aliyev', role: 'teacher' } as const
-const other = { id: 901, name: 'Another Mentor', role: 'teacher' } as const
-const admin = { id: 1000, name: 'Admin', role: 'admin' } as const
-const sam = { id: 1, name: 'Sam', role: 'student' } as const
-const eli = { id: 2, name: 'Eli', role: 'student' } as const
+const mentor: Actor = { id: 900, name: 'Rashad Aliyev', roles: ['mentor', 'lecturer'] }
+const other: Actor = { id: 901, name: 'Another Mentor', roles: ['mentor'] }
+const admin: Actor = { id: 1000, name: 'Admin', roles: ['admin'] }
+const sam: Actor = { id: 1, name: 'Sam', roles: ['student'] }
+const eli: Actor = { id: 2, name: 'Eli', roles: ['student'] }
 const win = { date: '2026-11-06', start: '15:00', end: '18:00' }
 
 describe('demo data', () => {

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import * as authApi from '../api/auth'
 import type { User } from '../types/user'
+import { normalizeUser } from '../utils/roles'
 import { AuthContext } from './auth'
 
 const STORAGE_KEY = 'auth_user'
@@ -9,7 +10,8 @@ const STORAGE_KEY = 'auth_user'
 function loadUser(): User | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as User) : null
+    // older sessions stored a single `role`: turn it into the role set
+    return raw ? normalizeUser(JSON.parse(raw)) : null
   } catch {
     return null
   }
@@ -27,7 +29,8 @@ function saveUser(user: User | null) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(loadUser)
 
-  const applyUser = useCallback((u: User | null) => {
+  const applyUser = useCallback((raw: User | null) => {
+    const u = normalizeUser(raw)
     setUser(u)
     saveUser(u)
   }, [])

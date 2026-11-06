@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { login, logout, mapRole, mapUser, signup } from './auth.http'
+import { login, logout, mapUser, signup } from './auth.http'
 import { ApiError } from './http'
 import { getTokens, saveTokens } from './session'
 
@@ -49,7 +49,7 @@ describe('login', () => {
     mockFetch(200, authBody)
     const user = await login('alice@xsolla.com', 'secret123')
 
-    expect(user).toEqual({ id: 7, name: 'Alice', email: 'alice@xsolla.com', role: 'student' })
+    expect(user).toEqual({ id: 7, name: 'Alice', email: 'alice@xsolla.com', roles: ['student'] })
     expect(getTokens()).toEqual({ accessToken: 'access-1', refreshToken: 'refresh-1' })
   })
 
@@ -136,21 +136,19 @@ describe('logout', () => {
   })
 })
 
-describe('mapRole / mapUser', () => {
-  it('keeps the known roles', () => {
-    expect(mapRole('student')).toBe('student')
-    expect(mapRole('teacher')).toBe('teacher')
-    expect(mapRole('admin')).toBe('admin')
+describe('mapUser', () => {
+  it('reads the backend role into the role set ("teacher" = mentor + lecturer)', () => {
+    expect(mapUser({ id: 1, email: 'a', name: 'A', role: 'student' }).roles).toEqual(['student'])
+    expect(mapUser({ id: 1, email: 'a', name: 'A', role: 'teacher' }).roles).toEqual(['mentor', 'lecturer'])
+    expect(mapUser({ id: 1, email: 'a', name: 'A', role: 'ADMIN' }).roles).toEqual(['admin'])
   })
 
-  it('accepts "lecturer" as teacher and ignores case', () => {
-    expect(mapRole('lecturer')).toBe('teacher')
-    expect(mapRole('ADMIN')).toBe('admin')
+  it('prefers a roles list when the backend sends one', () => {
+    expect(mapUser({ id: 1, email: 'a', name: 'A', role: 'teacher', roles: ['mentor'] }).roles).toEqual(['mentor'])
   })
 
   it('gives an unknown role the least access (student)', () => {
-    expect(mapRole('superuser')).toBe('student')
-    expect(mapRole('')).toBe('student')
+    expect(mapUser({ id: 1, email: 'a', name: 'A', role: 'superuser' }).roles).toEqual(['student'])
   })
 
   it('accepts string ids, as in API_CONTRACT.md', () => {
@@ -162,7 +160,7 @@ describe('mapRole / mapUser', () => {
       id: 3,
       email: 'x@y.co',
       name: 'X',
-      role: 'teacher',
+      roles: ['mentor', 'lecturer'],
     })
   })
 })

@@ -15,7 +15,7 @@ describe('auth API selection', () => {
     const { login } = await vi.importActual<typeof import('./auth')>('./auth')
     const user = await login('sam@example.com', 'pw')
 
-    expect(user).toMatchObject({ email: 'sam@example.com', role: 'student' })
+    expect(user).toMatchObject({ email: 'sam@example.com', roles: ['student'] })
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -38,6 +38,6 @@ describe('auth API selection', () => {
     const user = await login('x@y.co', 'pw')
 
     expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(user.role).toBe('teacher')
+    expect(user.roles).toEqual(['mentor', 'lecturer'])
   })
 })

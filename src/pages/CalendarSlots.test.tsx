@@ -14,8 +14,8 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-const STUDENT = { id: 1, name: 'Sam', email: 'sam@example.com', role: 'student' }
-const MENTOR = { id: 900, name: 'Rashad Aliyev', email: 'rashad@example.com', role: 'teacher' }
+const STUDENT = { id: 1, name: 'Sam', email: 'sam@example.com', roles: ['student'] }
+const MENTOR = { id: 900, name: 'Rashad Aliyev', email: 'rashad@example.com', roles: ['mentor', 'lecturer'] }
 
 async function open(who: typeof STUDENT | typeof MENTOR, dayLabel: RegExp) {
   localStorage.setItem('auth_user', JSON.stringify(who))
@@ -85,7 +85,7 @@ describe('Student: booking a 1:1', () => {
 
   it('says so, and refreshes, when someone else took the time first', async () => {
     const { user, dialog } = await open(STUDENT, /^Thursday, November 5/)
-    reserve({ id: 2, name: 'Eli', role: 'student' }, listSlots(STUDENT as never)[1].id) // Eli is faster
+    reserve({ id: 2, name: 'Eli', roles: ['student'] }, listSlots(STUDENT as never)[1].id) // Eli is faster
     await user.click(within(dialog).getByRole('button', { name: 'Book 15:30 - 16:00' }))
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('someone just took this time')
@@ -135,7 +135,7 @@ describe('Mentor: setting availability', () => {
     for (const r of rows) expect(r).toHaveTextContent('Free')
 
     // a student now sees them
-    const friday = listSlots({ id: 1, name: 'Sam', role: 'student' }).filter((s) => new Date(s.startsAt).getDate() === 6)
+    const friday = listSlots({ id: 1, name: 'Sam', roles: ['student'] }).filter((s) => new Date(s.startsAt).getDate() === 6)
     expect(friday).toHaveLength(6)
   })
 

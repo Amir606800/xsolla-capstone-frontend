@@ -30,11 +30,11 @@ describe('Lecturer account', () => {
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/login' })
     const demo = await screen.findByRole('group', { name: 'Demo accounts' })
-    await user.click(within(demo).getByRole('button', { name: 'Lecturer' }))
+    await user.click(within(demo).getByRole('button', { name: 'Mentor & lecturer' }))
     expect(screen.getByLabelText('Email')).toHaveValue('lecturer@xsolla.school')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(await screen.findByRole('heading', { name: 'Welcome, Rashad Aliyev', level: 1 })).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem('auth_user')!).role).toBe('teacher')
+    expect(JSON.parse(localStorage.getItem('auth_user')!).roles).toEqual(['mentor', 'lecturer'])
   })
 
   it('has its own navigation, without the student pages', async () => {
@@ -44,10 +44,11 @@ describe('Lecturer account', () => {
       'Dashboard',
       'Course content',
       'Calendar',
+      'My team', // the demo lecturer is also Team 3's mentor
     ])
   })
 
-  it.each(['/tasks', '/grades', '/team'])('sends a lecturer away from the student page %s', async (route) => {
+  it.each(['/tasks', '/grades'])('sends a lecturer away from the student page %s', async (route) => {
     renderAs(LECTURER, route)
     expect(await screen.findByRole('heading', { name: 'Welcome, Rashad Aliyev', level: 1 })).toBeInTheDocument()
   })
@@ -61,12 +62,11 @@ describe('Lecturer account', () => {
 describe('Lecturer dashboard', () => {
   it('shows the running module with what it holds', async () => {
     renderAs(LECTURER, '/dashboard')
-    const card = (await screen.findByRole('heading', { name: 'This week' })).closest('section')!
-    expect(card).toHaveTextContent('Module 6 · Go Basics')
-    expect(card).toHaveTextContent('Materials2')
-    expect(card).toHaveTextContent('Tasks2')
-    expect(card).toHaveTextContent('Quizzes0')
-    expect(within(card).getByRole('link', { name: 'Open' })).toHaveAttribute('href', '/courses/m6')
+    const tile = (await screen.findByRole('heading', { name: 'This week' })).closest('section')!
+    expect(tile).toHaveTextContent('Module 6')
+    expect(tile).toHaveTextContent('Go Basics')
+    expect(tile).toHaveTextContent('2 materials · 2 tasks · 0 quizzes')
+    expect(within(tile).getByRole('link')).toHaveAttribute('href', '/courses/m6')
   })
 
   it('has shortcuts to the things students depend on', async () => {
