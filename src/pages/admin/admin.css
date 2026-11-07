@@ -743,3 +743,284 @@ button.admin-table__title:hover {
     gap: 2px;
   }
 }
+
+/* ---------- calendar: the month and the list beside it ---------- */
+.admin-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.admin-field {
+  display: flex;
+  flex: 1 1 160px;
+  flex-direction: column;
+  min-width: 0;
+}
+.admin-field .admin-field__label {
+  margin-top: 0;
+}
+.admin-cal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  align-items: start;
+  gap: 20px;
+}
+.admin-cal__month {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.admin-cal__month .month {
+  border-radius: 6px;
+}
+.admin-cal__list {
+  position: sticky;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100vh - 96px);
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+}
+.admin-cal__list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.admin-cal__all {
+  font-size: 13px;
+}
+.admin-cal__days {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-cal__day {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.admin-cal__events {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-cal__event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--divider);
+  border-radius: 4px;
+}
+.admin-cal__event .dot {
+  flex: none;
+}
+.admin-cal__event.is-past .admin-cal__text {
+  opacity: 0.6;
+}
+.admin-cal__text {
+  flex: 1;
+  min-width: 0;
+}
+.admin-cal__title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.admin-cal__meta {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.admin-cal__event .admin-actions {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+.admin-cal__event .admin-icon-btn {
+  width: 30px;
+  height: 30px;
+}
+@media (max-width: 1100px) {
+  .admin-cal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-cal__list {
+    position: static;
+    max-height: none;
+  }
+}
+.admin-range {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--divider);
+}
+.admin-cal__tip {
+  font-size: 13px;
+}
+.admin-cal__event.is-past {
+  background: color-mix(in srgb, var(--active-bg) 35%, transparent);
+}
+
+/* ---------- people pages ---------- */
+.admin-search {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 8px;
+  max-width: 420px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  background: var(--field);
+  color: var(--text-muted);
+}
+.admin-search:focus-within {
+  border-color: var(--xs-cyan);
+}
+.admin-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+.admin-inline-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.admin-inline-field .admin-field__input {
+  width: auto;
+  height: 36px;
+  font-size: 14px;
+}
+.admin-count {
+  margin-left: auto;
+}
+.admin-table__strong {
+  font-weight: 600;
+}
+.admin-hint {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.admin-hint--warn {
+  color: var(--warn);
+}
+.admin-pw-row {
+  display: flex;
+  gap: 8px;
+}
+.admin-pw-row .admin-field__pw {
+  flex: 1;
+  min-width: 0;
+}
+.admin-field .admin-field__error {
+  display: block;
+  margin-top: 6px;
+}
+.admin-table tr.is-left td:not(:last-child) {
+  color: var(--text-muted);
+}
+/* row actions stay side by side: wrapping them would make every row taller */
+.admin-table .admin-actions {
+  flex-wrap: nowrap;
+}
+
+/* ---------- roles ---------- */
+.admin-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--field-border));
+  border-radius: 4px;
+  color: var(--warn);
+  font-size: 14px;
+}
+.admin-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+}
+.admin-roles legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+.admin-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.admin-check input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--xs-cyan);
+}
+.admin-check .admin-hint {
+  display: block;
+  margin-top: 2px;
+}
+.admin-roles__until {
+  gap: 8px;
+  margin-left: 26px;
+}
+.admin-roles__until .admin-field__label {
+  margin: 0;
+}
+.admin-btn--small {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+.admin-roles-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.admin-pill--role {
+  color: var(--text);
+}
+.admin-pill__detail {
+  color: var(--text-muted);
+  font-weight: 400;
+}

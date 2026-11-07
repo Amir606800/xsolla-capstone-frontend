@@ -2,12 +2,14 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Modal } from '../../components/Modal'
 
-/** "Are you sure?" for the admin's destructive actions. Stays open with the error if the action fails. */
+/** "Are you sure?" for the admin's bigger actions. Stays open with the error if the action fails. */
 export function ConfirmDialog({
   open,
   title,
   children,
   confirmLabel,
+  busyLabel = 'Deleting…',
+  tone = 'danger',
   onConfirm,
   onClose,
 }: {
@@ -15,6 +17,10 @@ export function ConfirmDialog({
   title: string
   children: ReactNode
   confirmLabel: string
+  /** Shown on the button while it works. */
+  busyLabel?: string
+  /** Red for what cannot be undone, the normal colour for what can. */
+  tone?: 'danger' | 'primary'
   onConfirm: () => Promise<void>
   onClose: () => void
 }) {
@@ -52,8 +58,8 @@ export function ConfirmDialog({
           <button type="button" className="admin-btn admin-confirm__cancel" onClick={close} disabled={busy}>
             Cancel
           </button>
-          <button type="button" className="admin-btn admin-btn--danger" onClick={confirm} disabled={busy}>
-            {busy ? 'Deleting…' : confirmLabel}
+          <button type="button" className={`admin-btn admin-btn--${tone}`} onClick={confirm} disabled={busy}>
+            {busy ? busyLabel : confirmLabel}
           </button>
         </div>
       </div>

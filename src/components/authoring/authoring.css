@@ -10,8 +10,11 @@
   padding: 4px 0 0;
 }
 .form__field {
-  flex: 1 1 180px;
   min-width: 0;
+}
+/* side by side in a row; in the form's column a flex-basis would become a 180px minimum height */
+.form__row > .form__field {
+  flex: 1 1 180px;
 }
 .form__field .field__label {
   margin: 10px 0 6px;
@@ -46,8 +49,13 @@ select.form__input {
 .form__row {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  /* labels line up even when one field has a longer hint or an error */
+  align-items: flex-start;
   gap: 0 12px;
+}
+/* a checkbox next to a field sits level with that field's input */
+.form__row > .form__check {
+  align-self: flex-end;
 }
 .form__group {
   margin: 0;

@@ -1,5 +1,5 @@
-import { DEMO_ACCOUNTS, DEMO_ADMIN } from '../api/auth.mock'
-import type { SchoolTeam } from '../types/admin'
+import { DEMO_ACCOUNTS, DEMO_ADMIN } from './accounts'
+import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { Role, User } from '../types/user'
 
 /**
@@ -99,13 +99,199 @@ const TEAM_SEEDS: { id: string; name: string; mentor: User; students: User[] }[]
 /** Staff who are in no team: lecturers without a team, and the admin. */
 const OTHER_STAFF: User[] = [elvin, person(907, 'Nargiz Abbasova', ['lecturer']), DEMO_ADMIN]
 
-/** Everyone, sorted by name. Each call returns fresh copies. */
-export function listUsers(): User[] {
-  const all = [...TEAM_SEEDS.flatMap((t) => [t.mentor, ...t.students]), ...OTHER_STAFF]
-  return all.map((u) => ({ ...u, roles: [...u.roles] })).sort((a, b) => a.name.localeCompare(b.name))
+// ---------- what the admin changed, kept in this browser ----------
+
+interface DirectoryEdits {
+  /** Accounts the admin added. */
+  added: User[]
+  /** Students moved between teams: user id -> team id, or null for no team. */
+  teamOf: Record<string, string | null>
+  /** Name / e-mail corrections: user id -> the new values. */
+  changed: Record<string, { name?: string; email?: string }>
+  /** Students who left the school: user id -> when. Their account is kept. */
+  left: Record<string, string>
+  /** Accounts deleted for good. */
+  deleted: number[]
+  /** Roles the admin set: user id -> the roles, and until when the temporary ones last. */
+  roles: Record<string, { roles: Role[]; until?: Partial<Record<Role, string>> }>
+  /** Team mentors the admin set: team id -> mentor id, or null for none. */
+  mentorOf: Record<string, number | null>
 }
 
-/** The teams, in order. Each call returns fresh copies. */
-export function listTeams(): SchoolTeam[] {
-  return TEAM_SEEDS.map((t) => ({ id: t.id, name: t.name, mentorId: t.mentor.id, studentIds: t.students.map((s) => s.id) }))
+const KEY = 'school_directory'
+
+function load(): DirectoryEdits {
+  try {
+    const raw = localStorage.getItem(KEY)
+    const parsed = raw ? (JSON.parse(raw) as Partial<DirectoryEdits>) : {}
+    return {
+      added: parsed.added ?? [],
+      teamOf: parsed.teamOf ?? {},
+      changed: parsed.changed ?? {},
+      left: parsed.left ?? {},
+      deleted: parsed.deleted ?? [],
+      roles: parsed.roles ?? {},
+      mentorOf: parsed.mentorOf ?? {},
+    }
+  } catch {
+    return { added: [], teamOf: {}, changed: {}, left: {}, deleted: [], roles: {}, mentorOf: {} }
+  }
+}
+
+function save(edits: DirectoryEdits): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(edits))
+  } catch {
+    /* storage blocked or full: the change lasts until the page reloads */
+  }
+}
+
+const seedUsers = (): User[] => [...TEAM_SEEDS.flatMap((t) => [t.mentor, ...t.students]), ...OTHER_STAFF]
+
+/**
+ * The roles someone holds at `now`: a role given until a date is gone once that date has passed
+ * (the backend should do the same). The end dates of the roles still held are kept.
+ */
+function rolesAt(base: User, set: DirectoryEdits['roles'][string] | undefined, now: Date): Pick<User, 'roles' | 'roleUntil'> {
+  const roles = set ? set.roles : base.roles
+  const until = set ? set.until ?? {} : base.roleUntil ?? {}
+  const held = roles.filter((r) => !until[r] || new Date(until[r]!) > now)
+  const left: Partial<Record<Role, string>> = {}
+  for (const r of held) if (until[r]) left[r] = until[r]
+  return { roles: held, ...(Object.keys(left).length ? { roleUntil: left } : {}) }
+}
+
+/** Everyone (also those who left; not the deleted), sorted by name. Each call returns fresh copies. */
+export function listUsers(now: Date = new Date()): SchoolUser[] {
+  const { added, changed, left, deleted, roles } = load()
+  return [...seedUsers(), ...added]
+    .filter((u) => !deleted.includes(u.id))
+    .map((u) => {
+      const { roleUntil: _old, ...rest } = u
+      void _old
+      return {
+        ...rest,
+        ...changed[String(u.id)],
+        ...rolesAt(u, roles[String(u.id)], now),
+        ...(left[String(u.id)] ? { leftAt: left[String(u.id)] } : {}),
+      }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+/** Students who left or were deleted are in no team. */
+const gone = (edits: DirectoryEdits) => (id: number) => edits.deleted.includes(id) || String(id) in edits.left
+
+/** The teams, in order, with the admin's moves applied. Each call returns fresh copies. */
+export function listTeams(now: Date = new Date()): SchoolTeam[] {
+  const edits = load()
+  const { teamOf, mentorOf } = edits
+  const out = gone(edits)
+  // a team's mentor must still exist and still hold the mentor role
+  const mentors = new Set(listUsers(now).filter((u) => u.roles.includes('mentor') && !u.leftAt).map((u) => u.id))
+  return TEAM_SEEDS.map((t) => {
+    const mentorId = t.id in mentorOf ? mentorOf[t.id] : t.mentor.id
+    const kept = t.students.map((s) => s.id).filter((id) => !(String(id) in teamOf))
+    const joined = Object.entries(teamOf)
+      .filter(([, team]) => team === t.id)
+      .map(([id]) => Number(id))
+    return { id: t.id, name: t.name, mentorId: mentorId !== null && mentors.has(mentorId) ? mentorId : null, studentIds: [...kept, ...joined].filter((id) => !out(id)) }
+  })
+}
+
+export interface NewAccount {
+  name: string
+  email: string
+  roles: Role[]
+  roleUntil?: Partial<Record<Role, string>>
+}
+
+/** Adds an account (any password works offline). The e-mail must be new. */
+export function addUser(account: NewAccount): User {
+  const email = account.email.trim().toLowerCase()
+  if (emailTaken(email)) throw new Error('There is already an account with this email.')
+  const edits = load()
+  const id = Math.max(2000, ...listUsers().map((u) => u.id)) + 1
+  const user: User = { id, name: account.name.trim(), email, roles: [...account.roles], ...(account.roleUntil ? { roleUntil: { ...account.roleUntil } } : {}) }
+  edits.added.push(user)
+  save(edits)
+  return { ...user, roles: [...user.roles] }
+}
+
+const emailTaken = (email: string, exceptId?: number) =>
+  listUsers().some((u) => u.id !== exceptId && u.email.toLowerCase() === email.trim().toLowerCase())
+
+function existing(id: number): SchoolUser {
+  const user = listUsers().find((u) => u.id === id)
+  if (!user) throw new Error('This account does not exist')
+  return user
+}
+
+/** Corrects someone's name or e-mail (the e-mail must stay unique). */
+export function updateUser(id: number, patch: { name?: string; email?: string }): SchoolUser {
+  existing(id)
+  if (patch.email !== undefined && emailTaken(patch.email, id)) throw new Error('There is already an account with this email.')
+  const edits = load()
+  edits.changed[String(id)] = {
+    ...edits.changed[String(id)],
+    ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
+    ...(patch.email !== undefined ? { email: patch.email.trim().toLowerCase() } : {}),
+  }
+  save(edits)
+  return existing(id)
+}
+
+/** Marks a student as having left (they leave their team too), or brings them back (without a team). */
+export function setLeft(id: number, left: boolean, now: Date = new Date()): SchoolUser {
+  existing(id)
+  const edits = load()
+  if (left) {
+    edits.left[String(id)] = now.toISOString()
+    edits.teamOf[String(id)] = null
+  } else delete edits.left[String(id)]
+  save(edits)
+  return existing(id)
+}
+
+/** Deletes an account for good. */
+export function deleteUser(id: number): void {
+  existing(id)
+  const edits = load()
+  edits.deleted.push(id)
+  delete edits.teamOf[String(id)]
+  delete edits.left[String(id)]
+  save(edits)
+}
+
+/**
+ * Sets someone's roles. `until`: the roles given only for a while, and when they end.
+ * Staff keep at least one role; a mentor who loses the role is no longer any team's mentor.
+ */
+export function setRoles(id: number, roles: Role[], until: Partial<Record<Role, string>> = {}): SchoolUser {
+  existing(id)
+  if (roles.length === 0) throw new Error('Keep at least one role.')
+  const edits = load()
+  const kept: Partial<Record<Role, string>> = {}
+  for (const r of roles) if (until[r]) kept[r] = until[r]
+  edits.roles[String(id)] = { roles: [...roles], ...(Object.keys(kept).length ? { until: kept } : {}) }
+  save(edits)
+  return existing(id)
+}
+
+/** Makes someone the mentor of a team (its previous mentor is left without one), or of none (null). */
+export function setMentorTeam(mentorId: number, teamId: string | null): void {
+  // no check that the mentor is in this directory: with a backend the accounts live there, only teams are here
+  if (teamId !== null && !TEAM_SEEDS.some((t) => t.id === teamId)) throw new Error('This team does not exist')
+  const edits = load()
+  for (const t of listTeams()) if (t.mentorId === mentorId) edits.mentorOf[t.id] = null
+  if (teamId !== null) edits.mentorOf[teamId] = mentorId
+  save(edits)
+}
+
+/** Puts a student in a team (or in none, with null). */
+export function setTeam(userId: number, teamId: string | null): void {
+  if (teamId !== null && !TEAM_SEEDS.some((t) => t.id === teamId)) throw new Error('This team does not exist')
+  const edits = load()
+  edits.teamOf[String(userId)] = teamId
+  save(edits)
 }

@@ -10,4 +10,9 @@ export interface User {
   name: string
   email: string
   roles: Role[]
+  /**
+   * Roles given for a while: role -> when it ends (ISO). Past that moment the role no longer counts
+   * (see `hasRole`), so a lecturer role an admin gave until a date goes away by itself.
+   */
+  roleUntil?: Partial<Record<Role, string>>
 }

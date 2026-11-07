@@ -79,3 +79,16 @@ test('the modules pages and the details pop-up fit a phone screen', async ({ pag
   })
   expect(gap).toBeGreaterThanOrEqual(16)
 })
+
+test('the module form is compact: no tall empty fields, the date labels side by side', async ({ page }) => {
+  await signInAsAdmin(page)
+  await page.goto('/admin/modules/m1')
+  await page.getByRole('button', { name: 'Edit module' }).click()
+  const form = page.getByRole('dialog')
+  const titleField = form.getByLabel('Title').locator('xpath=ancestor::div[contains(@class,"form__field")][1]')
+  expect((await titleField.boundingBox())!.height).toBeLessThan(90)
+  const opens = (await form.getByText('Opens on', { exact: true }).boundingBox())!
+  const closes = (await form.getByText('Closes on', { exact: true }).boundingBox())!
+  // on a wide screen they share a row; on a phone they stack
+  if (closes.x > opens.x) expect(Math.abs(closes.y - opens.y)).toBeLessThan(2)
+})

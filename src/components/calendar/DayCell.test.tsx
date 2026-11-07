@@ -19,18 +19,7 @@ const event = (id: number, over: Partial<CalendarEvent> = {}): CalendarEvent => 
 
 function renderCell(events: CalendarEvent[] = [], props: Partial<Parameters<typeof DayCell>[0]> = {}) {
   const onSelect = vi.fn()
-  render(
-    <DayCell
-      date={DAY}
-      inMonth
-      isToday={false}
-      selected={false}
-      events={events}
-      now={NOW}
-      onSelect={onSelect}
-      {...props}
-    />,
-  )
+  render(<DayCell date={DAY} inMonth isToday={false} selected={false} events={events} now={NOW} onSelect={onSelect} {...props} />)
   return onSelect
 }
 
@@ -93,9 +82,44 @@ describe('DayCell', () => {
     expect(chip('D3')).not.toHaveClass('is-overdue')
   })
 
-  it('reports its day when clicked', async () => {
+  it('shades events that are over; upcoming ones keep their full colour (for every role)', () => {
+    // seen on Nov 12 at 13:00: the 9-10 meeting is over, the 15-16 one is still to come
+    render(
+      <DayCell
+        date={DAY}
+        inMonth
+        isToday={false}
+        selected={false}
+        now={new Date(2026, 10, 12, 13)}
+        onSelect={vi.fn()}
+        events={[event(1, { title: 'Done already' }), event(7, { title: 'Still to come' })]}
+      />,
+    )
+    expect(screen.getByText('Done already').closest('.ev')).toHaveClass('is-past')
+    expect(screen.getByText('Still to come').closest('.ev')).not.toHaveClass('is-past')
+    const dots = document.querySelectorAll('.cell__dots .dot')
+    expect([...dots].map((d) => d.classList.contains('is-past'))).toEqual([true, false])
+  })
+
+  it('a deadline is never "past": it is done or overdue instead', () => {
+    const due = new Date(2026, 10, 1, 9).toISOString()
+    renderCell([event(1, { kind: 'deadline', title: 'Due', startsAt: due, endsAt: due })])
+    expect(screen.getByText('Due').closest('.ev')).not.toHaveClass('is-past')
+  })
+
+  it('is tinted when it is inside a picked range of days', () => {
+    renderCell([], { inRange: true })
+    expect(screen.getByRole('button')).toHaveClass('is-in-range')
+  })
+
+  it('reports its day when clicked, and whether Shift was held (to stretch a range)', async () => {
     const onSelect = renderCell()
-    await userEvent.setup().click(screen.getByRole('button'))
-    expect(onSelect).toHaveBeenCalledWith('2026-11-12')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button'))
+    expect(onSelect).toHaveBeenLastCalledWith('2026-11-12', false)
+    await user.keyboard('{Shift>}')
+    await user.click(screen.getByRole('button'))
+    await user.keyboard('{/Shift}')
+    expect(onSelect).toHaveBeenLastCalledWith('2026-11-12', true)
   })
 })

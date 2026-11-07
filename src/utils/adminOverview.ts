@@ -4,6 +4,7 @@ import type { CalendarEvent } from '../types/calendar'
 import type { CourseModule } from '../types/course'
 import type { User } from '../types/user'
 import { canMentor, hasRole, isStudent } from './roles'
+import { isSchoolEvent } from './adminCalendar'
 import { formatShortDate } from './date'
 
 /** One data source of the overview: loaded, or failed (the tile then says so). */
@@ -26,13 +27,11 @@ export interface OverviewTile {
 const FAILED = 'Could not load'
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
-/** Events the admin manages on the calendar: not task deadlines or 1:1 times. */
-const SCHOOL_EVENTS: readonly CalendarEvent['kind'][] = ['lecture', 'meeting', 'off-campus']
-
 /** The overview's count tiles, in sidebar order. */
 export function overviewTiles(data: OverviewData, now: Date, opts: { demoTeams?: boolean } = {}): OverviewTile[] {
   const { modules, users, teams, events } = data
-  const people = users.ok ? users.value : []
+  // students who left the school are not counted
+  const people = (users.ok ? users.value : []).filter((u) => !(u as { leftAt?: string }).leftAt)
   const students = people.filter(isStudent)
   const mentors = people.filter(canMentor)
   const lecturers = people.filter((u) => hasRole(u, 'lecturer'))
@@ -52,7 +51,7 @@ export function overviewTiles(data: OverviewData, now: Date, opts: { demoTeams?:
 
   if (events.ok) {
     const upcoming = events.value
-      .filter((e) => SCHOOL_EVENTS.includes(e.kind) && new Date(e.endsAt) >= now)
+      .filter((e) => isSchoolEvent(e) && new Date(e.endsAt) >= now)
       .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     const next = upcoming[0]
     tiles.push({

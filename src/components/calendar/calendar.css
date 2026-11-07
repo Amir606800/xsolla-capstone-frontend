@@ -221,6 +221,24 @@
 .ev--deadline.is-overdue {
   --c: var(--danger);
 }
+/* events that are over: same colour, shaded out, so what is still to come stands out */
+.cell__events .ev.is-past {
+  opacity: 0.5;
+}
+.dot.is-past,
+.event-card__bar.is-past {
+  opacity: 0.4;
+}
+.event-card.is-past .event-card__main {
+  opacity: 0.75;
+}
+.event-card__past {
+  color: var(--text-muted);
+}
+/* a picked range of days (admin calendar) */
+.cell.is-in-range {
+  background: color-mix(in srgb, var(--xs-cyan) 9%, var(--card));
+}
 
 .cell__events .ev {
   display: flex;

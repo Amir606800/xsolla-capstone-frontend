@@ -8,10 +8,12 @@ interface MonthGridProps {
   today: Date
   selected: string
   eventsByDay: Record<string, CalendarEvent[]>
-  onSelect: (key: string) => void
+  /** Optional range of days to tint ("yyyy-mm-dd", inclusive). */
+  range?: { from: string; to: string }
+  onSelect: (key: string, extend: boolean) => void
 }
 
-function MonthGridBase({ month, today, selected, eventsByDay, onSelect }: MonthGridProps) {
+function MonthGridBase({ month, today, selected, eventsByDay, range, onSelect }: MonthGridProps) {
   const days = useMemo(() => monthGrid(month), [month])
   const todayKey = dateKey(today)
 
@@ -32,6 +34,7 @@ function MonthGridBase({ month, today, selected, eventsByDay, onSelect }: MonthG
               inMonth={date.getMonth() === month.getMonth()}
               isToday={key === todayKey}
               selected={key === selected}
+              inRange={!!range && key >= range.from && key <= range.to}
               events={eventsByDay[key]}
               now={today}
               onSelect={onSelect}

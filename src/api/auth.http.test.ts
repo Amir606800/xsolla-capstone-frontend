@@ -136,6 +136,14 @@ describe('logout', () => {
   })
 })
 
+describe('mapUser: roles given for a while', () => {
+  it('reads role_expires_at (planned) into roleUntil', () => {
+    const u = mapUser({ id: 9, email: 'r@x', name: 'R', roles: ['mentor', 'lecturer'], role_expires_at: { lecturer: '2026-12-01T00:00:00Z', mentor: null } })
+    expect(u).toMatchObject({ roles: ['mentor', 'lecturer'], roleUntil: { lecturer: '2026-12-01T00:00:00Z' } })
+    expect(mapUser({ id: 9, email: 'r@x', name: 'R', roles: ['mentor'] })).not.toHaveProperty('roleUntil')
+  })
+})
+
 describe('mapUser', () => {
   it('reads the backend role into the role set ("teacher" = mentor + lecturer)', () => {
     expect(mapUser({ id: 1, email: 'a', name: 'A', role: 'student' }).roles).toEqual(['student'])

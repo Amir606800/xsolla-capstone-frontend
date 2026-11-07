@@ -14,9 +14,14 @@ import type { Role, User } from '../types/user'
  * The backend must enforce the same rules; these checks only decide what the screen shows.
  */
 
-type Someone = Pick<User, 'roles'> | null | undefined
+type Someone = Pick<User, 'roles' | 'roleUntil'> | null | undefined
 
-export const hasRole = (user: Someone, role: Role): boolean => !!user?.roles.includes(role)
+/** The user holds the role now: it is theirs and, if it was given until a date, that date has not passed. */
+export function hasRole(user: Someone, role: Role, now: Date = new Date()): boolean {
+  if (!user?.roles.includes(role)) return false
+  const until = user.roleUntil?.[role]
+  return !until || new Date(until) > now
+}
 
 export const isStudent = (user: Someone) => hasRole(user, 'student')
 /** Runs the school: works only in the separate admin section (/admin), not in the LMS pages. */
@@ -58,12 +63,24 @@ export function normalizeUser(raw: unknown): User | null {
   if (!raw || typeof raw !== 'object') return null
   const u = raw as Partial<User> & { role?: unknown }
   if (typeof u.id !== 'number' && typeof u.id !== 'string') return null
+  const roleUntil = untilFrom(u.roleUntil)
   return {
     id: Number(u.id),
     name: String(u.name ?? ''),
     email: String(u.email ?? ''),
     roles: rolesFrom(u.roles ?? u.role),
+    ...(roleUntil ? { roleUntil } : {}),
   }
+}
+
+/** Keeps only known roles with a real date. */
+export function untilFrom(raw: unknown): User['roleUntil'] | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const out: NonNullable<User['roleUntil']> = {}
+  for (const [role, value] of Object.entries(raw as Record<string, unknown>)) {
+    if ((KNOWN as readonly string[]).includes(role) && typeof value === 'string' && !Number.isNaN(Date.parse(value))) out[role as Role] = value
+  }
+  return Object.keys(out).length ? out : undefined
 }
 
 /** Short label for the account, e.g. "Mentor & lecturer". */

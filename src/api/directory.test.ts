@@ -46,3 +46,102 @@ describe('directory API', () => {
     expect(teamsAreDemoData()).toBe(true)
   })
 })
+
+describe('adding a student', () => {
+  const input = { name: 'Ann Lee', email: 'ann@x.co', password: 'secret123', teamId: 't2' }
+
+  it('offline: added to the demo directory and to the chosen team', async () => {
+    vi.stubEnv('VITE_API_URL', '')
+    const { createStudent, fetchTeams, fetchUsers } = await import('./directory')
+    const ann = await createStudent(input)
+    expect(ann).toMatchObject({ name: 'Ann Lee', email: 'ann@x.co', roles: ['student'] })
+    expect((await fetchUsers()).some((u) => u.id === ann.id)).toBe(true)
+    expect((await fetchTeams()).find((t) => t.id === 't2')!.studentIds).toContain(ann.id)
+  })
+
+  it('with a backend: POST /auth/signup with the chosen password; the admin keeps their own session', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'admin-acc', refreshToken: 'admin-ref' })
+    const fetchSpy = vi.fn(async (url: string) =>
+      url.endsWith('/auth/signup')
+        ? new Response(
+            JSON.stringify({ access_token: 'ann-acc', refresh_token: 'ann-ref', user: { id: '41', email: 'ann@x.co', name: 'Ann Lee', role: 'student' } }),
+            { status: 201 },
+          )
+        : new Response(null, { status: 204 }),
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    const { createStudent } = await import('./directory')
+    const { getTokens } = await import('./session')
+
+    expect(await createStudent(input)).toEqual({ id: 41, name: 'Ann Lee', email: 'ann@x.co', roles: ['student'] })
+    const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('https://api.test/auth/signup')
+    expect(JSON.parse(init.body as string)).toEqual({ email: 'ann@x.co', name: 'Ann Lee', password: 'secret123' })
+    // the admin is still the one signed in
+    expect(getTokens()).toEqual({ accessToken: 'admin-acc', refreshToken: 'admin-ref' })
+    // and the session signup opened for Ann is closed
+    await vi.waitFor(() => expect(fetchSpy.mock.calls.some(([u]) => String(u).endsWith('/auth/logout'))).toBe(true))
+    const logout = fetchSpy.mock.calls.find(([u]) => String(u).endsWith('/auth/logout')) as unknown as [string, RequestInit]
+    expect(JSON.parse(logout[1].body as string)).toEqual({ refresh_token: 'ann-ref' })
+  })
+
+  it('with a backend: edit, left the school and delete use the proposed routes', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ id: 41 }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchSpy)
+    const { deleteStudent, setStudentLeft, updateStudent } = await import('./directory')
+    await updateStudent(41, { name: 'Ann Lee', email: 'ann@x.co', teamId: null })
+    await setStudentLeft(41, true)
+    await deleteStudent(41)
+    const sent = (fetchSpy.mock.calls as unknown as [string, RequestInit][]).map(([url, init]) => [init.method, url, init.body ? JSON.parse(init.body as string) : undefined])
+    expect(sent).toEqual([
+      ['PATCH', 'https://api.test/users/41', { name: 'Ann Lee', email: 'ann@x.co' }],
+      ['PATCH', 'https://api.test/users/41', { active: false }],
+      ['DELETE', 'https://api.test/users/41', undefined],
+    ])
+  })
+
+  it('with a backend that does not have those routes yet: a plain message', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('404 page not found', { status: 404 })))
+    const { deleteStudent, setStudentLeft, updateStudent } = await import('./directory')
+    await expect(updateStudent(41, { name: 'A', email: 'a@x.co', teamId: null })).rejects.toThrow('The server cannot change accounts yet.')
+    await expect(setStudentLeft(41, true)).rejects.toThrow('The server cannot mark students as left yet.')
+    await expect(deleteStudent(41)).rejects.toThrow('The server cannot delete accounts yet.')
+  })
+
+  it('with a backend: a new mentor is POST /users with the mentor role; roles go to PUT /users/:id/roles', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ id: '77', email: 'nil@x.co', name: 'Nil Ay', roles: ['mentor'] }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchSpy)
+    const { createMentor, setUserRoles } = await import('./directory')
+    expect(await createMentor({ name: 'Nil Ay', email: 'nil@x.co', password: 'secret123', teamId: null })).toMatchObject({ id: 77, roles: ['mentor'] })
+    await setUserRoles(77, ['mentor', 'lecturer'], { lecturer: '2026-12-01T23:59:59.000Z' })
+    const sent = (fetchSpy.mock.calls as unknown as [string, RequestInit][]).map(([url, init]) => [init.method, url, JSON.parse(init.body as string)])
+    expect(sent).toEqual([
+      ['POST', 'https://api.test/users', { email: 'nil@x.co', name: 'Nil Ay', password: 'secret123', roles: ['mentor'] }],
+      ['PUT', 'https://api.test/users/77/roles', { roles: ['mentor', 'lecturer'], expires_at: { lecturer: '2026-12-01T23:59:59.000Z' } }],
+    ])
+  })
+
+  it('with a backend that cannot do it yet: plain messages for mentors and roles', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('404 page not found', { status: 404 })))
+    const { createMentor, setUserRoles } = await import('./directory')
+    await expect(createMentor({ name: 'Nil', email: 'nil@x.co', password: 'secret123', teamId: null })).rejects.toThrow('The server cannot create mentor accounts yet.')
+    await expect(setUserRoles(77, ['mentor'])).rejects.toThrow('The server cannot change roles yet.')
+    await expect(setUserRoles(77, [])).rejects.toThrow('Keep at least one role.')
+  })
+
+  it('with a backend: an e-mail that is taken (409) says so in plain words', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'conflict', message: 'email exists', status: 409 }), { status: 409 })))
+    const { createStudent } = await import('./directory')
+    await expect(createStudent(input)).rejects.toThrow('There is already an account with this email.')
+  })
+})

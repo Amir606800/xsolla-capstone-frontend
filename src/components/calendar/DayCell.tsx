@@ -12,12 +12,15 @@ interface DayCellProps {
   inMonth: boolean
   isToday: boolean
   selected: boolean
+  /** Inside a picked range of days (admin calendar). */
+  inRange?: boolean
   events?: CalendarEvent[]
   now: Date
-  onSelect: (key: string) => void
+  /** `extend`: Shift was held, to stretch a range up to this day. */
+  onSelect: (key: string, extend: boolean) => void
 }
 
-function DayCellBase({ date, inMonth, isToday, selected, events = NO_EVENTS, now, onSelect }: DayCellProps) {
+function DayCellBase({ date, inMonth, isToday, selected, inRange = false, events = NO_EVENTS, now, onSelect }: DayCellProps) {
   const key = dateKey(date)
   const shown = events.slice(0, MAX_CHIPS)
   const more = events.length - shown.length
@@ -28,11 +31,11 @@ function DayCellBase({ date, inMonth, isToday, selected, events = NO_EVENTS, now
   return (
     <button
       type="button"
-      className={`cell${inMonth ? '' : ' is-outside'}${isToday ? ' is-today' : ''}${selected ? ' is-selected' : ''}`}
+      className={`cell${inMonth ? '' : ' is-outside'}${isToday ? ' is-today' : ''}${selected ? ' is-selected' : ''}${inRange ? ' is-in-range' : ''}`}
       aria-label={label}
       aria-pressed={selected}
       aria-current={isToday ? 'date' : undefined}
-      onClick={() => onSelect(key)}
+      onClick={(e) => onSelect(key, e.shiftKey)}
     >
       <span className="cell__num">{date.getDate()}</span>
 

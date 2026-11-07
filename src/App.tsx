@@ -34,6 +34,11 @@ const AdminSectionPage = lazy(() => import('./pages/admin/AdminSectionPage'))
 const AdminCoursesLayout = lazy(() => import('./pages/admin/modules/AdminCoursesLayout'))
 const AdminModulesPage = lazy(() => import('./pages/admin/modules/AdminModulesPage'))
 const AdminModulePage = lazy(() => import('./pages/admin/modules/AdminModulePage'))
+const AdminCalendarPage = lazy(() => import('./pages/admin/calendar/AdminCalendarPage'))
+const AdminStudentsPage = lazy(() => import('./pages/admin/people/AdminStudentsPage'))
+const AdminMentorsPage = lazy(() => import('./pages/admin/people/AdminMentorsPage'))
+/** Admin sections with their own pages; the rest show a placeholder until they are built. */
+const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors']
 
 export default function App() {
   return (
@@ -49,8 +54,13 @@ export default function App() {
               <Route index element={<AdminModulesPage />} />
               <Route path=":moduleId" element={<AdminModulePage />} />
             </Route>
+            <Route path="/admin/calendar" element={<AdminCoursesLayout />}>
+              <Route index element={<AdminCalendarPage />} />
+            </Route>
+            <Route path="/admin/students" element={<AdminStudentsPage />} />
+            <Route path="/admin/mentors" element={<AdminMentorsPage />} />
             {/* sections that are not built yet */}
-            {ADMIN_SECTIONS.filter((s) => s.key !== 'modules').map((s) => (
+            {ADMIN_SECTIONS.filter((s) => !BUILT_ADMIN.includes(s.key)).map((s) => (
               <Route key={s.key} path={s.path} element={<AdminSectionPage section={s} />} />
             ))}
             <Route path="*" element={<Navigate to="/admin" replace />} />

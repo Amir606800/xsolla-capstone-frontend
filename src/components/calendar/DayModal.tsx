@@ -6,7 +6,7 @@ import { formatTimeLeft } from '../../utils/date'
 import { Icon } from '../Icon'
 import { Modal } from '../Modal'
 import '../authoring/authoring.css'
-import { eventClass } from './eventClass'
+import { eventClass, isPastEvent } from './eventClass'
 
 const KIND_LABEL: Record<EventKind, string> = {
   lecture: 'Lecture',
@@ -89,14 +89,16 @@ function EventTools({ event, editing }: { event: CalendarEvent; editing: EventEd
 
 function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date; editing?: EventEditing }) {
   const duration = formatDuration(event)
+  const past = isPastEvent(event, now)
 
   return (
-    <li className="event-card">
+    <li className={`event-card${past ? ' is-past' : ''}`}>
       <span className={`event-card__bar ${eventClass(event, now)}`} aria-hidden="true" />
       <div className="event-card__main">
         <div className="event-card__top">
           <h3 className="event-card__title">{event.title}</h3>
           <span className="pill">{KIND_LABEL[event.kind]}</span>
+          {past && <span className="pill event-card__past">Past</span>}
         </div>
 
         <dl className="event-card__facts">

@@ -134,7 +134,7 @@ describe('Admin: creating content', () => {
     await user.click(form.getByRole('button', { name: 'Add task' }))
     expect(await screen.findByText('Task added.')).toBeInTheDocument()
     const row = screen.getByRole('button', { name: 'View Deploy an app' }).closest('tr')!
-    expect(within(row).getByText('School Admin')).toBeInTheDocument()
+    expect(await within(row).findByText('School Admin')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'New resource' }))
     form = within(await dialog())

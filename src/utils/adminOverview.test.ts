@@ -54,6 +54,11 @@ describe('overviewTiles', () => {
     expect(tile(all(), 'lecturers')).toMatchObject({ value: 2, hint: '1 also mentors' })
   })
 
+  it('students who left the school are not counted', () => {
+    const withLeaver = [...users, { ...u(4, 'student'), leftAt: '2026-11-01T00:00:00Z' }]
+    expect(tile(all({ users: ok(withLeaver) }), 'students')).toMatchObject({ value: 3, hint: '1 not in a team' })
+  })
+
   it('says when every student is in a team', () => {
     const placed = [{ ...teams[0], studentIds: [1, 2, 3] }]
     expect(tile(all({ teams: ok(placed) }), 'students').hint).toBe('All are in a team')
