@@ -106,10 +106,21 @@ export interface MaterialDraft {
   url: string
   /** The chosen file, or the one already saved. */
   file?: { name: string; sizeBytes: number }
+  /** The backend's id of the file already saved. */
+  fileId?: string
+  /** The file the lecturer just picked; uploaded when the material is saved. */
+  upload?: File
 }
 
 export function materialToDraft(r?: ResourceItem): MaterialDraft {
-  return { title: r?.title ?? '', kind: r?.kind ?? 'pdf', description: r?.description ?? '', url: r?.url ?? '', file: r?.file }
+  return {
+    title: r?.title ?? '',
+    kind: r?.kind ?? 'pdf',
+    description: r?.description ?? '',
+    url: r?.url ?? '',
+    file: r?.file,
+    ...(r?.fileId ? { fileId: r.fileId } : {}),
+  }
 }
 
 export function validateMaterial(d: MaterialDraft): Errors<'title' | 'url' | 'file'> {
@@ -134,6 +145,8 @@ export function draftToMaterial(d: MaterialDraft, moduleId: string, id: string):
     description: d.description.trim() || undefined,
     url: isLink ? d.url.trim() : undefined,
     file: isLink ? undefined : d.file,
+    ...(!isLink && d.fileId ? { fileId: d.fileId } : {}),
+    ...(!isLink && d.upload ? { upload: d.upload } : {}),
   }
 }
 

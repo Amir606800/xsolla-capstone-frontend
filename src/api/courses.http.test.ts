@@ -1,25 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authedRequest } from './authed'
-import { fetchModules, submitWork } from './courses.http'
+import { deleteItem, fetchModules, saveItem, saveModule, submitWork } from './courses.http'
+import { deleteEvent, fetchEvents, saveEvent } from './events.http'
 import { getTokens, saveTokens } from './session'
 
 const BASE = 'https://api.test'
-type Call = { url: string; init: RequestInit }
+type Call = { method: string; path: string; init: RequestInit }
 let calls: Call[]
+type Route = (init: RequestInit) => { status: number; body?: unknown }
 
-/** Answers by "METHOD /path"; anything not listed is a 404. */
-function backend(routes: Record<string, (init: RequestInit) => { status: number; body?: unknown }>) {
+/** A fake Go backend: answers by "METHOD /path" (query string ignored); anything else is a 404. */
+function backend(routes: Record<string, Route>) {
   calls = []
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init: RequestInit) => {
-      calls.push({ url, init })
-      const key = `${init.method} ${url.replace(BASE, '')}`
-      const r = routes[key]?.(init) ?? { status: 404, body: { error: 'not_found', message: 'missing', status: 404 } }
+      const path = url.replace(BASE, '').split('?')[0]
+      calls.push({ method: init.method ?? 'GET', path, init })
+      const r = routes[`${init.method} ${path}`]?.(init) ?? { status: 404, body: { error: 'not_found', message: 'missing', status: 404 } }
       return new Response(r.body === undefined ? null : JSON.stringify(r.body), { status: r.status })
     }),
   )
 }
+const json = (c: Call) => JSON.parse(c.init.body as string)
+const find = (method: string, path: string) => calls.find((c) => c.method === method && c.path === path)!
 
 beforeEach(() => {
   localStorage.clear()
@@ -31,111 +35,167 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const tree = [
-  {
-    id: '200',
-    type: 'section',
-    title: 'Week 1',
-    position: 1,
-    is_visible: true,
-    children: [
-      { id: '202', type: 'assignment', title: 'Homework 1', position: 1, is_visible: true, due_at: '2026-11-10T23:59:00Z', max_points: 100 },
+// what the backend returns today: numeric ids, modules = weeks, flat content items
+const MODULES = { 'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', description: 'Go', created_by: 9, created_at: '2026-11-01T00:00:00Z' }] }) }
+const ITEMS = {
+  'GET /modules/4/content-items': () => ({
+    status: 200,
+    body: [
+      { id: 40, type: 'file', title: 'slides.pdf', description: '', position: 1, is_visible: true, file_id: 7 },
+      { id: 41, type: 'assignment', title: 'CLI tool', description: '', position: 2, is_visible: true, file_id: null, due_at: '2026-11-09T18:00:00Z' },
     ],
-  },
-]
+  }),
+}
 
 describe('fetchModules', () => {
-  it('lists the courses, loads the first one and sends the bearer token', async () => {
-    backend({
-      'GET /courses': () => ({ status: 200, body: [{ id: '10', title: 'CS101' }] }),
-      'GET /courses/10/content-items': () => ({ status: 200, body: tree }),
-    })
-    const modules = await fetchModules(false)
-    expect(modules).toHaveLength(1)
-    expect(modules[0].items[0]).toMatchObject({ id: '202', type: 'assignment', title: 'Homework 1' })
+  it('loads the modules, then each module\'s flat items, with the bearer token', async () => {
+    backend({ ...MODULES, ...ITEMS })
+    const [m] = await fetchModules(false)
+    expect(m).toMatchObject({ id: '4', position: 1, title: 'Go Basics' })
+    expect(m.items.map((i) => [i.id, i.type, i.moduleId])).toEqual([
+      ['40', 'resource', '4'],
+      ['41', 'assignment', '4'],
+    ])
     expect(calls.every((c) => (c.init.headers as Record<string, string>).Authorization === 'Bearer acc')).toBe(true)
-    expect(calls).toHaveLength(2) // no per-task requests for teachers
+    expect(calls).toHaveLength(2) // staff: no per-task requests
   })
 
-  it('students also get their own submission; a 404 means not handed in', async () => {
+  it("students also get their own work from the module's submissions/me; 404 means none", async () => {
     backend({
-      'GET /courses': () => ({ status: 200, body: [{ id: '10' }] }),
-      'GET /courses/10/content-items': () => ({ status: 200, body: tree }),
-      'GET /content-items/202/submissions/me': () => ({
+      ...MODULES,
+      ...ITEMS,
+      'GET /modules/4/content-items/41/submissions/me': () => ({
         status: 200,
-        body: { id: '400', assignment_id: '202', text_body: 'hi', submitted_at: '2026-11-05T10:00:00Z', feedback: null, graded_at: null },
+        body: { id: 9, content_item_id: 41, student_id: 1, text_body: 'repo link', submitted_at: '2026-11-08T10:00:00Z' },
       }),
     })
     const [m] = await fetchModules(true)
-    expect(m.items[0]).toMatchObject({ submission: { textBody: 'hi' } })
+    expect(m.items[1]).toMatchObject({ submission: { textBody: 'repo link' } })
 
-    backend({
-      'GET /courses': () => ({ status: 200, body: [{ id: '10' }] }),
-      'GET /courses/10/content-items': () => ({ status: 200, body: tree }),
-    })
+    backend({ ...MODULES, ...ITEMS })
     const [m2] = await fetchModules(true)
-    expect(m2.items[0]).not.toHaveProperty('submission')
+    expect(m2.items[1]).not.toHaveProperty('submission')
   })
 
-  it('an empty course list gives an empty course', async () => {
-    backend({ 'GET /courses': () => ({ status: 200, body: [] }) })
+  it('no modules (not enrolled yet) gives an empty course; null bodies are fine', async () => {
+    backend({ 'GET /modules': () => ({ status: 200, body: null }) })
     expect(await fetchModules(true)).toEqual([])
   })
 })
 
 describe('submitWork', () => {
-  it('uploads each file as multipart (no JSON header), then posts text_body and file_ids', async () => {
+  it('uploads the files as multipart, then posts text_body and NUMERIC file_ids under the module', async () => {
     backend({
-      'GET /courses': () => ({ status: 200, body: [{ id: '10' }] }),
-      'POST /files': () => ({ status: 201, body: { id: '300', original_name: 'a.pdf', mime_type: 'application/pdf', size_bytes: 3 } }),
-      'POST /courses/10/content-items/202/submissions': () => ({
+      'POST /files': () => ({ status: 201, body: { id: 300, original_name: 'a.pdf', mime_type: 'application/pdf', size_bytes: 3 } }),
+      'POST /modules/4/content-items/41/submissions': () => ({
         status: 201,
-        body: { id: '400', assignment_id: '202', text_body: 'done', submitted_at: '2026-11-05T10:00:00Z', feedback: null, graded_at: null },
+        body: { id: 9, content_item_id: 41, text_body: 'done', submitted_at: '2026-11-08T10:00:00Z' },
       }),
     })
     const file = new File(['abc'], 'a.pdf', { type: 'application/pdf' })
-    const result = await submitWork('202', { textBody: 'done', files: [file] })
+    const result = await submitWork('4', '41', { textBody: 'done', files: [file] })
 
-    const upload = calls.find((c) => c.url.endsWith('/files'))!
-    expect(upload.init.body).toBeInstanceOf(FormData)
-    expect((upload.init.body as FormData).get('file')).toBeInstanceOf(File)
-    expect(Object.keys(upload.init.headers as object).map((h) => h.toLowerCase())).not.toContain('content-type')
+    const up = find('POST', '/files')
+    expect((up.init.body as FormData).get('file')).toBeInstanceOf(File)
+    expect(Object.keys(up.init.headers as object).map((h) => h.toLowerCase())).not.toContain('content-type')
 
-    const post = calls[calls.length - 1]
-    expect(post.init.headers).toMatchObject({ 'Content-Type': 'application/json', Authorization: 'Bearer acc' })
-    expect(JSON.parse(post.init.body as string)).toEqual({ text_body: 'done', file_ids: ['300'] })
-    expect(result).toMatchObject({ submittedAt: '2026-11-05T10:00:00Z', textBody: 'done', files: [{ name: 'a.pdf', sizeBytes: 3 }] })
+    const post = find('POST', '/modules/4/content-items/41/submissions')
+    expect(json(post)).toEqual({ text_body: 'done', file_ids: [300] })
+    expect(typeof json(post).file_ids[0]).toBe('number')
+    expect(result).toMatchObject({ textBody: 'done', files: [{ name: 'a.pdf', sizeBytes: 3 }] })
+  })
+})
+
+describe('lecturer editing', () => {
+  const reload = { ...MODULES, ...ITEMS }
+
+  it('a new task is POSTed to its own module with a due date and max_points 0', async () => {
+    backend({ ...reload, 'POST /modules/4/content-items': () => ({ status: 201, body: { id: 42 } }) })
+    await saveItem({ id: 'task-ab1', moduleId: '4', type: 'assignment', title: 'HTTP server', requirements: ['Tests'], dueAt: '2026-11-11T18:00:00.000Z' })
+    const body = json(find('POST', '/modules/4/content-items'))
+    expect(body).toMatchObject({ type: 'assignment', title: 'HTTP server', due_at: '2026-11-11T18:00:00.000Z', max_points: 0 })
+    expect(body.description).toContain('Tests')
+    expect(calls.some((c) => c.path.includes('/modules/module'))).toBe(false)
   })
 
-  it('leaves text_body out when there is none', async () => {
+  it('an existing task is PATCHed by its id', async () => {
+    backend({ ...reload, 'PATCH /content-items/41': () => ({ status: 200, body: { id: 41 } }) })
+    await saveItem({ id: '41', moduleId: '4', type: 'assignment', title: 'CLI tool v2', dueAt: '2026-11-09T18:00:00Z' })
+    expect(json(find('PATCH', '/content-items/41'))).toEqual({ title: 'CLI tool v2', description: '' })
+  })
+
+  it('a new file material uploads the file, then creates the item with its numeric file_id', async () => {
     backend({
-      'GET /courses': () => ({ status: 200, body: [{ id: '10' }] }),
-      'POST /courses/10/content-items/202/submissions': () => ({
-        status: 201,
-        body: { id: '1', assignment_id: '202', text_body: null, submitted_at: 'x', feedback: null, graded_at: null },
-      }),
+      ...reload,
+      'POST /files': () => ({ status: 201, body: { id: 77, original_name: 'notes.md', mime_type: 'text/markdown', size_bytes: 4 } }),
+      'POST /modules/4/content-items': () => ({ status: 201, body: { id: 43 } }),
     })
-    await submitWork('202', { textBody: '', files: [] })
-    expect(JSON.parse(calls[calls.length - 1].init.body as string)).toEqual({ file_ids: [] })
+    const upload = new File(['# hi'], 'notes.md', { type: 'text/markdown' })
+    await saveItem({ id: 'material-x', moduleId: '4', type: 'resource', title: 'Notes', kind: 'md', file: { name: 'notes.md', sizeBytes: 4 }, upload })
+    expect(json(find('POST', '/modules/4/content-items'))).toMatchObject({ type: 'file', title: 'Notes', file_id: 77 })
+  })
+
+  it('links and quizzes have no place in the backend yet: a clear error, nothing sent', async () => {
+    backend(reload)
+    await expect(saveItem({ id: 'm-1', moduleId: '4', type: 'resource', title: 'Docs', kind: 'link', url: 'https://go.dev' })).rejects.toThrow(/Links cannot be saved/)
+    await expect(saveItem({ id: 'q-1', moduleId: '4', type: 'quiz', title: 'Quiz' })).rejects.toThrow(/Quizzes cannot be saved/)
+    expect(calls).toHaveLength(0)
+  })
+
+  it('module details are PATCHed by module id; deleting an item uses its id', async () => {
+    backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: {} }), 'DELETE /content-items/40': () => ({ status: 204 }) })
+    await saveModule('4', { title: 'Go', description: 'Basics' })
+    expect(json(find('PATCH', '/modules/4'))).toEqual({ title: 'Go', description: 'Basics' })
+    const after = await deleteItem('40')
+    expect(find('DELETE', '/content-items/40')).toBeDefined()
+    expect(after[0].id).toBe('4')
+  })
+})
+
+describe('calendar events', () => {
+  const LIST = {
+    'GET /events': () => ({
+      status: 200,
+      body: [{ id: 5, title: 'Lecture', kind: 'lecture', starts_at: '2026-11-09T10:00:00Z', ends_at: '2026-11-09T12:00:00Z', all_day: false, location: 'Hall', module_id: 4 }],
+    }),
+  }
+
+  it('loads the events of a wide window around today', async () => {
+    backend(LIST)
+    const [e] = await fetchEvents(new Date('2026-11-06T12:00:00Z'))
+    expect(e).toMatchObject({ id: '5', kind: 'lecture', location: 'Hall', moduleId: '4' })
+    const url = (vi.mocked(fetch).mock.calls[0] as unknown as [string])[0]
+    expect(url).toMatch(/\/events\?from=.+&to=.+/)
+  })
+
+  it('creates a new event with POST and edits an existing one with PATCH', async () => {
+    backend({ ...LIST, 'POST /events': () => ({ status: 201, body: {} }), 'PATCH /events/5': () => ({ status: 200, body: {} }) })
+    await saveEvent({ id: 'ev-new', title: 'Talk', kind: 'meeting', startsAt: 's', endsAt: 'e', moduleId: '4' })
+    expect(json(find('POST', '/events'))).toEqual({ title: 'Talk', kind: 'meeting', starts_at: 's', ends_at: 'e', all_day: false, module_id: 4 })
+    await saveEvent({ id: '5', title: 'Lecture 2', kind: 'lecture', startsAt: 's', endsAt: 'e' })
+    expect(json(find('PATCH', '/events/5'))).toMatchObject({ title: 'Lecture 2' })
+  })
+
+  it('deletes by id', async () => {
+    backend({ ...LIST, 'DELETE /events/5': () => ({ status: 204 }) })
+    await deleteEvent('5')
+    expect(find('DELETE', '/events/5')).toBeDefined()
   })
 })
 
 describe('authedRequest', () => {
   it('on 401 refreshes the tokens once and repeats the request', async () => {
-    let first = true
     backend({
-      'GET /users/me': (init) => {
-        const ok = (init.headers as Record<string, string>).Authorization === 'Bearer acc2'
-        first = false
-        return ok ? { status: 200, body: { id: '1' } } : { status: 401, body: { error: 'unauthorized', message: 'expired', status: 401 } }
-      },
+      'GET /users/me': (init) =>
+        (init.headers as Record<string, string>).Authorization === 'Bearer acc2'
+          ? { status: 200, body: { id: 1 } }
+          : { status: 401, body: { error: 'unauthorized', message: 'expired', status: 401 } },
       'POST /auth/refresh': (init) => {
         expect(JSON.parse(init.body as string)).toEqual({ refresh_token: 'ref' })
         return { status: 200, body: { access_token: 'acc2', refresh_token: 'ref2' } }
       },
     })
-    await expect(authedRequest('/users/me')).resolves.toEqual({ id: '1' })
-    expect(first).toBe(false)
+    await expect(authedRequest('/users/me')).resolves.toEqual({ id: 1 })
     expect(getTokens()).toEqual({ accessToken: 'acc2', refreshToken: 'ref2' })
   })
 

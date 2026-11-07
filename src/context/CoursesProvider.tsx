@@ -87,7 +87,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       if (target?.type === 'assignment' && target.submission?.gradedAt !== undefined) {
         throw new Error('This task has already been graded')
       }
-      const result = await submitWork(assignmentId, payload, user?.id)
+      const result = await submitWork(assignmentId, payload, { studentId: user?.id, moduleId: owner?.id })
       setModules((prev) => withSubmission(prev, assignmentId, result))
       setNow(new Date())
     },

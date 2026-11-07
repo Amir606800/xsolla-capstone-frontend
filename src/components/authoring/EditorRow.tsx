@@ -14,6 +14,7 @@ export function EditorRow({
   warning,
   onEdit,
   onDelete,
+  extra,
 }: {
   icon: ReactNode
   title: string
@@ -22,6 +23,8 @@ export function EditorRow({
   warning?: string
   onEdit: () => void
   onDelete: () => Promise<void>
+  /** More tools before Edit, e.g. a download button. */
+  extra?: ReactNode
 }) {
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -64,6 +67,7 @@ export function EditorRow({
         </div>
       ) : (
         <div className="editor-row__tools">
+          {extra}
           <button type="button" className="icon-btn" onClick={onEdit} aria-label={`Edit ${title}`} title="Edit">
             <Icon name="edit" size={18} />
           </button>

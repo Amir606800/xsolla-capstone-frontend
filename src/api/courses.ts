@@ -2,24 +2,19 @@ import { listModules, type ModulePatch, putItem, putModule, removeItem } from '.
 import { handIn, submissionsOf } from '../mocks/submissions'
 import type { ContentItem, CourseModule, Submission } from '../types/course'
 import * as http from './courses.http'
-import { ApiError, hasBackend } from './http'
+import { hasBackend } from './http'
 
 /**
  * Real backend when VITE_API_URL is set (./courses.http), the offline mock otherwise.
- * Real now (API_CONTRACT.md): loading the course, handing in work, deleting an item.
- * Mock only, because the contract has no place for them yet: creating/editing materials, tasks and quizzes,
- * and module details/dates. With a backend, lecturers get a clear error instead of a silent browser-only save.
- * Missing from the contract: quizzes, link materials, module open/close dates, per-task requirements, and
- * `max_points` (required there when creating a task, while the app rates weekly, not per task).
- * Each authoring call returns the whole updated course, like a refetch would.
+ * Real: loading the modules and their items, handing in work, module title/description, creating and
+ * editing tasks and file materials, deleting items. The backend has no place yet for quizzes, link
+ * materials or week dates; with a backend those give a clear error instead of a browser-only save.
+ * Each authoring call returns the whole updated course (all modules), like a refetch would.
  */
 const MOCK_LATENCY_MS = 300
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
 
 export type { ModulePatch }
-
-const notYet = () =>
-  new ApiError(501, 'not_implemented', 'The backend cannot store this yet. Lecturer editing works in the offline demo only.')
 
 /** Puts this student's own work (from the submissions store) on the tasks; nobody else's. */
 function withWork(modules: CourseModule[], mine: Record<string, Submission>): CourseModule[] {
@@ -47,8 +42,17 @@ export interface SubmitPayload {
   files: File[]
 }
 
-export async function submitWork(assignmentId: string, payload: SubmitPayload, studentId?: number): Promise<Submission> {
-  if (hasBackend()) return http.submitWork(assignmentId, payload)
+/** Who hands in, and the module the task belongs to (the backend's URL needs it). */
+export interface SubmitContext {
+  studentId?: number
+  moduleId?: string
+}
+
+export async function submitWork(assignmentId: string, payload: SubmitPayload, ctx: SubmitContext = {}): Promise<Submission> {
+  if (hasBackend()) {
+    if (!ctx.moduleId) throw new Error('This task has no module')
+    return http.submitWork(ctx.moduleId, assignmentId, payload)
+  }
   await wait()
   const submission: Submission = {
     submittedAt: new Date().toISOString(),
@@ -56,17 +60,17 @@ export async function submitWork(assignmentId: string, payload: SubmitPayload, s
     files: payload.files.map((f) => ({ name: f.name, sizeBytes: f.size })),
   }
   // kept so the student's mentor can review it
-  return studentId === undefined ? submission : handIn(studentId, assignmentId, submission)
+  return ctx.studentId === undefined ? submission : handIn(ctx.studentId, assignmentId, submission)
 }
 
 export async function saveModule(id: string, patch: ModulePatch): Promise<CourseModule[]> {
-  if (hasBackend()) throw notYet()
+  if (hasBackend()) return http.saveModule(id, patch)
   await wait()
   return putModule(id, patch)
 }
 
 export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
-  if (hasBackend()) throw notYet()
+  if (hasBackend()) return http.saveItem(item)
   await wait()
   return putItem(item)
 }

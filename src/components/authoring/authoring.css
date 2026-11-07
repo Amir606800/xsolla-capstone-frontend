@@ -126,26 +126,7 @@ select.form__input {
   background: var(--danger);
   color: #fff;
 }
-.icon-btn {
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.icon-btn:hover {
-  background: var(--active-bg);
-  color: var(--text);
-}
-.icon-btn:focus-visible {
-  outline: 2px solid var(--xs-cyan);
-  outline-offset: 2px;
-}
+/* .icon-btn lives in styles/ui.css (used outside the editor too) */
 
 /* ---------- quiz editor ---------- */
 .quiz-qs {

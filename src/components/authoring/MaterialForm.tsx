@@ -72,7 +72,7 @@ export function MaterialForm({
               className="form__file"
               onChange={(e) => {
                 const f = e.target.files?.[0]
-                if (f) set({ file: { name: f.name, sizeBytes: f.size } })
+                if (f) set({ file: { name: f.name, sizeBytes: f.size }, upload: f })
               }}
             />
           )}

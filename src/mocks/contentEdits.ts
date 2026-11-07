@@ -91,7 +91,9 @@ export function putModule(id: string, patch: ModulePatch, now: Date = new Date()
 export function putItem(item: ContentItem, now: Date = new Date()): CourseModule[] {
   const edits = loadCourseEdits()
   if (!buildMockModules(now).some((m) => m.id === item.moduleId)) throw new Error('This module does not exist')
-  const clean: ContentItem = item.type === 'assignment' ? { ...item, submission: undefined } : item
+  // student work never travels with a lecturer edit; a picked File cannot be stored (the mock keeps name and size)
+  const clean: ContentItem =
+    item.type === 'assignment' ? { ...item, submission: undefined } : item.type === 'resource' ? { ...item, upload: undefined } : item
   edits.items[item.id] = clean
   write(COURSE_KEY, edits)
   return listModules(now)

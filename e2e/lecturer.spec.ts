@@ -135,3 +135,10 @@ test('the quiz form fits inside the pop-up on every screen', async ({ context })
   await page.getByRole('dialog').getByRole('button', { name: 'Add quiz' }).scrollIntoViewIfNeeded()
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Add quiz' })).toBeInViewport()
 })
+
+test('the lecturer can download a material from the module editor', async ({ context }) => {
+  const page = await tabAs(context, LECTURER, '/courses/m6')
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download Go Basics - lecture slides' }).click()
+  expect((await download).suggestedFilename()).toMatch(/-demo\.txt$/)
+})

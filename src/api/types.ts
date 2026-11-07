@@ -1,75 +1,87 @@
 /**
- * Wire formats from the backend (see DESIGN.md sections 3, 7, 8).
- * Fields marked "inferred" are not spelled out in the design doc yet -
- * confirm against the real API and adjust here only; the rest of the app
- * uses the domain types in `src/types/course.ts`.
+ * Wire formats of the Go backend (github.com/Mahammadali12/xsolla-capstone-backend, internal/dto).
+ * Only this file and ./mappers know them; the rest of the app uses the domain types in src/types.
+ *
+ * The backend's "module" is one week of the program (it used to be called "course"). Its content
+ * items are a FLAT list of files and assignments; sections were removed (migration 012).
  */
 
-/** bigint ids may arrive as numbers or strings depending on the JSON encoder. */
+/** int64 ids arrive as JSON numbers; strings are accepted too (API_CONTRACT.md writes them as strings). */
 export type ApiId = number | string
 
-export interface ApiCourse {
+/** GET /modules, GET /modules/:id (dto.ModuleResponse). No position or week dates yet. */
+export interface ApiModule {
   id: ApiId
   title: string
-  description: string | null
-  created_by: ApiId
+  description?: string | null
+  created_by?: ApiId
   created_at: string
 }
 
 interface ApiContentItemBase {
   id: ApiId
   title: string
-  description?: string | null // inferred
+  description?: string | null
   position: number
   is_visible: boolean
-}
-
-export interface ApiSection extends ApiContentItemBase {
-  type: 'section'
-  /** inferred: the schema has no module dates yet (product doc: a Week has a date range) */
-  starts_at?: string | null
-  ends_at?: string | null
-  children: ApiContentItem[]
+  file_id?: ApiId | null
+  /** Always empty now that sections are gone; read defensively in case a parent ever comes back. */
+  children?: ApiContentItem[]
 }
 
 export interface ApiFileItem extends ApiContentItemBase {
   type: 'file'
-  file_id: ApiId
-  /** inferred: original file name / mime, used to pick the resource kind */
-  mime_type?: string | null
 }
 
 export interface ApiAssignmentItem extends ApiContentItemBase {
   type: 'assignment'
-  due_at: string
-  /** Not used: work is rated green/yellow/red, not with points. */
+  /** Required by the backend when an assignment is created. */
+  due_at?: string | null
+  /** Not used: the program grades weeks, not tasks. Sent as 0. */
   max_points?: number
 }
 
-export type ApiContentItem = ApiSection | ApiFileItem | ApiAssignmentItem
+/** GET /modules/:moduleId/content-items (dto.ContentTreeNode) */
+export type ApiContentItem = ApiFileItem | ApiAssignmentItem
 
-/** POST /files, GET /files/:id */
+/** POST /files, GET /files/:id (dto.FileResponse) */
 export interface ApiFile {
   id: ApiId
   original_name: string
   mime_type: string
   size_bytes: number
+  created_at?: string
 }
 
-/** GET /content-items/:id/submissions/me, POST .../submissions */
+/** GET /modules/:moduleId/content-items/:assignmentId/submissions/me, POST .../submissions (dto.SubmissionResponse) */
 export interface ApiSubmission {
   id: ApiId
-  assignment_id: ApiId
-  text_body: string | null
+  content_item_id: ApiId
+  student_id?: ApiId
+  text_body?: string | null
   submitted_at: string
-  /** Not used: the green/yellow/red rating is given per week (see ApiWeeklyStanding), not per task. */
-  grade?: unknown
-  feedback: string | null
-  graded_at: string | null
-  files?: { id: ApiId; original_name: string }[] | null
+  /** Not used: the program grades weeks, not tasks. */
+  grade?: number | null
+  feedback?: string | null
+  graded_at?: string | null
+  files?: ApiFile[] | null
 }
 
-/** GET /standings/me (inferred, the backend has no such endpoint yet): the mentor's rating of each finished week */
+/** GET /events (dto.EventResponse) */
+export interface ApiEvent {
+  id: ApiId
+  title: string
+  kind: string
+  starts_at: string
+  ends_at: string
+  all_day: boolean
+  location?: string | null
+  description?: string | null
+  module_id?: ApiId | null
+  created_at?: string
+}
+
+/** GET /standings/me (not in the backend yet): the mentor's grade of each finished week */
 export interface ApiWeeklyStanding {
   /** Module position (1-12): a module is a week */
   week: number

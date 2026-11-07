@@ -481,3 +481,79 @@
 .submission__comment p:last-child {
   margin: 4px 0 0;
 }
+
+/* ---------- resources: scroll inside the card, filter, pop-up ---------- */
+.resources__enlarge {
+  margin-left: 4px;
+}
+.card__head .pill + .resources__enlarge {
+  margin-left: 4px;
+}
+.resources__filter {
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--divider);
+}
+.resources__filter button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.resources__filter button span {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.resources__filter button[aria-pressed='true'] {
+  border-color: var(--xs-cyan);
+  background: color-mix(in srgb, var(--xs-cyan) 14%, var(--card));
+  color: var(--text);
+}
+.resources__filter button:focus-visible,
+.resources__scroll:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: -2px;
+}
+/* about five rows; a cut-off row and the fade show there is more */
+.resources__scroll {
+  max-height: 380px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.resources__scroll.is-overflowing {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+.resources__all {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.resources__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+}
+.resources__group span {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--active-bg);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+}
+.resources__group {
+  padding: 0 20px;
+}

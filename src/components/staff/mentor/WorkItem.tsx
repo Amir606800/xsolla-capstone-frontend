@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import type { WorkRow, WorkStatus } from '../../../utils/review'
 import { rowId } from '../../../utils/review'
 import { formatDateTime } from '../../../utils/date'
+import { DownloadButton } from '../../DownloadButton'
 import { Icon } from '../../Icon'
 import { Avatar } from '../../team/People'
 
@@ -98,6 +99,7 @@ export function WorkItem({
                 <li key={f.name}>
                   <Icon name="file" size={16} />
                   {f.name} <span className="list__meta">({kb(f.sizeBytes)})</span>
+                  <DownloadButton variant="icon" file={f} label={`Download ${f.name}`} />
                 </li>
               ))}
             </ul>

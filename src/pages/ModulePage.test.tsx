@@ -2,8 +2,12 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { submitWork } from '../api/courses'
+import { downloadFile } from '../api/files'
 import App from '../App'
 import { renderWithProviders } from '../test/renderWithProviders'
+
+// the real download needs object URLs, which jsdom lacks; api/files has its own tests
+vi.mock('../api/files', () => ({ downloadFile: vi.fn(async () => undefined) }))
 
 function renderAt(route: string) {
   localStorage.setItem(
@@ -50,13 +54,14 @@ describe('ModulePage - content', () => {
     expect(within(quizzes).getByText('Coming soon')).toBeInTheDocument()
   })
 
-  it('opens external links safely in a new tab; file downloads are placeholders for now', async () => {
+  it('opens external links safely in a new tab and downloads files', async () => {
     renderAt('/courses/m6')
     const link = await screen.findByRole('link', { name: 'Open Go Basics - further reading' })
     expect(link).toHaveAttribute('href', 'https://developer.mozilla.org/')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
-    expect(screen.getByRole('button', { name: 'Download Go Basics - lecture slides' })).toBeDisabled()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Download Go Basics - lecture slides' }))
+    expect(downloadFile).toHaveBeenCalledWith({ id: undefined, name: 'Go Basics - lecture slides' })
   })
 
   it('shows a not-found state for an unknown module', async () => {
@@ -103,11 +108,11 @@ describe('ModulePage - submitting work', () => {
     await user.click(screen.getByRole('button', { name: 'Submit' }))
 
     expect(await screen.findByText('Your work was submitted.')).toBeInTheDocument()
-    // handed in as this student (id 1), so their mentor can review it
+    // as this student (id 1), so their mentor can review it, under its module (the backend URL needs it)
     expect(submitWork).toHaveBeenLastCalledWith(
       'm6-a2',
       { textBody: 'https://github.com/me/http-server', files: [] },
-      1,
+      { studentId: 1, moduleId: 'm6' },
     )
     expect(screen.getByRole('button', { name: /HTTP server/ })).toHaveTextContent('Submitted')
     expect(screen.getByText('https://github.com/me/http-server', { selector: 'p' })).toBeInTheDocument()

@@ -93,3 +93,10 @@ test('visual snapshot helper: module page renders in dark theme', async ({ page 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect(page.getByRole('heading', { name: 'Go Basics', level: 1 })).toBeVisible()
 })
+
+test('a material downloads as a file (a demo file while offline)', async ({ page }) => {
+  await page.goto('/courses/m6')
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download Go Basics - lecture slides' }).click()
+  expect((await download).suggestedFilename()).toBe('Go Basics - lecture slides-demo.txt')
+})

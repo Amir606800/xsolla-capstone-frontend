@@ -5,6 +5,7 @@ import { MaterialForm } from '../../components/authoring/MaterialForm'
 import { ModuleForm } from '../../components/authoring/ModuleForm'
 import { QuizForm } from '../../components/authoring/QuizForm'
 import { TaskForm } from '../../components/authoring/TaskForm'
+import { DownloadButton } from '../../components/DownloadButton'
 import { Icon } from '../../components/Icon'
 import type { IconName } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
@@ -214,6 +215,11 @@ export default function ModuleEditorPage() {
                 meta={[kindLabel(r.kind), r.file?.name, r.description].filter(Boolean).join(' · ')}
                 onEdit={() => open('material', r.id)}
                 onDelete={removed('material', r.id)}
+                extra={
+                  r.kind === 'link' ? undefined : (
+                    <DownloadButton variant="icon" file={{ id: r.fileId, name: r.file?.name ?? r.title }} label={`Download ${r.title}`} />
+                  )
+                }
               />
             ))}
           </Section>

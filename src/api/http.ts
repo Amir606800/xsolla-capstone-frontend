@@ -39,10 +39,12 @@ interface RequestOptions {
   body?: unknown
   /** Sent as `Authorization: Bearer <token>`. */
   token?: string | null
+  /** 'blob' for file downloads; JSON otherwise. */
+  as?: 'json' | 'blob'
 }
 
-export async function apiRequest<T>(path: string, { method = 'GET', body, token }: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { Accept: 'application/json' }
+export async function apiRequest<T>(path: string, { method = 'GET', body, token, as = 'json' }: RequestOptions = {}): Promise<T> {
+  const headers: Record<string, string> = { Accept: as === 'blob' ? '*/*' : 'application/json' }
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
@@ -57,6 +59,8 @@ export async function apiRequest<T>(path: string, { method = 'GET', body, token 
   } catch {
     throw new ApiError(0, 'network_error', "Can't reach the server. Check your connection and try again.")
   }
+
+  if (res.ok && as === 'blob') return (await res.blob()) as T
 
   const text = await res.text()
   let json: unknown = null

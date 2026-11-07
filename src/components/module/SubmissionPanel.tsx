@@ -5,6 +5,7 @@ import type { AssignmentItem } from '../../types/course'
 import { formatDateTime } from '../../utils/date'
 import { ALLOWED_EXTENSIONS, formatBytes, validateFile } from '../../utils/files'
 import { GradedPill } from '../GradedPill'
+import { DownloadButton } from '../DownloadButton'
 import { Icon } from '../Icon'
 
 interface SubmissionPanelProps {
@@ -110,6 +111,7 @@ export function SubmissionPanel({ assignment, onSubmit }: SubmissionPanelProps) 
               {submission.files.map((f) => (
                 <li key={f.name}>
                   <Icon name="file" size={16} /> {f.name} <span>{formatBytes(f.sizeBytes)}</span>
+                  <DownloadButton variant="icon" file={f} />
                 </li>
               ))}
             </ul>

@@ -7,6 +7,8 @@
 export interface SubmissionFile {
   name: string
   sizeBytes: number
+  /** The backend's file id, used to download it. */
+  id?: string
 }
 
 export interface Submission {
@@ -33,6 +35,10 @@ export interface ResourceItem extends BaseItem {
   url?: string
   /** Uploaded file (name and size only in the mock; the real file goes through POST /files). */
   file?: SubmissionFile
+  /** The backend's id of the uploaded file. */
+  fileId?: string
+  /** A newly chosen file, only while it is being saved (never stored). */
+  upload?: File
 }
 
 export interface AssignmentItem extends BaseItem {
