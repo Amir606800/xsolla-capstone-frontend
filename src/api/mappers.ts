@@ -59,15 +59,17 @@ export function mapContentItems(
   items: ApiContentItem[],
   moduleId: string,
   submissions: Record<string, ApiSubmission | undefined> = {},
+  opts: { includeHidden?: boolean } = {},
 ): ContentItem[] {
   const out: ContentItem[] = []
   const ordered = flatten(items)
-    .filter((i) => i.is_visible)
+    .filter((i) => opts.includeHidden || i.is_visible)
     .sort((a, b) => a.position - b.position || Number(a.id) - Number(b.id))
 
   for (const node of ordered) {
     const id = String(node.id)
     const text = splitDescription(node.description)
+    const hidden = node.is_visible ? {} : { hidden: true }
     if (node.type === 'file') {
       const r: ResourceItem = {
         id,
@@ -75,6 +77,7 @@ export function mapContentItems(
         type: 'resource',
         title: node.title,
         kind: resourceKind(node.title),
+        ...hidden,
         ...(text.description ? { description: text.description } : {}),
         ...(node.file_id != null ? { fileId: String(node.file_id) } : {}),
       }
@@ -88,6 +91,7 @@ export function mapContentItems(
         moduleId,
         type: 'assignment',
         title: node.title,
+        ...hidden,
         ...text,
         dueAt: node.due_at,
         ...(sub ? { submission: mapSubmission(sub) } : {}),
@@ -107,6 +111,7 @@ export function mapModules(
   modules: ApiModule[],
   itemsByModule: Record<string, ApiContentItem[]>,
   submissions: Record<string, ApiSubmission | undefined> = {},
+  opts: { includeHidden?: boolean } = {},
 ): CourseModule[] {
   return [...modules]
     .sort((a, b) => a.created_at.localeCompare(b.created_at) || Number(a.id) - Number(b.id))
@@ -117,7 +122,9 @@ export function mapModules(
         position: i + 1,
         title: m.title,
         ...(m.description ? { description: m.description } : {}),
-        items: mapContentItems(itemsByModule[id] ?? [], id, submissions),
+        ...(m.created_by != null ? { createdBy: Number(m.created_by) } : {}),
+        createdAt: m.created_at,
+        items: mapContentItems(itemsByModule[id] ?? [], id, submissions, opts),
       }
     })
 }

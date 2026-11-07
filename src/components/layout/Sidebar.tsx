@@ -1,9 +1,11 @@
 import { memo } from 'react'
 import { NavLink } from 'react-router'
+import { LINKS } from '../../config/links'
 import { navFor } from '../../config/nav'
 import { useAuth } from '../../hooks/useAuth'
 import { useCourses } from '../../hooks/useCourses'
 import { isModuleLocked } from '../../utils/progress'
+import { GitLabLogo, SlackLogo } from '../BrandLogos'
 import { Icon } from '../Icon'
 
 interface SidebarProps {
@@ -42,6 +44,35 @@ function ProgramProgress() {
       >
         <div className="sidebar__progress-fill" style={{ width: `${pct}%` }} />
       </div>
+    </div>
+  )
+}
+
+/** Slack and GitLab, one click away. They open in a new tab; collapsed, only the logos show. */
+function TeamTools({ collapsed }: { collapsed: boolean }) {
+  const tools = [
+    { name: 'Slack', href: LINKS.slack, logo: <SlackLogo /> },
+    { name: 'GitLab', href: LINKS.gitlab, logo: <GitLabLogo /> },
+  ]
+  return (
+    <div className="sidebar__apps" role="group" aria-label="Team tools">
+      {tools.map((t) => (
+        <a
+          key={t.name}
+          className="sidebar__app"
+          href={t.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${t.name} (opens in a new tab)`}
+          title={collapsed ? t.name : `Open ${t.name}`}
+        >
+          {t.logo}
+          <span className="sidebar__text">{t.name}</span>
+          <span className="sidebar__app-ext sidebar__text" aria-hidden="true">
+            <Icon name="external" size={13} />
+          </span>
+        </a>
+      ))}
     </div>
   )
 }
@@ -92,6 +123,7 @@ function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarPro
         </nav>
 
         <div className="sidebar__bottom">
+          <TeamTools collapsed={collapsed} />
           <ProgramProgress />
 
           <button

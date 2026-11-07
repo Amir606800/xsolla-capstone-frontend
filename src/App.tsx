@@ -1,7 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
+import AdminRoute from './components/AdminRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Allow, ByRole, StudentOnly } from './components/RoleRoutes'
+import { ADMIN_SECTIONS } from './config/adminNav'
 import { canAuthor, canMentor } from './utils/roles'
 
 // Route-level code splitting: each screen is downloaded only when visited.
@@ -22,12 +24,38 @@ const ModuleEditorPage = lazy(() => import('./pages/lecturer/ModuleEditorPage'))
 // mentor role
 const MentorTeamPage = lazy(() => import('./pages/mentor/MentorTeamPage'))
 const GradingPage = lazy(() => import('./pages/mentor/GradingPage'))
+// everyone
+const OfficeTourPage = lazy(() => import('./pages/OfficeTourPage'))
+// admin section: separate sign-in and pages
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
+const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
+const AdminSectionPage = lazy(() => import('./pages/admin/AdminSectionPage'))
+const AdminCoursesLayout = lazy(() => import('./pages/admin/modules/AdminCoursesLayout'))
+const AdminModulesPage = lazy(() => import('./pages/admin/modules/AdminModulesPage'))
+const AdminModulePage = lazy(() => import('./pages/admin/modules/AdminModulePage'))
 
 export default function App() {
   return (
     <Suspense fallback={null}>
       <Routes>
         <Route path="/login" element={<AuthPage />} />
+
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin" element={<AdminRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route index element={<AdminHomePage />} />
+            <Route path="/admin/modules" element={<AdminCoursesLayout />}>
+              <Route index element={<AdminModulesPage />} />
+              <Route path=":moduleId" element={<AdminModulePage />} />
+            </Route>
+            {/* sections that are not built yet */}
+            {ADMIN_SECTIONS.filter((s) => s.key !== 'modules').map((s) => (
+              <Route key={s.key} path={s.path} element={<AdminSectionPage section={s} />} />
+            ))}
+            <Route path="*" element={<Navigate to="/admin" replace />} />
+          </Route>
+        </Route>
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
@@ -41,6 +69,7 @@ export default function App() {
               element={<ByRole student={<ModulePage />} staff={<Allow when={canAuthor}><ModuleEditorPage /></Allow>} />}
             />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/office-tour" element={<OfficeTourPage />} />
             <Route
               path="/team"
               element={<ByRole student={<TeamPage />} staff={<Allow when={canMentor}><MentorTeamPage /></Allow>} />}

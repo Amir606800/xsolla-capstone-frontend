@@ -1,4 +1,4 @@
-import type { AssignmentItem, CourseModule, QuizItem, ResourceItem, Submission } from '../types/course'
+import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission } from '../types/course'
 
 /**
  * Mock course: 12 modules (weeks). Dates are built relative to `now` so the
@@ -207,15 +207,25 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
       return item
     })
 
+    // Rashad (900, mentor & lecturer) writes the odd weeks, Elvin (902) the even ones; Nargiz (907) the extra quizzes
+    const createdBy = idx % 2 === 0 ? 900 : 902
+    const byWho = (i: ContentItem): ContentItem => ({ ...i, createdBy: i.type === 'quiz' ? 907 : createdBy })
+
     return {
       id,
       position: idx + 1,
       title,
       description: DESCRIPTIONS[idx],
+      createdBy,
+      // the course was written in the weeks before it started
+      createdAt: dayAt(now, -currentIdx * 7 - 21 + idx, 10),
       opensAt: dayAt(now, weekOffset), // opens at midnight
       closesAt: dayAt(now, weekOffset + 6, 23, 59),
       // module 5 is the busy one (see busyResources)
-      items: idx === 4 ? [...resources, ...busyResources(id), ...assignments, ...busyQuizzes(id, now, weekOffset)] : [...resources, ...assignments],
+      items: (idx === 4
+        ? [...resources, ...busyResources(id), ...assignments, ...busyQuizzes(id, now, weekOffset)]
+        : [...resources, ...assignments]
+      ).map(byWho),
     }
   })
 }

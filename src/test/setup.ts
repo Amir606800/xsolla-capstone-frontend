@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+
+// pages load several mock APIs at once; on a busy machine 1 s (the default) is sometimes too short
+configure({ asyncUtilTimeout: 4000 })
 
 // jsdom does not implement matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -19,10 +22,11 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Make the mock API instant so tests don't wait on simulated latency
 vi.mock('../api/auth', async () => {
-  const { DEMO_ACCOUNTS } = await import('../api/auth.mock')
+  const { DEMO_ACCOUNTS, DEMO_ADMIN } = await import('../api/auth.mock')
   return {
   login: vi.fn(async (email: string, password: string) => {
     if (!password) throw new Error('Invalid email or password')
+    if (email.toLowerCase() === DEMO_ADMIN.email) return DEMO_ADMIN
     return DEMO_ACCOUNTS[email.toLowerCase()] ?? { id: 1, name: 'Tester', email, roles: ['student'] }
   }),
   signup: vi.fn(async (email: string, name: string) => ({ id: 1, name, email, roles: ['student'] })),
@@ -43,6 +47,8 @@ vi.mock('../api/courses', async () => {
     saveModule: vi.fn(async (id: string, patch: import('../mocks/contentEdits').ModulePatch) => store.putModule(id, patch)),
     saveItem: vi.fn(async (item: import('../types/course').ContentItem) => store.putItem(item)),
     deleteItem: vi.fn(async (id: string) => store.removeItem(id)),
+    deleteModule: vi.fn(async (id: string) => store.removeModule(id)),
+    createModule: vi.fn(async (patch: Parameters<typeof store.addModule>[0], ctx?: { createdBy?: number }) => store.addModule(patch, ctx?.createdBy)),
   }
 })
 

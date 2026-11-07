@@ -28,15 +28,15 @@
   grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
   gap: 12px;
 }
-.stat {
+.kpi {
   min-width: 0;
   border-radius: 8px;
   background: var(--card);
 }
-:root[data-theme='dark'] .stat {
+:root[data-theme='dark'] .kpi {
   border: 1px solid var(--field-border);
 }
-.stat__body {
+.kpi__body {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -46,14 +46,14 @@
   text-decoration: none;
   border-radius: 8px;
 }
-a.stat__body:hover {
+a.kpi__body:hover {
   background: var(--sidebar-bg);
 }
-a.stat__body:focus-visible {
+a.kpi__body:focus-visible {
   outline: 2px solid var(--xs-cyan);
   outline-offset: 2px;
 }
-.stat__label {
+.kpi__label {
   margin: 0 0 6px;
   color: var(--text-muted);
   font-family: var(--font-label);
@@ -63,20 +63,20 @@ a.stat__body:focus-visible {
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
-.stat__value {
+.kpi__value {
   margin: 0;
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 600;
   line-height: 30px;
 }
-.stat__value.is-ok {
+.kpi__value.is-ok {
   color: var(--ok);
 }
-.stat__value.is-warn {
+.kpi__value.is-warn {
   color: var(--warn);
 }
-.stat__sub {
+.kpi__sub {
   margin: 0;
   overflow: hidden;
   color: var(--text-muted);

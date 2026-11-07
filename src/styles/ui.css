@@ -105,12 +105,16 @@
 }
 
 .pill {
-  flex: none;
+  display: flex;
+  flex-direction: row;
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--active-bg);
   font-size: 13px;
   white-space: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
 .pill--danger {
   background: color-mix(in srgb, var(--danger) 20%, transparent);

@@ -11,10 +11,12 @@ import type { ApiContentItem, ApiFile, ApiModule, ApiSubmission } from './types'
  *   GET    /modules/:moduleId/content-items/:assignmentId/submissions/me    (404 = nothing handed in)
  *   POST   /files                                                       multipart, field "file"
  *   POST   /modules/:moduleId/content-items/:assignmentId/submissions   { text_body, file_ids: number[] }
+ *   POST   /modules                                                     { title, description } (new module)
  *   PATCH  /modules/:id                                                 { title, description }
  *   POST   /modules/:moduleId/content-items                             new task / file material
  *   PATCH  /content-items/:id                                           edit one
  *   DELETE /content-items/:id
+ *   DELETE /modules/:id                                                 (admin or the module's creator)
  */
 
 const isAssignment = (i: ApiContentItem) => i.type === 'assignment'
@@ -49,7 +51,8 @@ export async function fetchModules(withSubmissions: boolean): Promise<CourseModu
       mine[aid] = found[i]
     })
   }
-  return mapModules(list, itemsByModule, mine)
+  // only admins are sent hidden items (the backend filters them for everyone else); students never get them
+  return mapModules(list, itemsByModule, mine, { includeHidden: !withSubmissions })
 }
 
 /** Uploads one file and returns its id as the NUMBER the backend expects in `file_ids` / `file_id`. */
@@ -86,6 +89,20 @@ export async function saveModule(id: string, patch: { title?: string; descriptio
     body: { ...(patch.title !== undefined ? { title: patch.title } : {}), ...(patch.description !== undefined ? { description: patch.description } : {}) },
   })
   return fetchModules(false)
+}
+
+/** A new module (the backend records who created it). It has no week dates yet, so those are not sent. */
+export async function createModule(patch: {
+  title: string
+  description?: string
+  opensAt?: string
+  closesAt?: string
+}): Promise<{ id: string; modules: CourseModule[] }> {
+  const created = await authedRequest<ApiModule>('/modules', {
+    method: 'POST',
+    body: { title: patch.title, ...(patch.description ? { description: patch.description } : {}) },
+  })
+  return { id: String(created.id), modules: await fetchModules(false) }
 }
 
 export class NotSupportedError extends ApiError {
@@ -131,6 +148,12 @@ export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
   if (item.type === 'assignment') await saveTask(item)
   else if (item.type === 'resource') await saveMaterial(item)
   else throw new NotSupportedError('Quizzes cannot be saved by the backend yet.')
+  return fetchModules(false)
+}
+
+/** Soft delete on the server: its items go with it, students' handed-in work is kept. */
+export async function deleteModule(id: string): Promise<CourseModule[]> {
+  await authedRequest<void>(`/modules/${id}`, { method: 'DELETE' })
   return fetchModules(false)
 }
 

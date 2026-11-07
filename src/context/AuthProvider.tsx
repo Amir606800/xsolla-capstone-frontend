@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import * as authApi from '../api/auth'
 import type { User } from '../types/user'
-import { normalizeUser } from '../utils/roles'
+import { isAdmin, normalizeUser } from '../utils/roles'
 import { AuthContext } from './auth'
 
 const STORAGE_KEY = 'auth_user'
@@ -39,6 +39,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => applyUser(await authApi.login(email, password)),
     [applyUser],
   )
+  const signInAdmin = useCallback(
+    async (email: string, password: string) => {
+      const u = normalizeUser(await authApi.login(email, password))
+      if (!isAdmin(u)) {
+        // the login already replaced any earlier session's tokens, so nobody stays signed in
+        await authApi.logout()
+        applyUser(null)
+        throw new Error('This account does not have admin access')
+      }
+      applyUser(u)
+    },
+    [applyUser],
+  )
   const signUp = useCallback(
     async (email: string, name: string, password: string) =>
       applyUser(await authApi.signup(email, name, password)),
@@ -50,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applyUser])
 
   const value = useMemo(
-    () => ({ user, isAuthenticated: user !== null, signIn, signUp, signOut }),
-    [user, signIn, signUp, signOut],
+    () => ({ user, isAuthenticated: user !== null, signIn, signInAdmin, signUp, signOut }),
+    [user, signIn, signInAdmin, signUp, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

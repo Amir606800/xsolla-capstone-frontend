@@ -9,8 +9,10 @@ export function ModuleForm({
   module,
   onSave,
   onCancel,
+  submitLabel = 'Save module',
 }: {
   module: CourseModule
+  submitLabel?: string
   onSave: (patch: ReturnType<typeof draftToModulePatch>) => Promise<void>
   onCancel: () => void
 }) {
@@ -45,7 +47,7 @@ export function ModuleForm({
           {(p) => <input {...p} type="date" className="field__input form__input" value={d.closesDate} onChange={(e) => set({ closesDate: e.target.value })} />}
         </Field>
       </div>
-      <FormActions submitLabel="Save module" busy={busy} error={error} onCancel={onCancel} />
+      <FormActions submitLabel={submitLabel} busy={busy} error={error} onCancel={onCancel} />
     </form>
   )
 }

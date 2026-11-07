@@ -23,6 +23,9 @@ export const DEMO_ACCOUNTS: Record<string, User> = {
   'teacher@xsolla.school': { id: 902, name: 'Elvin Huseynov', email: 'teacher@xsolla.school', roles: ['lecturer'] },
 }
 
+/** Offline admin account for the separate admin sign-in (/admin/login); any password works. */
+export const DEMO_ADMIN: User = { id: 1000, name: 'School Admin', email: 'admin@xsolla.school', roles: ['admin'] }
+
 function nameFromEmail(email: string): string {
   const local = email.split('@')[0] ?? 'Student'
   return local.charAt(0).toUpperCase() + local.slice(1)
@@ -31,7 +34,9 @@ function nameFromEmail(email: string): string {
 export async function login(email: string, password: string): Promise<User> {
   await wait(MOCK_LATENCY_MS)
   if (!password) throw new Error('Invalid email or password')
-  const demo = DEMO_ACCOUNTS[email.trim().toLowerCase()]
+  const key = email.trim().toLowerCase()
+  if (key === DEMO_ADMIN.email) return DEMO_ADMIN
+  const demo = DEMO_ACCOUNTS[key]
   if (demo) return demo
   return { id: 1, name: nameFromEmail(email), email, roles: ['student'] }
 }

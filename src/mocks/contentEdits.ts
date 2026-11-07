@@ -16,7 +16,14 @@ interface CourseEdits {
   modules: Record<string, ModulePatch>
   /** A changed or new item, or null when it was deleted. */
   items: Record<string, ContentItem | null>
+  /** Modules an admin deleted (with everything in them). */
+  deletedModules?: string[]
+  /** Modules an admin added; their items live in `items` like any other. */
+  newModules?: Record<string, NewModule>
 }
+
+/** A module added on top of the demo course (it gets the next free position). */
+type NewModule = Omit<CourseModule, 'position' | 'items'> & { createdAt: string }
 
 const COURSE_KEY = 'course_edits'
 const EVENTS_KEY = 'event_edits'
@@ -52,11 +59,22 @@ function merge(base: ContentItem | undefined, edited: ContentItem): ContentItem 
   return edited
 }
 
-export function applyCourseEdits(base: CourseModule[], edits: CourseEdits): CourseModule[] {
+/** The demo modules plus the ones an admin added, numbered after the last demo module. */
+function withAdded(base: CourseModule[], edits: CourseEdits): CourseModule[] {
+  const last = base.reduce((max, m) => Math.max(max, m.position), 0)
+  const added = Object.values(edits.newModules ?? {})
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((m, i): CourseModule => ({ ...m, position: last + i + 1, items: [] }))
+  return [...base, ...added]
+}
+
+export function applyCourseEdits(demo: CourseModule[], edits: CourseEdits): CourseModule[] {
+  const base = withAdded(demo, edits)
   const baseItems = new Map<string, ContentItem>()
   for (const m of base) for (const i of m.items) baseItems.set(i.id, i)
 
-  return base.map((m) => {
+  const deleted = new Set(edits.deletedModules ?? [])
+  return base.filter((m) => !deleted.has(m.id)).map((m) => {
     const items: ContentItem[] = []
     for (const item of m.items) {
       const edited = edits.items[item.id]
@@ -79,9 +97,29 @@ export function listModules(now: Date = new Date()): CourseModule[] {
   return applyCourseEdits(buildMockModules(now), loadCourseEdits())
 }
 
+/** A module that is in the demo course (or was added) and was not deleted. */
+const exists = (id: string, edits: CourseEdits, now: Date) =>
+  !edits.deletedModules?.includes(id) && (!!edits.newModules?.[id] || buildMockModules(now).some((m) => m.id === id))
+
+/** Adds a module after the last one. Returns its id and the whole course. */
+export function addModule(
+  patch: ModulePatch & { title: string },
+  createdBy?: number,
+  now: Date = new Date(),
+): { id: string; modules: CourseModule[] } {
+  const edits = loadCourseEdits()
+  const id = newId('module')
+  edits.newModules = {
+    ...edits.newModules,
+    [id]: { id, ...patch, ...(createdBy !== undefined ? { createdBy } : {}), createdAt: now.toISOString() },
+  }
+  write(COURSE_KEY, edits)
+  return { id, modules: listModules(now) }
+}
+
 export function putModule(id: string, patch: ModulePatch, now: Date = new Date()): CourseModule[] {
   const edits = loadCourseEdits()
-  if (!buildMockModules(now).some((m) => m.id === id)) throw new Error('This module does not exist')
+  if (!exists(id, edits, now)) throw new Error('This module does not exist')
   edits.modules[id] = { ...edits.modules[id], ...patch }
   write(COURSE_KEY, edits)
   return listModules(now)
@@ -90,11 +128,20 @@ export function putModule(id: string, patch: ModulePatch, now: Date = new Date()
 /** Creates or replaces an item. Students' submissions are never part of what the lecturer saves. */
 export function putItem(item: ContentItem, now: Date = new Date()): CourseModule[] {
   const edits = loadCourseEdits()
-  if (!buildMockModules(now).some((m) => m.id === item.moduleId)) throw new Error('This module does not exist')
+  if (!exists(item.moduleId, edits, now)) throw new Error('This module does not exist')
   // student work never travels with a lecturer edit; a picked File cannot be stored (the mock keeps name and size)
   const clean: ContentItem =
     item.type === 'assignment' ? { ...item, submission: undefined } : item.type === 'resource' ? { ...item, upload: undefined } : item
   edits.items[item.id] = clean
+  write(COURSE_KEY, edits)
+  return listModules(now)
+}
+
+/** Deletes a whole module and what is in it (students' handed-in work stays in its own store). */
+export function removeModule(id: string, now: Date = new Date()): CourseModule[] {
+  const edits = loadCourseEdits()
+  if (!exists(id, edits, now)) throw new Error('This module does not exist')
+  edits.deletedModules = [...(edits.deletedModules ?? []), id]
   write(COURSE_KEY, edits)
   return listModules(now)
 }

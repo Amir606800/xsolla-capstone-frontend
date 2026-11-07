@@ -1,4 +1,4 @@
-import { listModules, type ModulePatch, putItem, putModule, removeItem } from '../mocks/contentEdits'
+import { addModule, listModules, type ModulePatch, putItem, putModule, removeItem, removeModule } from '../mocks/contentEdits'
 import { handIn, submissionsOf } from '../mocks/submissions'
 import type { ContentItem, CourseModule, Submission } from '../types/course'
 import * as http from './courses.http'
@@ -73,6 +73,23 @@ export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
   if (hasBackend()) return http.saveItem(item)
   await wait()
   return putItem(item)
+}
+
+/** A new module after the last one. Returns its id and the whole course. */
+export async function createModule(
+  patch: ModulePatch & { title: string },
+  ctx: { createdBy?: number } = {},
+): Promise<{ id: string; modules: CourseModule[] }> {
+  if (hasBackend()) return http.createModule(patch)
+  await wait()
+  return addModule(patch, ctx.createdBy)
+}
+
+/** Admins (and the module's creator): the module and everything in it. */
+export async function deleteModule(id: string): Promise<CourseModule[]> {
+  if (hasBackend()) return http.deleteModule(id)
+  await wait()
+  return removeModule(id)
 }
 
 export async function deleteItem(id: string): Promise<CourseModule[]> {

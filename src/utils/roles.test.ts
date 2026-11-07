@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canAuthor, canMentor, isStaff, isStudent, normalizeUser, roleLabel, rolesFrom } from './roles'
+import { canAuthor, canMentor, isAdmin, isStaff, isStudent, normalizeUser, roleLabel, rolesFrom } from './roles'
 import type { Role } from '../types/user'
 
 const as = (...roles: Role[]) => ({ roles })
@@ -24,6 +24,15 @@ describe('abilities', () => {
 
   it('an admin can write the course but is no team mentor', () => {
     expect([canAuthor(as('admin')), canMentor(as('admin'))]).toEqual([true, false])
+  })
+
+  it('only the admin role opens the admin section', () => {
+    expect([isAdmin(as('admin')), isAdmin(as('mentor', 'lecturer')), isAdmin(as('student')), isAdmin(null)]).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ])
   })
 
   it('students are not staff, and nobody signed in can do nothing', () => {

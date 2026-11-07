@@ -70,6 +70,19 @@ describe('mapModules', () => {
     expect(m2.items[0]).not.toHaveProperty('submission')
   })
 
+  it('keeps who created each module and when', () => {
+    expect(mapModules(modules, items)[0]).toMatchObject({ createdBy: 9, createdAt: '2026-10-01T09:00:00Z' })
+  })
+
+  it('for admins: hidden items are kept and marked hidden', () => {
+    const [m1] = mapModules(modules, items, {}, { includeHidden: true })
+    expect(m1.items.map((i) => [i.id, !!i.hidden])).toEqual([
+      ['11', false],
+      ['12', false],
+      ['13', true],
+    ])
+  })
+
   it('handles no modules, and a module without items', () => {
     expect(mapModules([], {})).toEqual([])
     expect(mapModules([modules[0]], {})[0].items).toEqual([])

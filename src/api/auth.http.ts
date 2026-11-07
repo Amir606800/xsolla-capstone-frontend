@@ -5,7 +5,7 @@ import { apiRequest } from './http'
 import { clearTokens, getTokens, saveTokens } from './session'
 
 /** Wire formats from the backend's Swagger (`dto.UserResponse`, `dto.AuthResponse`). */
-interface UserDto {
+export interface UserDto {
   /** API_CONTRACT.md sends ids as strings ("1"); older builds sent numbers. */
   id: number | string
   email: string

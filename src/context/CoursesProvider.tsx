@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { deleteItem as apiDeleteItem, fetchModules, saveItem as apiSaveItem, saveModule as apiSaveModule, submitWork } from '../api/courses'
+import { createModule as apiCreateModule, deleteItem as apiDeleteItem, deleteModule as apiDeleteModule, fetchModules, saveItem as apiSaveItem, saveModule as apiSaveModule, submitWork } from '../api/courses'
 import type { ModulePatch, SubmitPayload } from '../api/courses'
 import { useAuth } from '../hooks/useAuth'
 import type { ContentItem, CourseModule, Submission } from '../types/course'
@@ -107,10 +107,23 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const saveModule = useCallback((id: string, patch: ModulePatch) => author(() => apiSaveModule(id, patch)), [author])
   const saveItem = useCallback((item: ContentItem) => author(() => apiSaveItem(item)), [author])
   const deleteItem = useCallback((id: string) => author(() => apiDeleteItem(id)), [author])
+  const deleteModule = useCallback((id: string) => author(() => apiDeleteModule(id)), [author])
+  const createModule = useCallback(
+    async (patch: ModulePatch & { title: string }) => {
+      let id = ''
+      await author(async () => {
+        const res = await apiCreateModule(patch, { createdBy: user?.id })
+        id = res.id
+        return res.modules
+      })
+      return id
+    },
+    [author, user?.id],
+  )
 
   const value = useMemo(
-    () => ({ status, modules, now, reload, submitAssignment, saveModule, saveItem, deleteItem }),
-    [status, modules, now, reload, submitAssignment, saveModule, saveItem, deleteItem],
+    () => ({ status, modules, now, reload, submitAssignment, saveModule, saveItem, deleteItem, deleteModule, createModule }),
+    [status, modules, now, reload, submitAssignment, saveModule, saveItem, deleteItem, deleteModule, createModule],
   )
 
   return <CoursesContext.Provider value={value}>{children}</CoursesContext.Provider>

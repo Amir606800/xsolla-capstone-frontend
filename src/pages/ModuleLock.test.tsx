@@ -45,14 +45,11 @@ describe('Locked (future) modules', () => {
     expect(screen.queryByText(/This module opens on/)).not.toBeInTheDocument()
   })
 
-  it('teachers and admins can open future modules (in the editor)', async () => {
-    for (const role of ['teacher', 'admin'] as const) {
-      signIn(role)
-      const { unmount } = renderWithProviders(<App />, { route: '/courses/m9' })
-      expect(await screen.findByRole('region', { name: 'Tasks' })).toBeInTheDocument()
-      expect(screen.queryByText(/This module opens on/)).not.toBeInTheDocument()
-      unmount()
-    }
+  it('teachers can open future modules (in the editor)', async () => {
+    signIn('teacher')
+    renderWithProviders(<App />, { route: '/courses/m9' })
+    expect(await screen.findByRole('region', { name: 'Tasks' })).toBeInTheDocument()
+    expect(screen.queryByText(/This module opens on/)).not.toBeInTheDocument()
   })
 
   it('the lock goes away once the module has opened (opensAt in the past)', async () => {

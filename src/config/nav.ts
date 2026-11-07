@@ -26,7 +26,10 @@ export const STUDENT_NAV: NavGroup[] = [
   },
   {
     heading: 'COMMUNITY',
-    items: [{ to: '/team', label: 'My team', icon: 'team' }],
+    items: [
+      { to: '/team', label: 'My team', icon: 'team' },
+      { to: '/office-tour', label: 'Office tour', icon: 'tour' },
+    ],
   },
 ]
 
@@ -48,6 +51,8 @@ function staffNav(user: Pick<User, 'roles'>): NavGroup[] {
       ],
     })
   }
+  // everyone works in the same office
+  groups.push({ heading: 'COMMUNITY', items: [{ to: '/office-tour', label: 'Office tour', icon: 'tour' }] })
   return groups
 }
 

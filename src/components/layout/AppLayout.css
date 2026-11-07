@@ -265,6 +265,44 @@
   margin-top: auto;
   padding-top: 14px;
 }
+/* Slack / GitLab: two small tiles side by side */
+.sidebar__apps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.sidebar__app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+}
+.sidebar__app > svg {
+  flex: none;
+}
+.sidebar__app:hover {
+  border-color: var(--field-border);
+}
+.sidebar__app:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.sidebar__app-ext {
+  display: inline-flex;
+  margin-left: auto;
+  color: var(--text-muted);
+}
+:root[data-theme='dark'] .sidebar__app {
+  border-color: var(--field-border);
+}
 .sidebar__progress {
   padding: 12px 14px;
   border-radius: 6px;
@@ -327,6 +365,14 @@
   .sidebar.is-collapsed .sidebar__heading,
   .sidebar.is-collapsed .sidebar__progress {
     display: none;
+  }
+  /* collapsed rail: the tools stack, logos only */
+  .sidebar.is-collapsed .sidebar__apps {
+    grid-template-columns: 1fr;
+  }
+  .sidebar.is-collapsed .sidebar__app {
+    justify-content: center;
+    padding-inline: 0;
   }
   .sidebar.is-collapsed .sidebar__link,
   .sidebar.is-collapsed .sidebar__toggle {

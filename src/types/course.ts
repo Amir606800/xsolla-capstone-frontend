@@ -24,6 +24,10 @@ interface BaseItem {
   id: string
   moduleId: string
   title: string
+  /** Who wrote it (user id). The backend does not send it for items yet: the module's lecturer is shown instead. */
+  createdBy?: number
+  /** Hidden from students (backend `is_visible: false`). Only admins ever receive hidden items. */
+  hidden?: boolean
 }
 
 /** Lecturer material: own slides/files or an external source. */
@@ -80,5 +84,8 @@ export interface CourseModule {
   /** When the module opens / closes (week range). Not in the backend schema yet. */
   opensAt?: string
   closesAt?: string
+  /** The lecturer who created the module (user id) and when (backend `created_by`, `created_at`). */
+  createdBy?: number
+  createdAt?: string
   items: ContentItem[]
 }

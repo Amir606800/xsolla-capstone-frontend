@@ -20,21 +20,21 @@ export function StatTile({
 }) {
   const body = (
     <>
-      <h2 id={id} className="stat__label">
+      <h2 id={id} className="kpi__label">
         {label}
       </h2>
-      <p className={`stat__value${tone ? ` is-${tone}` : ''}`}>{value}</p>
-      {sub && <p className="stat__sub">{sub}</p>}
+      <p className={`kpi__value${tone ? ` is-${tone}` : ''}`}>{value}</p>
+      {sub && <p className="kpi__sub">{sub}</p>}
     </>
   )
   return (
-    <section className="stat" aria-labelledby={id}>
+    <section className="kpi" aria-labelledby={id}>
       {to ? (
-        <Link to={to} className="stat__body">
+        <Link to={to} className="kpi__body">
           {body}
         </Link>
       ) : (
-        <div className="stat__body">{body}</div>
+        <div className="kpi__body">{body}</div>
       )}
     </section>
   )

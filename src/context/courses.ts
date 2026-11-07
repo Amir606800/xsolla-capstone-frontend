@@ -17,6 +17,10 @@ export interface CoursesContextValue {
   /** Creates the item, or replaces the one with the same id. */
   saveItem: (item: ContentItem) => Promise<void>
   deleteItem: (itemId: string) => Promise<void>
+  /** The whole module with everything in it (admins). */
+  deleteModule: (moduleId: string) => Promise<void>
+  /** A new module after the last one; resolves with its id. */
+  createModule: (patch: ModulePatch & { title: string }) => Promise<string>
 }
 
 export const CoursesContext = createContext<CoursesContextValue | null>(null)

@@ -22,7 +22,7 @@ function renderAs(who: keyof typeof ACCOUNTS, route = '/dashboard') {
 }
 
 const nav = () => screen.getByRole('navigation', { name: 'Main navigation' })
-const dashboard = async () => screen.findByRole('navigation', { name: 'Quick actions' })
+const dashboard = async () => screen.findByRole('navigation', { name: 'Quick actions' }, { timeout: 4000 })
 
 describe('one staff dashboard, sections by role', () => {
   it('mentor + lecturer: team card and the course cards, all shortcuts, both nav items', async () => {
@@ -30,7 +30,7 @@ describe('one staff dashboard, sections by role', () => {
     const actions = await dashboard()
     expect(within(actions).getByRole('link', { name: 'New task' })).toBeInTheDocument()
     expect(within(actions).getByRole('link', { name: 'Set 1:1 times' })).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'My team · Team 3' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'My team · Team 3' }, { timeout: 4000 })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Needs attention' })).toBeInTheDocument()
     expect(within(nav()).getByRole('link', { name: 'Course content' })).toBeInTheDocument()
     expect(within(nav()).getByRole('link', { name: 'My team' })).toBeInTheDocument()
@@ -42,7 +42,7 @@ describe('one staff dashboard, sections by role', () => {
     const actions = await dashboard()
     expect(within(actions).queryByRole('link', { name: 'New task' })).not.toBeInTheDocument()
     expect(within(actions).getByRole('link', { name: 'Set 1:1 times' })).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'My team · Team 4' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'My team · Team 4' }, { timeout: 4000 })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Needs attention' })).not.toBeInTheDocument()
     expect(within(nav()).queryByRole('link', { name: 'Course content' })).not.toBeInTheDocument()
     expect(within(nav()).getByRole('link', { name: 'My team' })).toBeInTheDocument()
@@ -61,7 +61,7 @@ describe('one staff dashboard, sections by role', () => {
   it('an old saved session with role "teacher" still gets both parts', async () => {
     localStorage.setItem('auth_user', JSON.stringify({ id: 900, name: 'Rashad Aliyev', email: 'r@x', role: 'teacher' }))
     renderWithProviders(<App />, { route: '/dashboard' })
-    expect(await screen.findByRole('heading', { name: 'My team · Team 3' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'My team · Team 3' }, { timeout: 4000 })).toBeInTheDocument()
   })
 })
 

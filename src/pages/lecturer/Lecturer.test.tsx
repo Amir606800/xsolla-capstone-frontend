@@ -46,6 +46,7 @@ describe('Lecturer account', () => {
       'Calendar',
       'My team', // the demo lecturer is also Team 3's mentor
       'Grading',
+      'Office tour',
     ])
   })
 

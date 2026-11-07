@@ -19,6 +19,8 @@ type Someone = Pick<User, 'roles'> | null | undefined
 export const hasRole = (user: Someone, role: Role): boolean => !!user?.roles.includes(role)
 
 export const isStudent = (user: Someone) => hasRole(user, 'student')
+/** Runs the school: works only in the separate admin section (/admin), not in the LMS pages. */
+export const isAdmin = (user: Someone) => hasRole(user, 'admin')
 /** Looks after one team: team page, 1:1 times, weekly ratings. */
 export const canMentor = (user: Someone) => hasRole(user, 'mentor')
 /** Writes the course: modules, tasks, materials, quizzes, lectures. */

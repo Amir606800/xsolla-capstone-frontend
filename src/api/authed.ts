@@ -5,7 +5,7 @@ import { clearTokens, getTokens, saveTokens } from './session'
  * Requests that need the signed-in user (API_CONTRACT.md "Frontend Auth Contract"):
  *  - sends `Authorization: Bearer <access_token>`
  *  - on 401 tries POST /auth/refresh once and repeats the request with the new token
- *  - if that fails too: clears the session and sends the user to /login
+ *  - if that fails too: clears the session and sends the user to /login (/admin/login from the admin section)
  */
 
 /** POST /auth/refresh -> new token pair, saved. Throws (401) when the refresh token is invalid or expired. */
@@ -37,7 +37,9 @@ function endSession() {
   } catch {
     // storage unavailable
   }
-  if (window.location.pathname !== '/login') window.location.assign('/login')
+  // the admin section has its own sign-in page
+  const login = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login'
+  if (window.location.pathname !== login) window.location.assign(login)
 }
 
 type Options = NonNullable<Parameters<typeof apiRequest>[1]>

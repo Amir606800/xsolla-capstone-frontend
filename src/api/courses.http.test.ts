@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authedRequest } from './authed'
-import { deleteItem, fetchModules, saveItem, saveModule, submitWork } from './courses.http'
+import { createModule, deleteItem, deleteModule, fetchModules, saveItem, saveModule, submitWork } from './courses.http'
 import { deleteEvent, fetchEvents, saveEvent } from './events.http'
 import { getTokens, saveTokens } from './session'
 
@@ -109,6 +109,22 @@ describe('submitWork', () => {
 describe('lecturer editing', () => {
   const reload = { ...MODULES, ...ITEMS }
 
+  it('a new module is POSTed with its title and description and comes back with the server id', async () => {
+    backend({ ...reload, 'POST /modules': () => ({ status: 201, body: { id: 4, title: 'Go Basics', description: 'Go', created_by: 1, created_at: '2026-11-01T00:00:00Z' } }) })
+    const { id, modules } = await createModule({ title: 'Go Basics', description: 'Go', opensAt: '2026-11-02T00:00:00Z' })
+    // no week dates in the backend: only title and description are sent
+    expect(json(find('POST', '/modules'))).toEqual({ title: 'Go Basics', description: 'Go' })
+    expect(id).toBe('4')
+    expect(modules.map((m) => m.id)).toEqual(['4'])
+  })
+
+  it('an admin deletes a whole module: DELETE /modules/:id, then the course is loaded again', async () => {
+    backend({ ...reload, 'DELETE /modules/4': () => ({ status: 204 }) })
+    await deleteModule('4')
+    expect(find('DELETE', '/modules/4').init.headers).toMatchObject({ Authorization: 'Bearer acc' })
+    expect(calls.map((c) => `${c.method} ${c.path}`).slice(-2)).toEqual(['GET /modules', 'GET /modules/4/content-items'])
+  })
+
   it('a new task is POSTed to its own module with a due date and max_points 0', async () => {
     backend({ ...reload, 'POST /modules/4/content-items': () => ({ status: 201, body: { id: 42 } }) })
     await saveItem({ id: 'task-ab1', moduleId: '4', type: 'assignment', title: 'HTTP server', requirements: ['Tests'], dueAt: '2026-11-11T18:00:00.000Z' })
@@ -211,5 +227,16 @@ describe('authedRequest', () => {
     expect(getTokens()).toBeNull()
     expect(localStorage.getItem('auth_user')).toBeNull()
     expect(assign).toHaveBeenCalledWith('/login')
+  })
+
+  it('from the admin section it goes to the admin sign-in instead', async () => {
+    const assign = vi.fn()
+    vi.stubGlobal('location', { pathname: '/admin', assign })
+    backend({
+      'GET /users/me': () => ({ status: 401, body: { error: 'unauthorized', message: 'expired', status: 401 } }),
+      'POST /auth/refresh': () => ({ status: 401, body: { error: 'unauthorized', message: 'expired', status: 401 } }),
+    })
+    await expect(authedRequest('/users/me')).rejects.toMatchObject({ status: 401 })
+    expect(assign).toHaveBeenCalledWith('/admin/login')
   })
 })
