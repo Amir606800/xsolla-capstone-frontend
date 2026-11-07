@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authedRequest } from './authed'
-import { createModule, deleteItem, deleteModule, fetchModules, saveItem, saveModule, submitWork } from './courses.http'
+import { assignLecturer, createModule, deleteItem, deleteModule, fetchModules, saveItem, saveModule, submitWork } from './courses.http'
 import { deleteEvent, fetchEvents, saveEvent } from './events.http'
 import { getTokens, saveTokens } from './session'
 
@@ -116,6 +116,20 @@ describe('lecturer editing', () => {
     expect(json(find('POST', '/modules'))).toEqual({ title: 'Go Basics', description: 'Go' })
     expect(id).toBe('4')
     expect(modules.map((m) => m.id)).toEqual(['4'])
+  })
+
+  it('assigning a lecturer to a week sends lecturer_id and checks the server really changed it', async () => {
+    backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }) })
+    // the server accepts the request but still says created_by 9: it does not know the field yet
+    await expect(assignLecturer('4', 12)).rejects.toThrow('The server cannot change the lecturer of a week yet.')
+    expect(json(find('PATCH', '/modules/4'))).toEqual({ lecturer_id: 12 })
+    // once the server applies it, created_by follows
+    backend({
+      'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }),
+      'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', description: 'Go', created_by: 12, created_at: '2026-11-01T00:00:00Z' }] }),
+      ...ITEMS,
+    })
+    expect((await assignLecturer('4', 12))[0].createdBy).toBe(12)
   })
 
   it('an admin deletes a whole module: DELETE /modules/:id, then the course is loaded again', async () => {

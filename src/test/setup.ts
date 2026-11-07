@@ -48,6 +48,7 @@ vi.mock('../api/courses', async () => {
     saveItem: vi.fn(async (item: import('../types/course').ContentItem) => store.putItem(item)),
     deleteItem: vi.fn(async (id: string) => store.removeItem(id)),
     deleteModule: vi.fn(async (id: string) => store.removeModule(id)),
+    assignLecturer: vi.fn(async (id: string, lecturerId: number) => store.putModule(id, { createdBy: lecturerId })),
     createModule: vi.fn(async (patch: Parameters<typeof store.addModule>[0], ctx?: { createdBy?: number }) => store.addModule(patch, ctx?.createdBy)),
   }
 })

@@ -1024,3 +1024,39 @@ button.admin-table__title:hover {
   color: var(--text-muted);
   font-weight: 400;
 }
+
+/* ---------- sortable column headers ---------- */
+.admin-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.admin-sort:hover,
+.admin-sort.is-active {
+  color: var(--text);
+}
+.admin-sort:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.admin-sort__icon path {
+  fill: currentColor;
+  opacity: 0.3;
+}
+.admin-sort__icon path.is-on {
+  opacity: 1;
+}
+.admin-weeks {
+  max-height: 340px;
+  overflow-y: auto;
+}

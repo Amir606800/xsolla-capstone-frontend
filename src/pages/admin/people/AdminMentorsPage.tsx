@@ -3,11 +3,13 @@ import { hasBackend } from '../../../api/http'
 import { Icon } from '../../../components/Icon'
 import { Modal } from '../../../components/Modal'
 import { useDirectory } from '../../../hooks/useDirectory'
+import { useSort } from '../../../hooks/useSort'
 import type { SchoolTeam, SchoolUser } from '../../../types/admin'
 import { matchesQuery } from '../../../utils/adminPeople'
 import { roleBadges } from '../../../utils/adminRoles'
 import { canMentor } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
+import { SortableTh } from '../SortableTh'
 import { RolesForm } from './RolesForm'
 import { StudentForm } from './StudentForm'
 
@@ -40,7 +42,17 @@ export default function AdminMentorsPage() {
   const lecturing = mentors.filter((m) => m.roles.includes('lecturer'))
   const noTeam = mentors.filter((m) => !teamOf.has(m.id))
   const pool = show === 'lecturers' ? lecturing : show === 'no-team' ? noTeam : mentors
-  const shown = pool.filter((m) => matchesQuery(m, query))
+  const { sorted: shown, sort, toggle } = useSort(
+    pool.filter((m) => matchesQuery(m, query)),
+    {
+      name: (m) => m.name,
+      email: (m) => m.email,
+      team: (m) => teamOf.get(m.id)?.name,
+      // more roles first is not useful; sort by what they hold: "Mentor" before "Mentor, Lecturer"
+      roles: (m) => roleBadges(m, today).map((b) => b.label).join(', '),
+    },
+    { key: 'name', dir: 'asc' },
+  )
   const teamsWithout = teams.filter((t) => t.mentorId === null)
 
   const open = (a: Action) => {
@@ -124,10 +136,10 @@ export default function AdminMentorsPage() {
                 <caption className="sr-only">Mentors</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Team</th>
-                    <th scope="col">Roles</th>
+                    <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggle} />
+                    <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggle} />
+                    <SortableTh label="Team" sortKey="team" sort={sort} onSort={toggle} />
+                    <SortableTh label="Roles" sortKey="roles" sort={sort} onSort={toggle} />
                     <th scope="col">
                       <span className="sr-only">Actions</span>
                     </th>

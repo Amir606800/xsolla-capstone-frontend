@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createMentor, createStudent, deleteAccount, fetchTeams, fetchUsers, setStudentLeft, setUserRoles, updateMentor, updateStudent } from '../api/directory'
+import { createStaff, createStudent, deleteAccount, fetchTeams, fetchUsers, setStudentLeft, setUserRoles, updateMentor, updateStudent } from '../api/directory'
 import type { MentorChanges, NewMentor, NewStudent, StudentChanges } from '../api/directory'
 import type { Role } from '../types/user'
 import type { LoadStatus } from '../context/courses'
@@ -75,9 +75,9 @@ export function useDirectory() {
     },
     [refresh],
   )
-  const addMentor = useCallback(
-    async (input: NewMentor) => {
-      const user = await createMentor(input)
+  const addStaff = useCallback(
+    async (input: NewMentor, role: 'mentor' | 'lecturer') => {
+      const user = await createStaff(input, role)
       await refresh()
       // the backend may not list users yet: keep the new one on screen anyway
       setUsers((prev) => (prev.some((u) => u.id === user.id) ? prev : [...prev, user].sort((a, b) => a.name.localeCompare(b.name))))
@@ -85,6 +85,8 @@ export function useDirectory() {
     },
     [refresh],
   )
+  const addMentor = useCallback((input: NewMentor) => addStaff(input, 'mentor'), [addStaff])
+  const addLecturer = useCallback((input: NewMentor) => addStaff(input, 'lecturer'), [addStaff])
   const editMentor = useCallback(
     async (id: number, changes: MentorChanges) => {
       await updateMentor(id, changes)
@@ -100,5 +102,5 @@ export function useDirectory() {
     [refresh],
   )
 
-  return { status, users, teams, reload, addStudent, editStudent, markLeft, removeStudent: removeAccount, removeAccount, addMentor, editMentor, changeRoles }
+  return { status, users, teams, reload, addStudent, editStudent, markLeft, removeStudent: removeAccount, removeAccount, addMentor, addLecturer, editMentor, changeRoles }
 }

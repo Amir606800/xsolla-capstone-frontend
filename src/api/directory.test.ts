@@ -128,6 +128,25 @@ describe('adding a student', () => {
     ])
   })
 
+  it('with a backend: a new lecturer is POST /users with the lecturer role only', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ id: '78', email: 'lec@x.co', name: 'Lea Lec', roles: ['lecturer'] }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchSpy)
+    const { createStaff } = await import('./directory')
+    expect(await createStaff({ name: 'Lea Lec', email: 'lec@x.co', password: 'secret123', teamId: 't1' }, 'lecturer')).toMatchObject({ id: 78, roles: ['lecturer'] })
+    const [, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(init.body as string).roles).toEqual(['lecturer'])
+  })
+
+  it('offline: a new lecturer has the lecturer role and no team', async () => {
+    vi.stubEnv('VITE_API_URL', '')
+    const { createStaff, fetchTeams } = await import('./directory')
+    const lea = await createStaff({ name: 'Lea Lec', email: 'lea@x.co', password: 'secret123', teamId: 't1' }, 'lecturer')
+    expect(lea.roles).toEqual(['lecturer'])
+    expect((await fetchTeams()).some((t) => t.mentorId === lea.id)).toBe(false)
+  })
+
   it('with a backend that cannot do it yet: plain messages for mentors and roles', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })

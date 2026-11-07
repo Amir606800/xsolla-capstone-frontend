@@ -89,6 +89,12 @@ describe('course edits', () => {
     expect(listModules(NOW).some((m) => m.id === id)).toBe(false)
   })
 
+  it('a week can be given to another lecturer', () => {
+    putModule('m1', { createdBy: 902 }, NOW)
+    expect(mod('m1').createdBy).toBe(902)
+    expect(mod('m3').createdBy).toBe(900)
+  })
+
   it('demo modules know their lecturer and when they were created', () => {
     expect(mod('m1')).toMatchObject({ createdBy: 900 })
     expect(mod('m2')).toMatchObject({ createdBy: 902 })

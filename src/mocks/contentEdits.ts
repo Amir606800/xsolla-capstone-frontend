@@ -10,7 +10,7 @@ import { buildMockModules } from './courses'
  * browser see each other's changes.
  */
 
-export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt'>>
+export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt' | 'createdBy'>>
 
 interface CourseEdits {
   modules: Record<string, ModulePatch>

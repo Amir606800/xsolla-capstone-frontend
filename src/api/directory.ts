@@ -160,26 +160,28 @@ export interface NewMentor {
   teamId: string | null
 }
 
-/** A new staff account with the mentor role, the chosen password, and (optionally) the team they mentor. */
-export async function createMentor(input: NewMentor): Promise<User> {
+/** A new staff account with the given role, the chosen password, and (mentors only) the team they mentor. */
+export async function createStaff(input: NewMentor, role: 'mentor' | 'lecturer'): Promise<User> {
   let user: User
   if (hasBackend()) {
     try {
       const dto = await authedRequest<UserDto>('/users', {
         method: 'POST',
-        body: { email: input.email.trim(), name: input.name.trim(), password: input.password, roles: ['mentor'] },
+        body: { email: input.email.trim(), name: input.name.trim(), password: input.password, roles: [role] },
       })
       user = mapUser(dto)
     } catch (e) {
-      notYet(e, 'create mentor accounts')
+      notYet(e, `create ${role} accounts`)
     }
   } else {
     await wait()
-    user = addUser({ name: input.name, email: input.email, roles: ['mentor'] })
+    user = addUser({ name: input.name, email: input.email, roles: [role] })
   }
-  if (input.teamId) setMentorTeam(user.id, input.teamId)
+  if (role === 'mentor' && input.teamId) setMentorTeam(user.id, input.teamId)
   return user
 }
+
+export const createMentor = (input: NewMentor) => createStaff(input, 'mentor')
 
 export interface MentorChanges {
   name: string

@@ -5,13 +5,16 @@ import { Icon } from '../../../components/Icon'
 import { Modal } from '../../../components/Modal'
 import { useCourses } from '../../../hooks/useCourses'
 import { usePeopleNames } from '../../../hooks/usePeopleNames'
+import { useSort } from '../../../hooks/useSort'
 import type { CourseModule } from '../../../types/course'
 import { contentsLine, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
 import { modulePhase, PHASE_LABEL } from '../../../utils/content'
 import { formatShortDate } from '../../../utils/date'
 import { ConfirmDialog } from '../ConfirmDialog'
+import { SortableTh } from '../SortableTh'
 
 type Action = { kind: 'edit' | 'delete'; module: CourseModule } | { kind: 'new' }
+const PHASE_ORDER = { running: 0, upcoming: 1, done: 2 } as const
 
 /** Admin: every module of the course, who wrote it and what is in it; edit or delete one. */
 export default function AdminModulesPage() {
@@ -22,14 +25,27 @@ export default function AdminModulesPage() {
   const [action, setAction] = useState<Action | null>(null)
   // a module deleted on its own page comes back here with a message
   const [message, setMessage] = useState<string>(() => (location.state as { message?: string } | null)?.message ?? '')
-  const sorted = useMemo(() => [...modules].sort((a, b) => a.position - b.position), [modules])
+  const byPosition = useMemo(() => [...modules].sort((a, b) => a.position - b.position), [modules])
+  const { sorted, sort, toggle } = useSort(
+    byPosition,
+    {
+      position: (m) => m.position,
+      title: (m) => m.title,
+      lecturer: (m) => (m.createdBy !== undefined ? nameOf(m.createdBy) : undefined),
+      contents: (m) => m.items.length,
+      dates: (m) => m.opensAt,
+      // running first, then the ones to come, then the finished ones
+      status: (m) => PHASE_ORDER[modulePhase(m, now)],
+    },
+    { key: 'position', dir: 'asc' },
+  )
 
   const open = (kind: 'edit' | 'delete', module: CourseModule) => {
     setMessage('')
     setAction({ kind, module })
   }
   // an empty module for the form; it goes after the last one
-  const blank: CourseModule = { id: '', position: (sorted.at(-1)?.position ?? 0) + 1, title: '', items: [] }
+  const blank: CourseModule = { id: '', position: (byPosition.at(-1)?.position ?? 0) + 1, title: '', items: [] }
   const close = () => setAction(null)
 
   return (
@@ -76,12 +92,12 @@ export default function AdminModulesPage() {
             <caption className="sr-only">Modules</caption>
             <thead>
               <tr>
-                <th scope="col">#</th>
-                <th scope="col">Module</th>
-                <th scope="col">Lecturer</th>
-                <th scope="col">Contents</th>
-                <th scope="col">Dates</th>
-                <th scope="col">Status</th>
+                <SortableTh label="#" sortKey="position" sort={sort} onSort={toggle} />
+                <SortableTh label="Module" sortKey="title" sort={sort} onSort={toggle} />
+                <SortableTh label="Lecturer" sortKey="lecturer" sort={sort} onSort={toggle} />
+                <SortableTh label="Contents" sortKey="contents" sort={sort} onSort={toggle} />
+                <SortableTh label="Dates" sortKey="dates" sort={sort} onSort={toggle} />
+                <SortableTh label="Status" sortKey="status" sort={sort} onSort={toggle} />
                 <th scope="col">
                   <span className="sr-only">Actions</span>
                 </th>

@@ -3,12 +3,14 @@ import { hasBackend } from '../../../api/http'
 import { Icon } from '../../../components/Icon'
 import { Modal } from '../../../components/Modal'
 import { useDirectory } from '../../../hooks/useDirectory'
+import { useSort } from '../../../hooks/useSort'
 import type { SchoolUser } from '../../../types/admin'
 import { inTeamFilter, matchesQuery, teamByStudent } from '../../../utils/adminPeople'
 import type { TeamFilter } from '../../../utils/adminPeople'
 import { formatShortDate } from '../../../utils/date'
 import { isStudent } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
+import { SortableTh } from '../SortableTh'
 import { StudentForm } from './StudentForm'
 
 /** Who the list shows: students at the school now, those who left, or both. */
@@ -34,7 +36,21 @@ export default function AdminStudentsPage() {
   const byStudent = useMemo(() => teamByStudent(teams), [teams])
   const nameOf = useMemo(() => new Map(users.map((u) => [u.id, u.name])), [users])
   const pool = state === 'current' ? current : state === 'left' ? left : students
-  const shown = pool.filter((s) => matchesQuery(s, query) && inTeamFilter(s.id, team, byStudent))
+  const filtered = pool.filter((s) => matchesQuery(s, query) && inTeamFilter(s.id, team, byStudent))
+  const mentorName = (s: SchoolUser) => {
+    const id = byStudent.get(s.id)?.mentorId
+    return id != null ? nameOf.get(id) : undefined
+  }
+  const { sorted: shown, sort, toggle } = useSort(
+    filtered,
+    {
+      name: (s) => s.name,
+      email: (s) => s.email,
+      team: (s) => (s.leftAt ? undefined : byStudent.get(s.id)?.name),
+      mentor: mentorName,
+    },
+    { key: 'name', dir: 'asc' },
+  )
   const outside = current.filter((s) => !byStudent.has(s.id)).length
 
   const open = (a: Action) => {
@@ -127,10 +143,10 @@ export default function AdminStudentsPage() {
                 <caption className="sr-only">Students</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Team</th>
-                    <th scope="col">Mentor</th>
+                    <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggle} />
+                    <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggle} />
+                    <SortableTh label="Team" sortKey="team" sort={sort} onSort={toggle} />
+                    <SortableTh label="Mentor" sortKey="mentor" sort={sort} onSort={toggle} />
                     <th scope="col">
                       <span className="sr-only">Actions</span>
                     </th>

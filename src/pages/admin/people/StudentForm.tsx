@@ -22,7 +22,7 @@ export function StudentForm({
   onSave,
   onCancel,
 }: {
-  variant?: 'student' | 'mentor'
+  variant?: 'student' | 'mentor' | 'lecturer'
   /** The account being edited (a student or a mentor). */
   student?: User
   /** Their team now (when editing). */
@@ -36,7 +36,8 @@ export function StudentForm({
 }) {
   const editing = !!student
   const isMentor = variant === 'mentor'
-  const noun = isMentor ? 'mentor' : 'student'
+  const isLecturer = variant === 'lecturer'
+  const noun = variant
   const [name, setName] = useState(student?.name ?? '')
   const [email, setEmail] = useState(student?.email ?? '')
   const [password, setPassword] = useState('')
@@ -173,37 +174,39 @@ export function StudentForm({
         </div>
       )}
 
-      <div className="admin-field">
-        <label className="admin-field__label" htmlFor={`${id}-team`}>
-          {isMentor ? 'Team they mentor' : 'Team'}
-        </label>
-        <select id={`${id}-team`} className="admin-field__input" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-          <option value="">No team yet</option>
-          {teams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name} (
-              {isMentor
-                ? t.mentorId === null
-                  ? 'no mentor'
-                  : t.mentorId === student?.id
-                    ? 'mentors it now'
-                    : `mentor: ${nameOf(t.mentorId)}`
-                : `${t.studentIds.length} ${t.studentIds.length === 1 ? 'student' : 'students'}`}
-              )
-            </option>
-          ))}
-        </select>
-        {replaced !== null && team && (
-          <span className="admin-hint admin-hint--warn">
-            {team.name} is mentored by {nameOf(replaced)} now. {nameOf(replaced)} will have no team.
-          </span>
-        )}
-        {full && (
-          <span className="admin-hint admin-hint--warn">
-            {team.name} already has {others} students.
-          </span>
-        )}
-      </div>
+      {!isLecturer && (
+        <div className="admin-field">
+          <label className="admin-field__label" htmlFor={`${id}-team`}>
+            {isMentor ? 'Team they mentor' : 'Team'}
+          </label>
+          <select id={`${id}-team`} className="admin-field__input" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+            <option value="">No team yet</option>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} (
+                {isMentor
+                  ? t.mentorId === null
+                    ? 'no mentor'
+                    : t.mentorId === student?.id
+                      ? 'mentors it now'
+                      : `mentor: ${nameOf(t.mentorId)}`
+                  : `${t.studentIds.length} ${t.studentIds.length === 1 ? 'student' : 'students'}`}
+                )
+              </option>
+            ))}
+          </select>
+          {replaced !== null && team && (
+            <span className="admin-hint admin-hint--warn">
+              {team.name} is mentored by {nameOf(replaced)} now. {nameOf(replaced)} will have no team.
+            </span>
+          )}
+          {full && (
+            <span className="admin-hint admin-hint--warn">
+              {team.name} already has {others} students.
+            </span>
+          )}
+        </div>
+      )}
 
       {error && (
         <p className="admin-field__error" role="alert">

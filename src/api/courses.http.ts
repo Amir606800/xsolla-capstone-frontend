@@ -151,6 +151,20 @@ export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
   return fetchModules(false)
 }
 
+/**
+ * Makes `lecturerId` the lecturer of the week (module). The backend has no field for this yet; the call
+ * uses the proposed one (PATCH /modules/:id { lecturer_id }) and checks the answer, because a server
+ * that does not know the field would accept the request and change nothing.
+ */
+export async function assignLecturer(moduleId: string, lecturerId: number): Promise<CourseModule[]> {
+  await authedRequest(`/modules/${moduleId}`, { method: 'PATCH', body: { lecturer_id: lecturerId } })
+  const modules = await fetchModules(false)
+  if (modules.find((m) => m.id === moduleId)?.createdBy !== lecturerId) {
+    throw new NotSupportedError('The server cannot change the lecturer of a week yet.')
+  }
+  return modules
+}
+
 /** Soft delete on the server: its items go with it, students' handed-in work is kept. */
 export async function deleteModule(id: string): Promise<CourseModule[]> {
   await authedRequest<void>(`/modules/${id}`, { method: 'DELETE' })

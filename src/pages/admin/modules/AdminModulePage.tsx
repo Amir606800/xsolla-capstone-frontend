@@ -9,6 +9,7 @@ import { Modal } from '../../../components/Modal'
 import { useAuth } from '../../../hooks/useAuth'
 import { useCourses } from '../../../hooks/useCourses'
 import { usePeopleNames } from '../../../hooks/usePeopleNames'
+import { useSort } from '../../../hooks/useSort'
 import { newId } from '../../../mocks/contentEdits'
 import type { ContentItem, CourseModule } from '../../../types/course'
 import { contentsLine, ITEM_TYPE_LABEL, itemAuthor, itemSummary, keepMeta, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
@@ -16,6 +17,7 @@ import { draftToMaterial, draftToQuiz, draftToTask } from '../../../utils/author
 import { modulePhase, PHASE_LABEL } from '../../../utils/content'
 import { formatDateTime } from '../../../utils/date'
 import { ConfirmDialog } from '../ConfirmDialog'
+import { SortableTh } from '../SortableTh'
 import { ItemDetails } from './ItemDetails'
 
 type Filter = 'all' | ContentItem['type']
@@ -53,6 +55,18 @@ export default function AdminModulePage() {
   const [action, setAction] = useState<Action | null>(null)
   // a module created on the list page arrives here with a message
   const [message, setMessage] = useState<string>(() => (location.state as { message?: string } | null)?.message ?? '')
+  const module = modules.find((m) => m.id === moduleId)
+  const items = module ? TYPE_ORDER.flatMap((t) => module.items.filter((i) => i.type === t)) : []
+  const shownItems = filter === 'all' ? items : items.filter((i) => i.type === filter)
+  // no column picked: tasks, then resources, then quizzes, in course order
+  const { sorted: shown, sort, toggle } = useSort(shownItems, {
+    type: (i) => TYPE_ORDER.indexOf(i.type),
+    title: (i) => i.title,
+    // when it is due (tasks, quizzes); resources by kind
+    details: (i) => (i.type === 'resource' ? `~${i.kind}` : i.type === 'assignment' ? i.dueAt : i.dueAt),
+    lecturer: (i) => (module ? nameOf(itemAuthor(i, module)) : undefined),
+    students: (i) => (i.hidden ? 1 : 0),
+  })
 
   if (status === 'loading') {
     return (
@@ -72,7 +86,6 @@ export default function AdminModulePage() {
     )
   }
 
-  const module = modules.find((m) => m.id === moduleId)
   if (!module) {
     return (
       <section className="admin-page">
@@ -83,8 +96,6 @@ export default function AdminModulePage() {
     )
   }
 
-  const items = TYPE_ORDER.flatMap((t) => module.items.filter((i) => i.type === t))
-  const shown = filter === 'all' ? items : items.filter((i) => i.type === filter)
   const count = (f: Filter) => (f === 'all' ? items.length : items.filter((i) => i.type === f).length)
   const phase = modulePhase(module, now)
   // the item as it is now (it may have changed since the dialog opened)
@@ -174,11 +185,11 @@ export default function AdminModulePage() {
             <caption className="sr-only">Contents of {module.title}</caption>
             <thead>
               <tr>
-                <th scope="col">Type</th>
-                <th scope="col">Title</th>
-                <th scope="col">Details</th>
-                <th scope="col">Lecturer</th>
-                <th scope="col">Students</th>
+                <SortableTh label="Type" sortKey="type" sort={sort} onSort={toggle} />
+                <SortableTh label="Title" sortKey="title" sort={sort} onSort={toggle} />
+                <SortableTh label="Details" sortKey="details" sort={sort} onSort={toggle} />
+                <SortableTh label="Lecturer" sortKey="lecturer" sort={sort} onSort={toggle} />
+                <SortableTh label="Students" sortKey="students" sort={sort} onSort={toggle} />
                 <th scope="col">
                   <span className="sr-only">Actions</span>
                 </th>

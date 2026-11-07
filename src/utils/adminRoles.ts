@@ -2,10 +2,11 @@ import type { Role, User } from '../types/user'
 import { formatShortDate } from './date'
 
 const DAY = 86_400_000
+const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
 
-/** Whole days from `now` until `iso` (rounded up: anything left today counts as 1). */
+/** Calendar days from today to the day of `iso`: 0 when it ends today (never below 0). */
 export function daysLeft(iso: string, now: Date): number {
-  return Math.max(0, Math.ceil((new Date(iso).getTime() - now.getTime()) / DAY))
+  return Math.max(0, Math.round((midnight(new Date(iso)) - midnight(now)) / DAY))
 }
 
 export interface RoleBadge {
@@ -30,7 +31,7 @@ export function roleBadges(user: Pick<User, 'roles' | 'roleUntil'>, now: Date): 
       return {
         role,
         label: NAMES[role],
-        detail: `until ${formatShortDate(until)} · ${left === 1 ? '1 day' : `${left} days`} left`,
+        detail: `until ${formatShortDate(until)} · ${left === 0 ? 'ends today' : left === 1 ? '1 day left' : `${left} days left`}`,
         endingSoon: left <= 7,
       }
     })

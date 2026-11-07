@@ -4,8 +4,9 @@ import { dayInput, daysLeft, endOfDay, roleBadges } from './adminRoles'
 const NOW = new Date(2026, 10, 7, 12)
 
 describe('admin role helpers', () => {
-  it('counts the days left, anything left today being one', () => {
-    expect(daysLeft(new Date(2026, 10, 7, 18).toISOString(), NOW)).toBe(1)
+  it('counts the calendar days left: 0 when it ends today', () => {
+    expect(daysLeft(new Date(2026, 10, 7, 23, 59).toISOString(), NOW)).toBe(0)
+    expect(daysLeft(new Date(2026, 10, 8, 23, 59).toISOString(), NOW)).toBe(1)
     expect(daysLeft(new Date(2026, 10, 14, 12).toISOString(), NOW)).toBe(7)
     expect(daysLeft(new Date(2026, 10, 1).toISOString(), NOW)).toBe(0)
   })
@@ -14,9 +15,11 @@ describe('admin role helpers', () => {
     expect(roleBadges({ roles: ['mentor'] }, NOW)).toEqual([{ role: 'mentor', label: 'Mentor' }])
     const [, lecturer] = roleBadges({ roles: ['mentor', 'lecturer'], roleUntil: { lecturer: new Date(2026, 11, 1, 23, 59).toISOString() } }, NOW)
     expect(lecturer).toMatchObject({ role: 'lecturer', label: 'Lecturer', endingSoon: false })
-    expect(lecturer.detail).toMatch(/^until Dec 1 · 25 days left$/)
+    expect(lecturer.detail).toBe('until Dec 1 · 24 days left')
     const [soon] = roleBadges({ roles: ['lecturer'], roleUntil: { lecturer: new Date(2026, 10, 9).toISOString() } }, NOW)
-    expect(soon).toMatchObject({ endingSoon: true, detail: expect.stringMatching(/2 days left$/) })
+    expect(soon).toMatchObject({ endingSoon: true, detail: 'until Nov 9 · 2 days left' })
+    const [today] = roleBadges({ roles: ['lecturer'], roleUntil: { lecturer: new Date(2026, 10, 7, 23, 59).toISOString() } }, NOW)
+    expect(today.detail).toBe('until Nov 7 · ends today')
   })
 
   it('a role until a day lasts that whole day', () => {
