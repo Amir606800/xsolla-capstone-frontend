@@ -95,6 +95,14 @@ describe('course edits', () => {
     expect(mod('m3').createdBy).toBe(900)
   })
 
+  it('a week can have no lecturer, and that is kept', () => {
+    putModule('m1', { createdBy: null }, NOW)
+    expect(mod('m1').createdBy).toBeUndefined()
+    expect(JSON.parse(localStorage.getItem('course_edits')!).modules.m1.createdBy).toBeNull()
+    putModule('m1', { createdBy: 902 }, NOW)
+    expect(mod('m1').createdBy).toBe(902)
+  })
+
   it('demo modules know their lecturer and when they were created', () => {
     expect(mod('m1')).toMatchObject({ createdBy: 900 })
     expect(mod('m2')).toMatchObject({ createdBy: 902 })

@@ -46,7 +46,7 @@ export function ConfirmDialog({
   }
 
   return (
-    <Modal open={open} onClose={close} title={title} initialFocus=".admin-confirm__cancel">
+    <Modal open={open} onClose={close} title={title} initialFocus=".admin-confirm__cancel" size="sm">
       <div className="admin-confirm">
         <div className="admin-confirm__text">{children}</div>
         {error && (

@@ -294,7 +294,7 @@ export default function AdminCalendarPage() {
         )}
       </Modal>
 
-      <Modal open={action?.kind === 'postpone'} onClose={close} title={current ? `Postpone “${current.title}”` : ''} initialFocus=".admin-dialog button">
+      <Modal open={action?.kind === 'postpone'} onClose={close} title={current ? `Postpone “${current.title}”` : ''} initialFocus=".admin-dialog button" size="sm">
         {action?.kind === 'postpone' && current && (
           <PostponeForm
             event={current}

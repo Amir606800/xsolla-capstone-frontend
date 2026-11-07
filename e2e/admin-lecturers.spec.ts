@@ -50,11 +50,20 @@ test('the admin gives a week to a lecturer, and the Modules page shows them', as
   await expect(page.getByRole('row', { name: /Nargiz Abbasova/ })).toContainText('—')
   await page.getByRole('button', { name: 'Assign weeks to Nargiz Abbasova' }).click()
   await page.getByRole('dialog').getByRole('checkbox', { name: /^Week 3 · / }).check()
-  await page.getByRole('dialog').getByRole('button', { name: 'Assign 1 week' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Save weeks' }).click()
   await expect(page.getByText('Nargiz Abbasova now teaches week 3.')).toBeVisible()
   await expect(page.getByRole('row', { name: /Nargiz Abbasova/ })).toContainText('Week 3')
   await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Modules' }).click()
   await expect(page.getByRole('row', { name: /JavaScript/ })).toContainText('Nargiz Abbasova')
+
+  // and takes it off again
+  await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Lecturers' }).click()
+  await page.getByRole('button', { name: 'Assign weeks to Nargiz Abbasova' }).click()
+  await page.getByRole('dialog').getByRole('checkbox', { name: /^Week 3 · / }).uncheck()
+  await page.getByRole('dialog').getByRole('button', { name: 'Save weeks' }).click()
+  await expect(page.getByText('Nargiz Abbasova is off week 3.')).toBeVisible()
+  await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Modules' }).click()
+  await expect(page.getByRole('row', { name: /JavaScript/ })).toContainText('No lecturer')
 })
 
 test('the lecturers page fits a phone screen', async ({ page }) => {

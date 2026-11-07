@@ -85,45 +85,47 @@ export function StudentForm({
 
   return (
     <form className="admin-dialog" onSubmit={submit} noValidate aria-label={editing ? `Edit ${student.name}` : `New ${noun}`}>
-      <div className="admin-field">
-        <label className="admin-field__label" htmlFor={`${id}-name`}>
-          Full name
-        </label>
-        <input
-          id={`${id}-name`}
-          className="admin-field__input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoComplete="off"
-          aria-invalid={!!show('name')}
-          aria-describedby={show('name') ? `${id}-name-error` : undefined}
-        />
-        {show('name') && (
-          <span id={`${id}-name-error`} className="admin-field__error">
-            {show('name')}
-          </span>
-        )}
-      </div>
+      <div className="admin-form-row">
+        <div className="admin-field">
+          <label className="admin-field__label" htmlFor={`${id}-name`}>
+            Full name
+          </label>
+          <input
+            id={`${id}-name`}
+            className="admin-field__input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="off"
+            aria-invalid={!!show('name')}
+            aria-describedby={show('name') ? `${id}-name-error` : undefined}
+          />
+          {show('name') && (
+            <span id={`${id}-name-error`} className="admin-field__error">
+              {show('name')}
+            </span>
+          )}
+        </div>
 
-      <div className="admin-field">
-        <label className="admin-field__label" htmlFor={`${id}-email`}>
-          Email
-        </label>
-        <input
-          id={`${id}-email`}
-          type="email"
-          className="admin-field__input"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="off"
-          aria-invalid={!!show('email')}
-          aria-describedby={show('email') ? `${id}-email-error` : undefined}
-        />
-        {show('email') && (
-          <span id={`${id}-email-error`} className="admin-field__error">
-            {show('email')}
-          </span>
-        )}
+        <div className="admin-field">
+          <label className="admin-field__label" htmlFor={`${id}-email`}>
+            Email
+          </label>
+          <input
+            id={`${id}-email`}
+            type="email"
+            className="admin-field__input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="off"
+            aria-invalid={!!show('email')}
+            aria-describedby={show('email') ? `${id}-email-error` : undefined}
+          />
+          {show('email') && (
+            <span id={`${id}-email-error`} className="admin-field__error">
+              {show('email')}
+            </span>
+          )}
+        </div>
       </div>
 
       {!editing && (

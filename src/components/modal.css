@@ -22,6 +22,17 @@
   box-shadow: var(--shadow);
   animation: modal-pop 0.15s ease;
 }
+.modal--sm {
+  width: min(420px, 100%);
+}
+.modal--lg {
+  width: min(760px, 100%);
+  max-height: min(780px, calc(100vh - 32px));
+  max-height: min(780px, calc(100dvh - 32px));
+}
+.modal--sm .modal__head {
+  padding: 14px 18px;
+}
 .modal__head {
   display: flex;
   align-items: center;

@@ -37,9 +37,10 @@ const AdminModulePage = lazy(() => import('./pages/admin/modules/AdminModulePage
 const AdminCalendarPage = lazy(() => import('./pages/admin/calendar/AdminCalendarPage'))
 const AdminStudentsPage = lazy(() => import('./pages/admin/people/AdminStudentsPage'))
 const AdminMentorsPage = lazy(() => import('./pages/admin/people/AdminMentorsPage'))
+const AdminTeamsPage = lazy(() => import('./pages/admin/teams/AdminTeamsPage'))
 const AdminLecturersPage = lazy(() => import('./pages/admin/people/AdminLecturersPage'))
 /** Admin sections with their own pages; the rest show a placeholder until they are built. */
-const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers']
+const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams']
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
             </Route>
             <Route path="/admin/students" element={<AdminStudentsPage />} />
             <Route path="/admin/mentors" element={<AdminMentorsPage />} />
+            <Route path="/admin/teams" element={<AdminTeamsPage />} />
             {/* the lecturers page counts each lecturer's modules, so it loads the course */}
             <Route path="/admin/lecturers" element={<AdminCoursesLayout />}>
               <Route index element={<AdminLecturersPage />} />

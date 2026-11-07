@@ -23,7 +23,7 @@ export function usePeopleNames(): (id: number | undefined) => string {
   }, [])
 
   return useCallback((id: number | undefined) => {
-    if (id === undefined) return 'Unknown'
+    if (id === undefined) return 'No lecturer'
     return names?.get(id) ?? `User #${id}`
   }, [names])
 }

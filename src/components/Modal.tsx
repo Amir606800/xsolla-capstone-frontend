@@ -11,6 +11,8 @@ interface ModalProps {
   children: ReactNode
   /** CSS selector (inside the dialog) of the element to focus on open. Defaults to the close button. */
   initialFocus?: string
+  /** `sm`: short questions and one-line forms; `md` (default): forms; `lg`: details and previews. */
+  size?: 'sm' | 'md' | 'lg'
 }
 
 const FOCUSABLE =
@@ -21,7 +23,7 @@ const FOCUSABLE =
  * moved inside and trapped while open, restored to the trigger on close, and
  * the page behind does not scroll.
  */
-export function Modal({ open, onClose, title, children, initialFocus }: ModalProps) {
+export function Modal({ open, onClose, title, children, initialFocus, size = 'md' }: ModalProps) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -83,7 +85,7 @@ export function Modal({ open, onClose, title, children, initialFocus }: ModalPro
     >
       <div
         ref={dialogRef}
-        className="modal"
+        className={`modal modal--${size}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -2,10 +2,16 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import type { CourseModule } from '../../../types/course'
 
+export interface WeekChanges {
+  /** Weeks to give to the lecturer (they leave their current lecturer). */
+  assign: string[]
+  /** Weeks to take off the lecturer; they have no lecturer until someone is given them. */
+  unassign: string[]
+}
+
 /**
- * Admin: the weeks (modules) a lecturer teaches. Their own weeks are ticked; tick another week to give
- * it to them (it leaves its current lecturer). A week always has a lecturer, so to take a week away,
- * give it to someone else.
+ * Admin: the weeks (modules) a lecturer teaches. Their own weeks start ticked: untick one to take the
+ * lecturer off it, tick another week to give it to them.
  */
 export function AssignWeeksForm({
   lecturerId,
@@ -17,49 +23,62 @@ export function AssignWeeksForm({
   lecturerId: number
   modules: CourseModule[]
   nameOf: (id: number | undefined) => string
-  onSave: (moduleIds: string[]) => Promise<void>
+  onSave: (changes: WeekChanges) => Promise<void>
   onCancel: () => void
 }) {
-  const [picked, setPicked] = useState<string[]>([])
+  const sorted = [...modules].sort((a, b) => a.position - b.position)
+  const own = sorted.filter((m) => m.createdBy === lecturerId).map((m) => m.id)
+  const [ticked, setTicked] = useState<string[]>(own)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const sorted = [...modules].sort((a, b) => a.position - b.position)
+
+  const assign = ticked.filter((id) => !own.includes(id))
+  const unassign = own.filter((id) => !ticked.includes(id))
+  const changed = assign.length + unassign.length > 0
+  const summary = [
+    assign.length ? `give ${assign.length} ${assign.length === 1 ? 'week' : 'weeks'}` : '',
+    unassign.length ? `take off ${unassign.length} ${unassign.length === 1 ? 'week' : 'weeks'}` : '',
+  ]
+    .filter(Boolean)
+    .join(', ')
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (picked.length === 0 || busy) return
+    if (!changed || busy) return
     setBusy(true)
     setError('')
     try {
-      await onSave(picked)
+      await onSave({ assign, unassign })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The weeks could not be assigned.')
+      setError(err instanceof Error ? err.message : 'The weeks could not be saved.')
       setBusy(false)
     }
   }
 
   return (
-    <form className="admin-dialog" onSubmit={submit} aria-label="Assign weeks">
+    <form className="admin-dialog" onSubmit={submit} aria-label="Weeks">
       <fieldset className="admin-roles admin-weeks">
         <legend className="admin-field__label">Weeks</legend>
         {sorted.map((m) => {
-          const own = m.createdBy === lecturerId
+          const mine = m.createdBy === lecturerId
           return (
             <label key={m.id} className="admin-check">
               <input
                 type="checkbox"
-                checked={own || picked.includes(m.id)}
-                disabled={own}
-                onChange={(e) => setPicked((prev) => (e.target.checked ? [...prev, m.id] : prev.filter((id) => id !== m.id)))}
+                checked={ticked.includes(m.id)}
+                onChange={(e) => setTicked((prev) => (e.target.checked ? [...prev, m.id] : prev.filter((id) => id !== m.id)))}
               />
               <span>
                 Week {m.position} · {m.title}
-                <span className="admin-hint">{own ? 'Already theirs' : `Now: ${nameOf(m.createdBy)}`}</span>
+                <span className="admin-hint">{mine ? 'Theirs now' : m.createdBy === undefined ? 'No lecturer' : `Now: ${nameOf(m.createdBy)}`}</span>
               </span>
             </label>
           )
         })}
       </fieldset>
+      <p className="admin-muted" aria-live="polite">
+        {changed ? `Will ${summary}.` : 'Tick a week to give it to them, untick one to take it off.'}
+      </p>
       {error && (
         <p className="admin-field__error" role="alert">
           {error}
@@ -69,8 +88,8 @@ export function AssignWeeksForm({
         <button type="button" className="admin-btn" onClick={onCancel} disabled={busy}>
           Cancel
         </button>
-        <button type="submit" className="admin-btn admin-btn--primary" disabled={busy || picked.length === 0}>
-          {busy ? 'Saving…' : picked.length ? `Assign ${picked.length} ${picked.length === 1 ? 'week' : 'weeks'}` : 'Assign weeks'}
+        <button type="submit" className="admin-btn admin-btn--primary" disabled={busy || !changed}>
+          {busy ? 'Saving…' : 'Save weeks'}
         </button>
       </div>
     </form>

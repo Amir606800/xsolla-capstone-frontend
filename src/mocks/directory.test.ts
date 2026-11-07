@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildMentorTeam, buildMockTeam } from './teams'
-import { addUser, deleteUser, listTeams, listUsers, setLeft, setMentorTeam, setRoles, setTeam, updateUser } from './directory'
+import { addUser, clearTeams, createTeams, deleteUser, listTeams, listUsers, setLeft, setMentorTeam, setRoles, setTeam, setTeamMentor, updateUser } from './directory'
 import { canMentor, hasRole, isStudent } from '../utils/roles'
 
 describe('admin directory mock', () => {
@@ -137,6 +137,54 @@ describe('admin changes to the directory', () => {
   it('a deleted mentor’s team has no mentor', () => {
     deleteUser(905)
     expect(listTeams().find((t) => t.id === 't5')!.mentorId).toBeNull()
+  })
+
+  it('createTeams replaces every team: new names, members and mentors, nobody left in an old team', () => {
+    createTeams([
+      { mentorId: 901, studentIds: [1, 101] },
+      { mentorId: null, studentIds: [102] },
+    ])
+    const teams = listTeams()
+    expect(teams.map((t) => [t.id, t.name, t.mentorId, t.studentIds])).toEqual([
+      ['t1', 'Team 1', 901, [1, 101]],
+      ['t2', 'Team 2', null, [102]],
+    ])
+    // students and mentors that were not in the plan are free
+    expect(teams.flatMap((t) => t.studentIds)).not.toContain(103)
+    expect(teams.some((t) => t.mentorId === 900)).toBe(false)
+  })
+
+  it('in teams the admin made, students and mentors can be moved like before', () => {
+    createTeams([
+      { mentorId: 901, studentIds: [1] },
+      { mentorId: 902, studentIds: [] },
+    ])
+    setTeam(101, 't2')
+    setTeam(1, null)
+    expect(listTeams().find((t) => t.id === 't2')!.studentIds).toEqual([101])
+    expect(listTeams().find((t) => t.id === 't1')!.studentIds).toEqual([])
+    expect(() => setTeam(101, 't9')).toThrow('does not exist')
+  })
+
+  it('setTeamMentor: a mentor leaves their old team; null leaves the team without one', () => {
+    setTeamMentor('t1', 901) // Aysel led Team 4
+    expect(listTeams().find((t) => t.id === 't1')!.mentorId).toBe(901)
+    expect(listTeams().find((t) => t.id === 't4')!.mentorId).toBeNull()
+    setTeamMentor('t1', null)
+    expect(listTeams().find((t) => t.id === 't1')!.mentorId).toBeNull()
+    expect(() => setTeamMentor('t9', null)).toThrow('does not exist')
+  })
+
+  it('clearTeams: no teams at all, and the demo teams do not come back', () => {
+    clearTeams()
+    expect(listTeams()).toEqual([])
+    expect(listUsers().filter(isStudent)).toHaveLength(29)
+  })
+
+  it('a student who left is not in the team the admin made for them', () => {
+    createTeams([{ mentorId: null, studentIds: [101, 102] }])
+    setLeft(101, true)
+    expect(listTeams()[0].studentIds).toEqual([102])
   })
 
   it('survives broken storage', () => {

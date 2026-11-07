@@ -10,7 +10,8 @@ import { buildMockModules } from './courses'
  * browser see each other's changes.
  */
 
-export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt' | 'createdBy'>>
+/** `createdBy: null` takes the lecturer off the week (stored as null: JSON drops undefined). */
+export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt'>> & { createdBy?: number | null }
 
 interface CourseEdits {
   modules: Record<string, ModulePatch>
@@ -89,7 +90,9 @@ export function applyCourseEdits(demo: CourseModule[], edits: CourseEdits): Cour
       if (original && original.moduleId === m.id) continue // already placed above
       items.push(merge(original, edited))
     }
-    return { ...m, ...edits.modules[m.id], items }
+    const { createdBy, ...patch } = edits.modules[m.id] ?? {}
+    const lecturer = createdBy === undefined ? m.createdBy : (createdBy ?? undefined)
+    return { ...m, ...patch, createdBy: lecturer, items }
   })
 }
 
@@ -109,9 +112,11 @@ export function addModule(
 ): { id: string; modules: CourseModule[] } {
   const edits = loadCourseEdits()
   const id = newId('module')
+  const { createdBy: _ignored, ...fields } = patch
+  void _ignored
   edits.newModules = {
     ...edits.newModules,
-    [id]: { id, ...patch, ...(createdBy !== undefined ? { createdBy } : {}), createdAt: now.toISOString() },
+    [id]: { id, ...fields, ...(createdBy !== undefined ? { createdBy } : {}), createdAt: now.toISOString() },
   }
   write(COURSE_KEY, edits)
   return { id, modules: listModules(now) }

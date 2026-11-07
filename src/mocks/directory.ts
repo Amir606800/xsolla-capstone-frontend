@@ -116,6 +116,11 @@ interface DirectoryEdits {
   roles: Record<string, { roles: Role[]; until?: Partial<Record<Role, string>> }>
   /** Team mentors the admin set: team id -> mentor id, or null for none. */
   mentorOf: Record<string, number | null>
+  /**
+   * Teams the admin made (random teams) instead of the six demo ones. An empty list is "no teams".
+   * Left out, the demo teams are used.
+   */
+  custom?: { id: string; name: string }[]
 }
 
 const KEY = 'school_directory'
@@ -132,6 +137,7 @@ function load(): DirectoryEdits {
       deleted: parsed.deleted ?? [],
       roles: parsed.roles ?? {},
       mentorOf: parsed.mentorOf ?? {},
+      ...(parsed.custom ? { custom: parsed.custom } : {}),
     }
   } catch {
     return { added: [], teamOf: {}, changed: {}, left: {}, deleted: [], roles: {}, mentorOf: {} }
@@ -146,6 +152,10 @@ function save(edits: DirectoryEdits): void {
   }
 }
 
+/** The teams that exist: the ones the admin made, else the six demo teams. */
+const teamDefs = (edits: DirectoryEdits) => edits.custom ?? TEAM_SEEDS.map((t) => ({ id: t.id, name: t.name }))
+const teamExists = (id: string) => teamDefs(load()).some((t) => t.id === id)
+
 const seedUsers = (): User[] => [...TEAM_SEEDS.flatMap((t) => [t.mentor, ...t.students]), ...OTHER_STAFF]
 
 /**
@@ -154,7 +164,7 @@ const seedUsers = (): User[] => [...TEAM_SEEDS.flatMap((t) => [t.mentor, ...t.st
  */
 function rolesAt(base: User, set: DirectoryEdits['roles'][string] | undefined, now: Date): Pick<User, 'roles' | 'roleUntil'> {
   const roles = set ? set.roles : base.roles
-  const until = set ? set.until ?? {} : base.roleUntil ?? {}
+  const until = set ? (set.until ?? {}) : (base.roleUntil ?? {})
   const held = roles.filter((r) => !until[r] || new Date(until[r]!) > now)
   const left: Partial<Record<Role, string>> = {}
   for (const r of held) if (until[r]) left[r] = until[r]
@@ -188,14 +198,25 @@ export function listTeams(now: Date = new Date()): SchoolTeam[] {
   const { teamOf, mentorOf } = edits
   const out = gone(edits)
   // a team's mentor must still exist and still hold the mentor role
-  const mentors = new Set(listUsers(now).filter((u) => u.roles.includes('mentor') && !u.leftAt).map((u) => u.id))
-  return TEAM_SEEDS.map((t) => {
-    const mentorId = t.id in mentorOf ? mentorOf[t.id] : t.mentor.id
-    const kept = t.students.map((s) => s.id).filter((id) => !(String(id) in teamOf))
+  const mentors = new Set(
+    listUsers(now)
+      .filter((u) => u.roles.includes('mentor') && !u.leftAt)
+      .map((u) => u.id),
+  )
+  return teamDefs(edits).map((t) => {
+    // the demo teams start with their demo members and mentor; teams the admin made start empty
+    const seed = edits.custom ? undefined : TEAM_SEEDS.find((x) => x.id === t.id)
+    const mentorId = t.id in mentorOf ? mentorOf[t.id] : (seed?.mentor.id ?? null)
+    const kept = (seed?.students ?? []).map((st) => st.id).filter((id) => !(String(id) in teamOf))
     const joined = Object.entries(teamOf)
       .filter(([, team]) => team === t.id)
       .map(([id]) => Number(id))
-    return { id: t.id, name: t.name, mentorId: mentorId !== null && mentors.has(mentorId) ? mentorId : null, studentIds: [...kept, ...joined].filter((id) => !out(id)) }
+    return {
+      id: t.id,
+      name: t.name,
+      mentorId: mentorId !== null && mentors.has(mentorId) ? mentorId : null,
+      studentIds: [...kept, ...joined].filter((id) => !out(id)),
+    }
   })
 }
 
@@ -212,7 +233,13 @@ export function addUser(account: NewAccount): User {
   if (emailTaken(email)) throw new Error('There is already an account with this email.')
   const edits = load()
   const id = Math.max(2000, ...listUsers().map((u) => u.id)) + 1
-  const user: User = { id, name: account.name.trim(), email, roles: [...account.roles], ...(account.roleUntil ? { roleUntil: { ...account.roleUntil } } : {}) }
+  const user: User = {
+    id,
+    name: account.name.trim(),
+    email,
+    roles: [...account.roles],
+    ...(account.roleUntil ? { roleUntil: { ...account.roleUntil } } : {}),
+  }
   edits.added.push(user)
   save(edits)
   return { ...user, roles: [...user.roles] }
@@ -281,7 +308,7 @@ export function setRoles(id: number, roles: Role[], until: Partial<Record<Role, 
 /** Makes someone the mentor of a team (its previous mentor is left without one), or of none (null). */
 export function setMentorTeam(mentorId: number, teamId: string | null): void {
   // no check that the mentor is in this directory: with a backend the accounts live there, only teams are here
-  if (teamId !== null && !TEAM_SEEDS.some((t) => t.id === teamId)) throw new Error('This team does not exist')
+  if (teamId !== null && !teamExists(teamId)) throw new Error('This team does not exist')
   const edits = load()
   for (const t of listTeams()) if (t.mentorId === mentorId) edits.mentorOf[t.id] = null
   if (teamId !== null) edits.mentorOf[teamId] = mentorId
@@ -290,8 +317,46 @@ export function setMentorTeam(mentorId: number, teamId: string | null): void {
 
 /** Puts a student in a team (or in none, with null). */
 export function setTeam(userId: number, teamId: string | null): void {
-  if (teamId !== null && !TEAM_SEEDS.some((t) => t.id === teamId)) throw new Error('This team does not exist')
+  if (teamId !== null && !teamExists(teamId)) throw new Error('This team does not exist')
   const edits = load()
   edits.teamOf[String(userId)] = teamId
+  save(edits)
+}
+
+/** One team to create: who mentors it and which students are in it. */
+export interface TeamPlan {
+  mentorId: number | null
+  studentIds: number[]
+}
+
+/** Replaces every team with these (Team 1, Team 2, ...). Nobody is left in an old team. */
+export function createTeams(plan: TeamPlan[]): void {
+  const edits = load()
+  edits.custom = plan.map((_, i) => ({ id: `t${i + 1}`, name: `Team ${i + 1}` }))
+  edits.teamOf = {}
+  edits.mentorOf = {}
+  plan.forEach((team, i) => {
+    const id = `t${i + 1}`
+    edits.mentorOf[id] = team.mentorId
+    for (const studentId of team.studentIds) edits.teamOf[String(studentId)] = id
+  })
+  save(edits)
+}
+
+/** Removes every team: all students and mentors are free again. */
+export function clearTeams(): void {
+  const edits = load()
+  edits.custom = []
+  edits.teamOf = {}
+  edits.mentorOf = {}
+  save(edits)
+}
+
+/** Sets who mentors a team: a mentor leaves their old team for it; null leaves the team without one. */
+export function setTeamMentor(teamId: string, mentorId: number | null): void {
+  if (mentorId !== null) return setMentorTeam(mentorId, teamId)
+  if (!teamExists(teamId)) throw new Error('This team does not exist')
+  const edits = load()
+  edits.mentorOf[teamId] = null
   save(edits)
 }

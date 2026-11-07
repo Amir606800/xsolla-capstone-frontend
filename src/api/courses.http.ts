@@ -152,14 +152,14 @@ export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
 }
 
 /**
- * Makes `lecturerId` the lecturer of the week (module). The backend has no field for this yet; the call
+ * Makes `lecturerId` the lecturer of the week (module), or takes the lecturer off it (null). The backend has no field for this yet; the call
  * uses the proposed one (PATCH /modules/:id { lecturer_id }) and checks the answer, because a server
  * that does not know the field would accept the request and change nothing.
  */
-export async function assignLecturer(moduleId: string, lecturerId: number): Promise<CourseModule[]> {
+export async function assignLecturer(moduleId: string, lecturerId: number | null): Promise<CourseModule[]> {
   await authedRequest(`/modules/${moduleId}`, { method: 'PATCH', body: { lecturer_id: lecturerId } })
   const modules = await fetchModules(false)
-  if (modules.find((m) => m.id === moduleId)?.createdBy !== lecturerId) {
+  if (modules.find((m) => m.id === moduleId)?.createdBy !== (lecturerId ?? undefined)) {
     throw new NotSupportedError('The server cannot change the lecturer of a week yet.')
   }
   return modules

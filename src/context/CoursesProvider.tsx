@@ -107,7 +107,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const saveModule = useCallback((id: string, patch: ModulePatch) => author(() => apiSaveModule(id, patch)), [author])
   const saveItem = useCallback((item: ContentItem) => author(() => apiSaveItem(item)), [author])
   const deleteItem = useCallback((id: string) => author(() => apiDeleteItem(id)), [author])
-  const assignLecturer = useCallback((moduleId: string, lecturerId: number) => author(() => apiAssignLecturer(moduleId, lecturerId)), [author])
+  const assignLecturer = useCallback((moduleId: string, lecturerId: number | null) => author(() => apiAssignLecturer(moduleId, lecturerId)), [author])
   const deleteModule = useCallback((id: string) => author(() => apiDeleteModule(id)), [author])
   const createModule = useCallback(
     async (patch: ModulePatch & { title: string }) => {

@@ -17,8 +17,8 @@ export interface CoursesContextValue {
   /** Creates the item, or replaces the one with the same id. */
   saveItem: (item: ContentItem) => Promise<void>
   deleteItem: (itemId: string) => Promise<void>
-  /** Makes someone the lecturer of a week (admins). */
-  assignLecturer: (moduleId: string, lecturerId: number) => Promise<void>
+  /** Makes someone the lecturer of a week, or takes the lecturer off it with null (admins). */
+  assignLecturer: (moduleId: string, lecturerId: number | null) => Promise<void>
   /** The whole module with everything in it (admins). */
   deleteModule: (moduleId: string) => Promise<void>
   /** A new module after the last one; resolves with its id. */

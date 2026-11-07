@@ -85,8 +85,8 @@ export async function createModule(
   return addModule(patch, ctx.createdBy)
 }
 
-/** Makes someone the lecturer of a week (module). Returns the whole course. */
-export async function assignLecturer(moduleId: string, lecturerId: number): Promise<CourseModule[]> {
+/** Makes someone the lecturer of a week (module), or takes the lecturer off it (null). Returns the whole course. */
+export async function assignLecturer(moduleId: string, lecturerId: number | null): Promise<CourseModule[]> {
   if (hasBackend()) return http.assignLecturer(moduleId, lecturerId)
   await wait()
   return putModule(moduleId, { createdBy: lecturerId })

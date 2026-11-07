@@ -1,4 +1,5 @@
-import { addUser, deleteUser, listTeams, listUsers, setLeft, setMentorTeam, setRoles, setTeam, updateUser } from '../mocks/directory'
+import type { TeamPlan } from '../mocks/directory'
+import { addUser, clearTeams, createTeams, deleteUser, listTeams, listUsers, setLeft, setMentorTeam, setRoles, setTeam, setTeamMentor, updateUser } from '../mocks/directory'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { Role, User } from '../types/user'
 import { type UserDto, mapUser } from './auth.http'
@@ -217,4 +218,30 @@ export async function setUserRoles(id: number, roles: Role[], until: Partial<Rec
   }
   await wait()
   setRoles(id, roles, until)
+}
+
+// ---------- teams (not in the backend yet: always the demo store) ----------
+
+/** Replaces every team with these: random teams the admin has looked at and agreed to. */
+export async function buildTeams(plan: TeamPlan[]): Promise<void> {
+  await wait()
+  createTeams(plan)
+}
+
+/** Removes every team. */
+export async function removeAllTeams(): Promise<void> {
+  await wait()
+  clearTeams()
+}
+
+/** Puts a student in a team, or takes them out of theirs (null). */
+export async function moveStudent(studentId: number, teamId: string | null): Promise<void> {
+  await wait()
+  setTeam(studentId, teamId)
+}
+
+/** Sets a team's mentor (they leave their old team); null leaves the team without one. */
+export async function changeTeamMentor(teamId: string, mentorId: number | null): Promise<void> {
+  await wait()
+  setTeamMentor(teamId, mentorId)
 }

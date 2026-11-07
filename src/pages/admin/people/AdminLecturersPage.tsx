@@ -44,7 +44,7 @@ export default function AdminLecturersPage() {
       .sort((a, b) => a - b)
   const nameOf = useMemo(() => {
     const names = new Map(users.map((u) => [u.id, u.name]))
-    return (id: number | undefined) => (id === undefined ? 'Unknown' : (names.get(id) ?? `User #${id}`))
+    return (id: number | undefined) => (id === undefined ? 'No lecturer' : (names.get(id) ?? `User #${id}`))
   }, [users])
   const teamOf = useMemo(() => new Map(teams.filter((t) => t.mentorId !== null).map((t) => [t.mentorId as number, t])), [teams])
   const alsoMentors = lecturers.filter(canMentor)
@@ -84,6 +84,12 @@ export default function AdminLecturersPage() {
     const n = modulesBy.get(id) ?? 0
     return n === 0 ? '—' : `${n} ${n === 1 ? 'module' : 'modules'}`
   }
+  const weekNumbers = (ids: string[]) =>
+    courses.modules
+      .filter((m) => ids.includes(m.id))
+      .map((m) => m.position)
+      .sort((a, b) => a - b)
+      .join(', ')
   const weeksText = (id: number) => {
     const w = weeksOf(id)
     return w.length ? `Week${w.length === 1 ? '' : 's'} ${w.join(', ')}` : 'No weeks yet'
@@ -280,15 +286,16 @@ export default function AdminLecturersPage() {
             modules={courses.modules}
             nameOf={nameOf}
             onCancel={close}
-            onSave={async (ids) => {
-              for (const id of ids) await courses.assignLecturer(id, target.id)
-              done(
-                `${target.name} now teaches ${ids.length === 1 ? 'week' : 'weeks'} ${courses.modules
-                  .filter((m) => ids.includes(m.id))
-                  .map((m) => m.position)
-                  .sort((a, b) => a - b)
-                  .join(', ')}.`,
-              )
+            onSave={async ({ assign, unassign }) => {
+              for (const id of unassign) await courses.assignLecturer(id, null)
+              for (const id of assign) await courses.assignLecturer(id, target.id)
+              const parts = [
+                assign.length ? `now teaches ${assign.length === 1 ? 'week' : 'weeks'} ${weekNumbers(assign)}` : '',
+                unassign.length
+                  ? `${assign.length ? 'and ' : ''}is off ${unassign.length === 1 ? 'week' : 'weeks'} ${weekNumbers(unassign)}`
+                  : '',
+              ]
+              done(`${target.name} ${parts.filter(Boolean).join(' ')}.`)
             }}
           />
         )}

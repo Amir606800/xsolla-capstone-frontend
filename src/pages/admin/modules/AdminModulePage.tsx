@@ -240,7 +240,7 @@ export default function AdminModulePage() {
       )}
 
       {/* view */}
-      <Modal open={action?.kind === 'view'} onClose={close} title={current?.title ?? ''}>
+      <Modal open={action?.kind === 'view'} onClose={close} title={current?.title ?? ''} size="lg">
         {action?.kind === 'view' && current && (
           <div className="admin-dialog">
             <ItemDetails item={current} module={module} nameOf={nameOf} />

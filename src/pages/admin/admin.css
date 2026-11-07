@@ -1060,3 +1060,150 @@ button.admin-table__title:hover {
   max-height: 340px;
   overflow-y: auto;
 }
+
+/* ---------- dialogs: sizes and compact rows ---------- */
+.admin-dialog,
+.admin-confirm {
+  gap: 14px;
+}
+.admin-confirm__actions {
+  margin-top: 4px;
+}
+.admin-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.admin-form-row > .admin-field {
+  min-width: 0;
+}
+@media (max-width: 520px) {
+  .admin-form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- teams ---------- */
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+}
+.admin-panel p {
+  margin: 0;
+}
+.admin-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  align-items: start;
+  gap: 14px;
+}
+.admin-team {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+}
+.admin-team--loose {
+  border-style: dashed;
+}
+.admin-team__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.admin-team__head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.admin-team__mentor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.admin-team__mentor select {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  font-size: 14px;
+}
+.admin-team__students {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-team__students li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--divider);
+  font-size: 14px;
+}
+.admin-team__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-team__move,
+.admin-team__add {
+  width: auto;
+  height: 30px;
+  padding: 0 6px;
+  font-size: 13px;
+}
+.admin-team__add {
+  align-self: flex-start;
+}
+.admin-team__empty {
+  margin: 0;
+}
+.admin-maker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.admin-maker__teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-maker__team {
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 4px;
+  font-size: 13px;
+}
+.admin-maker__team p {
+  margin: 0;
+}
+.admin-maker__name {
+  font-weight: 600;
+}
+.admin-maker__mentor {
+  margin: 2px 0 6px !important;
+  color: var(--text-muted);
+}
+.admin-maker__students {
+  line-height: 1.5;
+}
+.admin-maker__sure {
+  align-items: center;
+}

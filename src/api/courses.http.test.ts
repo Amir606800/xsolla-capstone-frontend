@@ -132,6 +132,19 @@ describe('lecturer editing', () => {
     expect((await assignLecturer('4', 12))[0].createdBy).toBe(12)
   })
 
+  it('taking the lecturer off a week sends null; the server must then report no lecturer', async () => {
+    backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }) })
+    // this server still reports created_by 9
+    await expect(assignLecturer('4', null)).rejects.toThrow('cannot change the lecturer of a week yet')
+    expect(json(find('PATCH', '/modules/4'))).toEqual({ lecturer_id: null })
+    backend({
+      'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }),
+      'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', created_at: '2026-11-01T00:00:00Z' }] }),
+      ...ITEMS,
+    })
+    expect((await assignLecturer('4', null))[0].createdBy).toBeUndefined()
+  })
+
   it('an admin deletes a whole module: DELETE /modules/:id, then the course is loaded again', async () => {
     backend({ ...reload, 'DELETE /modules/4': () => ({ status: 204 }) })
     await deleteModule('4')
