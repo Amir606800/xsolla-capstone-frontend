@@ -111,10 +111,21 @@ vi.mock('../api/reviews', async () => {
 
 vi.mock('../api/notifications', async () => {
   const { buildMockNotifications } = await import('../mocks/notifications')
+  const store = await import('../mocks/broadcasts')
+  const { listUsers } = await import('../mocks/directory')
+  const { inAudience } = await import('../utils/adminNotifications')
   return {
     fetchNotifications: vi.fn(async () => buildMockNotifications(new Date())),
     markNotificationRead: vi.fn(async () => undefined),
     markAllNotificationsRead: vi.fn(async () => undefined),
+    // announcements from the admin: the real offline store, without the simulated delay
+    fetchAnnouncements: vi.fn(async (user: Parameters<typeof store.announcementsFor>[0]) => store.announcementsFor(user)),
+    markAnnouncementsAsRead: vi.fn(async (userId: number, ids: string[]) => store.markAnnouncementsRead(userId, ids)),
+    isAnnouncementId: store.isAnnouncementId,
+    fetchBroadcasts: vi.fn(async () => store.listBroadcasts()),
+    sendBroadcast: vi.fn(async (input: { message: string; link: string; audience: import('../utils/adminNotifications').Audience }, sentBy: string) =>
+      store.addBroadcast(input, listUsers().filter((u) => !u.leftAt && inAudience(u, input.audience)).length, sentBy),
+    ),
   }
 })
 

@@ -7,6 +7,7 @@ export type NotificationType =
   | 'meeting' // 1:1 scheduled, changed or starting soon
   | 'event' // calendar event added (off-campus day, ...)
   | 'submission' // lecturer: new submission received
+  | 'announcement' // a message the admin sent to everyone (or to one group)
 
 export interface AppNotification {
   id: string

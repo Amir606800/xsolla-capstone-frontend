@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from '../api/notifications'
+import {
+  fetchAnnouncements,
+  fetchNotifications,
+  isAnnouncementId,
+  markAllNotificationsRead,
+  markAnnouncementsAsRead,
+  markNotificationRead,
+} from '../api/notifications'
 import { isStaff } from '../utils/roles'
 import { useAuth } from '../hooks/useAuth'
 import type { AppNotification } from '../types/notification'
@@ -18,25 +25,22 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [attempt, setAttempt] = useState(0)
 
-  // the demo notifications are a student's ("your task was graded"); lecturers get their own later
-  const staff = isStaff(useAuth().user)
+  // the demo notifications are a student's ("your task was graded"); staff get only the admin's announcements
+  const { user } = useAuth()
+  const staff = isStaff(user)
+  const userId = user?.id
+  const roles = user?.roles
+  const roleUntil = user?.roleUntil
 
   useEffect(() => {
     let cancelled = false
-    if (staff) {
-      Promise.resolve().then(() => {
+    // announcements are optional: if they cannot be loaded the rest of the bell still works
+    const announcements =
+      userId === undefined || !roles ? Promise.resolve([]) : fetchAnnouncements({ id: userId, roles, roleUntil }).catch(() => [])
+    Promise.all([staff ? Promise.resolve([]) : fetchNotifications(), announcements])
+      .then(([own, announced]) => {
         if (cancelled) return
-        setNotifications([])
-        setStatus('ready')
-      })
-      return () => {
-        cancelled = true
-      }
-    }
-    fetchNotifications()
-      .then((data) => {
-        if (cancelled) return
-        setNotifications([...data].sort(byNewest))
+        setNotifications([...own, ...announced].sort(byNewest))
         setStatus('ready')
       })
       .catch(() => {
@@ -45,7 +49,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [attempt, staff])
+  }, [attempt, staff, userId, roles, roleUntil])
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -59,14 +63,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       const readAt = new Date().toISOString()
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAt } : n)))
       try {
-        await markNotificationRead(id)
+        if (isAnnouncementId(id)) {
+          if (userId !== undefined) await markAnnouncementsAsRead(userId, [id])
+        } else await markNotificationRead(id)
       } catch (err) {
         // roll back just this notification
         setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: null } : n)))
         throw err
       }
     },
-    [notifications],
+    [notifications, userId],
   )
 
   const markAllRead = useCallback(async () => {
@@ -75,12 +81,13 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const readAt = new Date().toISOString()
     setNotifications((prev) => prev.map((n) => (n.readAt ? n : { ...n, readAt })))
     try {
-      await markAllNotificationsRead()
+      if (userId !== undefined) await markAnnouncementsAsRead(userId, before.map((n) => n.id))
+      if (!staff) await markAllNotificationsRead()
     } catch (err) {
       setNotifications(before)
       throw err
     }
-  }, [notifications])
+  }, [notifications, userId, staff])
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.readAt).length, [notifications])
 

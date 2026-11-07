@@ -1207,3 +1207,25 @@ button.admin-table__title:hover {
 .admin-maker__sure {
   align-items: center;
 }
+
+/* ---------- notifications ---------- */
+.admin-compose {
+  max-width: 760px;
+}
+.admin-compose__text {
+  height: auto;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.admin-compose__who {
+  padding-bottom: 14px;
+}
+.admin-audience {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.admin-nowrap {
+  white-space: nowrap;
+}

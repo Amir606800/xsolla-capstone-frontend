@@ -272,8 +272,16 @@ Types the front-end knows: `task`, `deadline`, `graded`, `material`, `meeting`, 
   { "message": "No classes on Friday.", "link": "/calendar", "audience": "all" }
   ```
   `audience`: `all` | `students` | `mentors` | `lecturers`. Writes one row per recipient (active users only).
-  Admin only. Also `GET /notifications/broadcasts` (admin) -> history `{ id, message, audience, sent_at, recipients }`
-  so the admin sees what was sent. Message required, 1-500 characters.
+  Admin only. `201` returns the history row below. `link` is optional (`""` / missing = none); the front-end offers
+  `/calendar` and `/office-tour`. Message required, 1-500 characters (`400` otherwise).
+  `GET /notifications/broadcasts` (admin) -> everything sent, newest first, so the admin sees what went out:
+  ```json
+  [ { "id": 7, "message": "No classes on Friday.", "link": "/calendar", "audience": "students",
+      "sent_at": "2026-11-07T10:00:00Z", "sent_by": "School Admin", "recipients": 29 } ]
+  ```
+  `recipients` counts active people at send time; admins are never recipients, and a mentor who also lectures
+  counts once in `all`. Each recipient gets a normal `GET /notifications` row of type `announcement`, with its own
+  `read_at`. A sent announcement cannot be recalled (the admin is told so before sending).
 - **Created by the system** (no front-end call): new task or material in a module -> students; a task's due date
   changed; a mentor comment or weekly grade -> that student; a new submission -> the student's mentor;
   event created/moved/deleted -> everyone it concerns; slot booked/cancelled -> the other person.

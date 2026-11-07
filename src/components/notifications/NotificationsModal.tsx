@@ -21,6 +21,7 @@ const TYPE_ICON: Record<NotificationType, IconName> = {
   meeting: 'calendar',
   event: 'calendar',
   submission: 'upload',
+  announcement: 'bell',
 }
 
 type Filter = 'all' | 'unread'
