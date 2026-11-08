@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { buildMentorTeam, buildMockTeam } from './teams'
-import { addUser, clearTeams, createTeams, deleteUser, listTeams, listUsers, setLeft, setMentorTeam, setRoles, setTeam, setTeamMentor, updateUser } from './directory'
+import {
+  addUser,
+  clearTeams,
+  createTeams,
+  deleteUser,
+  listTeams,
+  listUsers,
+  passwordMatches,
+  setLeft,
+  setMentorTeam,
+  setPassword,
+  setRoles,
+  setTeam,
+  setTeamMentor,
+  updateUser,
+} from './directory'
 import { canMentor, hasRole, isStudent } from '../utils/roles'
 
 describe('admin directory mock', () => {
@@ -112,14 +127,55 @@ describe('admin changes to the directory', () => {
     expect(aysel).not.toHaveProperty('roleUntil')
   })
 
-  it('roles: at least one stays; a mentor who loses the role leaves their team without a mentor', () => {
+  it('every account has a main role: the one it was created with', () => {
+    const main = (id: number) => listUsers().find((u) => u.id === id)!.mainRole
+    expect(main(1)).toBe('student')
+    expect(main(901)).toBe('mentor') // Aysel
+    expect(main(902)).toBe('lecturer') // Elvin
+    expect(main(900)).toBe('mentor') // Rashad mentors Team 3 and also lectures
+    expect(main(1000)).toBe('admin')
+    const added = addUser({ name: 'Nil Ay', email: 'nil@example.com', roles: ['lecturer'] })
+    expect(main(added.id)).toBe('lecturer')
+    // giving the other role, even with no end date, does not move the main role
+    setRoles(added.id, ['lecturer', 'mentor'])
+    expect(main(added.id)).toBe('lecturer')
+  })
+
+  it('roles: the main role cannot be taken away or end; the extra role can be added and taken back', () => {
     expect(() => setRoles(901, [])).toThrow('Keep at least one role.')
-    setRoles(901, ['lecturer'])
-    expect(listUsers().find((u) => u.id === 901)!.roles).toEqual(['lecturer'])
-    expect(listTeams().find((t) => t.id === 't4')!.mentorId).toBeNull()
+    expect(() => setRoles(901, ['lecturer'])).toThrow('Aysel Mammadova is a mentor: that role cannot be taken away.')
+    expect(() => setRoles(902, ['mentor'])).toThrow('Elvin Huseynov is a lecturer: that role cannot be taken away.')
+    expect(() => setRoles(901, ['mentor'], { mentor: '2030-01-01T00:00:00Z' })).toThrow('Aysel Mammadova’s main role cannot end.')
+    expect(() => setRoles(901, ['mentor', 'admin'])).toThrow('Only the mentor and lecturer roles can be given.')
+
+    // a lecturer can be given the mentor role, for a while, and loses it again
+    setRoles(902, ['lecturer', 'mentor'], { mentor: '2030-01-01T00:00:00Z' })
+    expect(listUsers().find((u) => u.id === 902)).toMatchObject({ roles: ['lecturer', 'mentor'], roleUntil: { mentor: '2030-01-01T00:00:00Z' } })
+    setRoles(902, ['lecturer'])
+    expect(listUsers().find((u) => u.id === 902)!.roles).toEqual(['lecturer'])
+
     // Rashad can lose the lecturer role he was seeded with
     setRoles(900, ['mentor'])
     expect(listUsers().find((u) => u.id === 900)!.roles).toEqual(['mentor'])
+  })
+
+  it('a lecturer who mentored for a while leaves their team when the mentor role is taken back', () => {
+    setRoles(902, ['lecturer', 'mentor'])
+    setMentorTeam(902, 't4')
+    expect(listTeams().find((t) => t.id === 't4')!.mentorId).toBe(902)
+    setRoles(902, ['lecturer'])
+    expect(listTeams().find((t) => t.id === 't4')!.mentorId).toBeNull()
+  })
+
+  it('passwords: any works until the admin resets it, then only the new one', () => {
+    expect(passwordMatches(901, 'anything')).toBe(true)
+    setPassword(901, 'brand-new-pass')
+    expect(passwordMatches(901, 'brand-new-pass')).toBe(true)
+    expect(passwordMatches(901, 'anything')).toBe(false)
+    // only for that account, and the password itself is not stored
+    expect(passwordMatches(902, 'anything')).toBe(true)
+    expect(localStorage.getItem('school_directory')).not.toContain('brand-new-pass')
+    expect(() => setPassword(99999, 'brand-new-pass')).toThrow('This account does not exist')
   })
 
   it('one mentor per team: giving a team to a mentor replaces its mentor and frees their old team', () => {

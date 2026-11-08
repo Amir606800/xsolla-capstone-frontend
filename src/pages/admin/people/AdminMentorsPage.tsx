@@ -6,23 +6,32 @@ import { useDirectory } from '../../../hooks/useDirectory'
 import { useSort } from '../../../hooks/useSort'
 import type { SchoolTeam, SchoolUser } from '../../../types/admin'
 import { matchesQuery } from '../../../utils/adminPeople'
-import { roleBadges } from '../../../utils/adminRoles'
+import { isStaffRole, mainRoleOf, roleBadges, rolesSummary } from '../../../utils/adminRoles'
 import { canMentor } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
+import { ResetPasswordForm } from './ResetPasswordForm'
+import { RolePills } from './RolePills'
 import { RolesForm } from './RolesForm'
 import { StudentForm } from './StudentForm'
 
 type Show = 'all' | 'lecturers' | 'no-team'
-type Action = { kind: 'add' } | { kind: 'edit' | 'roles' | 'delete'; person: SchoolUser }
+type Action = { kind: 'add' } | { kind: 'edit' | 'roles' | 'password' | 'delete'; person: SchoolUser }
+
+/** The role the account was created with: mentor, or lecturer for a lecturer who also mentors. */
+const mainOf = (u: SchoolUser) => {
+  const main = mainRoleOf(u)
+  return isStaffRole(main) ? main : 'mentor'
+}
 
 /**
  * Admin: every mentor, the team they look after and their roles. Add a mentor (with the mentor role,
- * a password and a team), correct their details or team, give or take the lecturer role (for a while
- * or for good), or delete an account.
+ * a password and a team), correct their details or team, give or take the extra lecturer role (for a
+ * while or for good; the mentor role they were created with stays), reset a password, or delete an account.
+ * Lecturers who were given the mentor role are listed too.
  */
 export default function AdminMentorsPage() {
-  const { status, users, teams, reload, addMentor, editMentor, changeRoles, removeAccount } = useDirectory()
+  const { status, users, teams, reload, addMentor, editMentor, changeRoles, setNewPassword, removeAccount } = useDirectory()
   const [today] = useState(() => new Date())
   const [query, setQuery] = useState('')
   const [show, setShow] = useState<Show>('all')
@@ -158,14 +167,7 @@ export default function AdminMentorsPage() {
                         </td>
                         <td>{t ? `${t.name} · ${t.studentIds.length} students` : <span className="admin-pill admin-pill--hidden">No team</span>}</td>
                         <td>
-                          <span className="admin-roles-cell">
-                            {roleBadges(m, today).map((b) => (
-                              <span key={b.role} className={`admin-pill admin-pill--role${b.endingSoon ? ' admin-pill--hidden' : ''}`} title={b.detail}>
-                                {b.label}
-                                {b.detail && <span className="admin-pill__detail"> {b.detail}</span>}
-                              </span>
-                            ))}
-                          </span>
+                          <RolePills user={m} now={today} />
                         </td>
                         <td>
                           <div className="admin-actions">
@@ -174,6 +176,15 @@ export default function AdminMentorsPage() {
                             </button>
                             <button type="button" className="admin-icon-btn" onClick={() => open({ kind: 'roles', person: m })} aria-label={`Roles of ${m.name}`} title="Roles">
                               <Icon name="award" size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-icon-btn"
+                              onClick={() => open({ kind: 'password', person: m })}
+                              aria-label={`Reset the password of ${m.name}`}
+                              title="Reset password"
+                            >
+                              <Icon name="key" size={16} />
                             </button>
                             <button
                               type="button"
@@ -227,15 +238,26 @@ export default function AdminMentorsPage() {
         {action?.kind === 'roles' && target && (
           <RolesForm
             user={target}
+            main={mainOf(target)}
             teamName={teamOf.get(target.id)?.name}
             now={today}
             onCancel={close}
-            onSave={async (roles, until) => {
+            onSave={async (roles, until, extra) => {
               await changeRoles(target.id, roles, until)
-              if (!roles.includes('mentor')) done(`${target.name} is no longer a mentor. You will find them under Lecturers.`)
-              else if (roles.includes('lecturer')) done(`${target.name}: mentor and lecturer${until.lecturer ? ' for a while' : ''}.`)
-              else done(`${target.name}: mentor only.`)
+              const main = mainOf(target)
+              if (main === 'lecturer' && !extra.on) done(`${target.name} is no longer a mentor. You will find them under Lecturers.`)
+              else done(`${target.name}: ${rolesSummary(main, extra)}`)
             }}
+          />
+        )}
+      </Modal>
+
+      <Modal open={action?.kind === 'password'} onClose={close} title={target ? `Reset ${target.name}’s password` : ''} size="sm" initialFocus=".admin-dialog input">
+        {action?.kind === 'password' && target && (
+          <ResetPasswordForm
+            user={target}
+            onSave={(password) => setNewPassword(target.id, password)}
+            onDone={(saved) => (saved ? done(`${target.name} has a new password.`) : close())}
           />
         )}
       </Modal>

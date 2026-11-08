@@ -1251,3 +1251,61 @@ button.admin-table__title:hover {
 .admin-nowrap {
   white-space: nowrap;
 }
+
+/* a field directly in a column (dialog, fieldset) takes only its own height: the 160px basis is for rows */
+.admin-dialog > .admin-field,
+.admin-roles > .admin-field {
+  flex: none;
+}
+
+/* ---------- roles: the main role is fixed ---------- */
+.admin-main-role {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--active-bg);
+}
+.admin-main-role__value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.admin-main-role__value .admin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.admin-main-role > .admin-hint,
+.admin-main-role > .admin-field__label {
+  margin: 0;
+}
+
+/* ---------- reset password ---------- */
+.admin-reset__done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 600;
+}
+.admin-reset__done svg {
+  color: var(--xs-cyan);
+}
+.admin-reset__password {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  background: var(--field, var(--card));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}

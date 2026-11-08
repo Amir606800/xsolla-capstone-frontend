@@ -1,6 +1,7 @@
 import { DEMO_ACCOUNTS, DEMO_ADMIN } from './accounts'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { Role, User } from '../types/user'
+import { isStaffRole, mainRoleOf, ROLE_NAMES } from '../utils/adminRoles'
 
 /**
  * Offline school directory for the admin section: every account and the six teams.
@@ -102,8 +103,8 @@ const OTHER_STAFF: User[] = [elvin, person(907, 'Nargiz Abbasova', ['lecturer'])
 // ---------- what the admin changed, kept in this browser ----------
 
 interface DirectoryEdits {
-  /** Accounts the admin added. */
-  added: User[]
+  /** Accounts the admin added (with the role they were created with). */
+  added: SchoolUser[]
   /** Students moved between teams: user id -> team id, or null for no team. */
   teamOf: Record<string, string | null>
   /** Name / e-mail corrections: user id -> the new values. */
@@ -121,6 +122,12 @@ interface DirectoryEdits {
    * Left out, the demo teams are used.
    */
   custom?: { id: string; name: string }[]
+  /**
+   * Passwords the admin reset: user id -> a fingerprint of the new one. Offline only, so the demo
+   * behaves like the real thing (the old password stops working). Not a security measure: with a
+   * backend the server keeps passwords (hashed) and nothing is stored in the browser.
+   */
+  passwords?: Record<string, string>
 }
 
 const KEY = 'school_directory'
@@ -138,6 +145,7 @@ function load(): DirectoryEdits {
       roles: parsed.roles ?? {},
       mentorOf: parsed.mentorOf ?? {},
       ...(parsed.custom ? { custom: parsed.custom } : {}),
+      ...(parsed.passwords ? { passwords: parsed.passwords } : {}),
     }
   } catch {
     return { added: [], teamOf: {}, changed: {}, left: {}, deleted: [], roles: {}, mentorOf: {} }
@@ -183,6 +191,8 @@ export function listUsers(now: Date = new Date()): SchoolUser[] {
         ...rest,
         ...changed[String(u.id)],
         ...rolesAt(u, roles[String(u.id)], now),
+        // worked out from the roles the account started with, so later changes never move it
+        mainRole: mainRoleOf(u),
         ...(left[String(u.id)] ? { leftAt: left[String(u.id)] } : {}),
       }
     })
@@ -233,12 +243,14 @@ export function addUser(account: NewAccount): User {
   if (emailTaken(email)) throw new Error('There is already an account with this email.')
   const edits = load()
   const id = Math.max(2000, ...listUsers().map((u) => u.id)) + 1
-  const user: User = {
+  const user: SchoolUser = {
     id,
     name: account.name.trim(),
     email,
     roles: [...account.roles],
     ...(account.roleUntil ? { roleUntil: { ...account.roleUntil } } : {}),
+    // the first role is the one the account is created as
+    mainRole: account.roles[0],
   }
   edits.added.push(user)
   save(edits)
@@ -292,11 +304,16 @@ export function deleteUser(id: number): void {
 
 /**
  * Sets someone's roles. `until`: the roles given only for a while, and when they end.
- * Staff keep at least one role; a mentor who loses the role is no longer any team's mentor.
+ * The main role (the one the account was created with) always stays and never ends; only the other
+ * staff role can be added or taken back. A mentor who loses the role is no longer any team's mentor.
  */
 export function setRoles(id: number, roles: Role[], until: Partial<Record<Role, string>> = {}): SchoolUser {
-  existing(id)
+  const user = existing(id)
   if (roles.length === 0) throw new Error('Keep at least one role.')
+  const main = mainRoleOf(user)
+  if (!roles.includes(main)) throw new Error(`${user.name} is a ${ROLE_NAMES[main].toLowerCase()}: that role cannot be taken away.`)
+  if (until[main]) throw new Error(`${user.name}’s main role cannot end.`)
+  if (isStaffRole(main) && roles.some((r) => !isStaffRole(r))) throw new Error('Only the mentor and lecturer roles can be given.')
   const edits = load()
   const kept: Partial<Record<Role, string>> = {}
   for (const r of roles) if (until[r]) kept[r] = until[r]
@@ -359,4 +376,29 @@ export function setTeamMentor(teamId: string, mentorId: number | null): void {
   const edits = load()
   edits.mentorOf[teamId] = null
   save(edits)
+}
+
+/** Offline stand-in for a password check (see `passwords` above): a short fingerprint, not real hashing. */
+function fingerprint(id: number, password: string): string {
+  let h = 0x811c9dc5
+  for (const ch of `${id}:${password}`) {
+    h ^= ch.codePointAt(0)!
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h.toString(16)
+}
+
+/** The admin set a new password: from now on only this one signs the person in (offline demo). */
+export function setPassword(id: number, password: string): void {
+  existing(id)
+  if (!password) throw new Error('Enter the new password.')
+  const edits = load()
+  edits.passwords = { ...edits.passwords, [String(id)]: fingerprint(id, password) }
+  save(edits)
+}
+
+/** Offline sign-in: any password works until the admin resets it, then only the new one does. */
+export function passwordMatches(id: number, password: string): boolean {
+  const stored = load().passwords?.[String(id)]
+  return stored === undefined || stored === fingerprint(id, password)
 }

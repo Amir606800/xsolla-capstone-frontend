@@ -39,7 +39,8 @@ describe('Sorting admin tables by their column names', () => {
     teams = await column('Students', 2)
     expect(teams[0]).toBe('Team 6')
     expect(teams.at(-1)).toBe('Team 1')
-  })
+    // 29 rows with five buttons each, sorted twice: slow when the whole suite runs at once
+  }, 15_000)
 
   it('students: by mentor', async () => {
     renderWithProviders(<App />, { route: '/admin/students' })

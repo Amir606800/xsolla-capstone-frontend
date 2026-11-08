@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../../App'
 import { listModules } from '../../mocks/contentEdits'
-import { listTeams, listUsers } from '../../mocks/directory'
+import { listTeams, listUsers, passwordMatches } from '../../mocks/directory'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 beforeEach(() => {
@@ -72,10 +72,55 @@ describe('Admin: lecturers', () => {
     expect(listTeams().find((t) => t.id === 't3')!.mentorId).toBe(900)
   })
 
-  it('lecturers have no roles dialog: they stay lecturers', async () => {
+  it('a lecturer stays a lecturer: only the mentor role can be added on top, for a while or for good', async () => {
     renderWithProviders(<App />, { route: '/admin/lecturers' })
+    const user = userEvent.setup()
     await table()
-    expect(screen.queryByRole('button', { name: /^Roles of / })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Roles of Elvin Huseynov' }))
+    const form = within(await dialog())
+    expect(form.getByRole('group', { name: 'Main role' })).toHaveTextContent('Lecturer')
+    expect(form.getByRole('group', { name: 'Main role' })).toHaveTextContent('It cannot be changed or taken away.')
+    expect(form.queryByRole('radio', { name: /not a lecturer/i })).not.toBeInTheDocument()
+    expect(form.getByRole('radio', { name: 'Not a mentor' })).toBeChecked()
+
+    await user.click(form.getByRole('radio', { name: /^Mentor for a while/ }))
+    await user.click(form.getByRole('button', { name: '1 week' }))
+    await user.click(form.getByRole('button', { name: 'Save roles' }))
+    expect(await screen.findByText(/^Elvin Huseynov: Lecturer, and mentor until \w+ \d+\. Give them a team on the Mentors page\.$/)).toBeInTheDocument()
+    const pills = within(rowOf('Elvin Huseynov'))
+    expect(pills.getByText('Lecturer')).toHaveAttribute('title', 'Main role')
+    expect(pills.getByText('+ Mentor').closest('.admin-pill')).toHaveTextContent(/7 days left/)
+    const elvin = listUsers().find((u) => u.id === 902)!
+    expect(elvin.roles).toEqual(['lecturer', 'mentor'])
+    expect(elvin.roleUntil?.mentor).toBeDefined()
+    expect(elvin.roleUntil?.lecturer).toBeUndefined()
+  })
+
+  it('a mentor who lectures has Mentor as the main role: here only the extra lecturer role changes', async () => {
+    renderWithProviders(<App />, { route: '/admin/lecturers' })
+    const user = userEvent.setup()
+    await table()
+    await user.click(screen.getByRole('button', { name: 'Roles of Rashad Aliyev' }))
+    const form = within(await dialog())
+    expect(form.getByRole('group', { name: 'Main role' })).toHaveTextContent('Mentor')
+    await user.click(form.getByRole('radio', { name: 'Not a lecturer' }))
+    await user.click(form.getByRole('button', { name: 'Save roles' }))
+    expect(await screen.findByText('Rashad Aliyev no longer lectures. You will find them under Mentors.')).toBeInTheDocument()
+    expect(screen.queryByRole('cell', { name: 'Rashad Aliyev' })).not.toBeInTheDocument()
+    expect(listUsers().find((u) => u.id === 900)!.roles).toEqual(['mentor'])
+  })
+
+  it('resets a lecturer’s password', async () => {
+    renderWithProviders(<App />, { route: '/admin/lecturers' })
+    const user = userEvent.setup()
+    await table()
+    await user.click(screen.getByRole('button', { name: 'Reset the password of Elvin Huseynov' }))
+    const form = within(await dialog())
+    await user.type(form.getByLabelText('New password'), 'teach-again-1')
+    await user.click(form.getByRole('button', { name: 'Set new password' }))
+    expect(await screen.findByText('Elvin Huseynov’s password has been changed.')).toBeInTheDocument()
+    expect(passwordMatches(902, 'teach-again-1')).toBe(true)
+    expect(passwordMatches(902, 'demo')).toBe(false)
   })
 
   it('shows which weeks each lecturer teaches', async () => {

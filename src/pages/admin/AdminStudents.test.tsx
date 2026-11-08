@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../../App'
-import { listTeams, listUsers } from '../../mocks/directory'
+import { listTeams, listUsers, passwordMatches, setLeft } from '../../mocks/directory'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 beforeEach(() => {
@@ -233,5 +233,24 @@ describe('Admin: students', () => {
     await user.click(within(screen.getByRole('navigation', { name: 'Admin sections' })).getByRole('link', { name: 'Overview' }))
     const tile = within(await screen.findByRole('list', { name: 'School at a glance' })).getByRole('link', { name: /^Students/ })
     expect(tile).toHaveTextContent('301 not in a team')
+  })
+
+  it('resets a student’s password; a student who left has no reset', async () => {
+    setLeft(164, true)
+    renderWithProviders(<App />, { route: '/admin/students' })
+    const user = userEvent.setup()
+    await table()
+    await user.click(screen.getByRole('button', { name: 'Reset the password of Leyla Hasanova' }))
+    const form = within(await dialog())
+    await user.type(form.getByLabelText('New password'), 'new-term-pass')
+    await user.click(form.getByRole('button', { name: 'Set new password' }))
+    expect(await screen.findByText('Leyla Hasanova’s password has been changed.')).toBeInTheDocument()
+    expect(passwordMatches(101, 'new-term-pass')).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+    expect(await screen.findByText('Leyla Hasanova has a new password.')).toBeInTheDocument()
+
+    await user.click(within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: /^Left the school/ }))
+    expect(screen.getByRole('cell', { name: 'Vusala Karimli' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reset the password of Vusala Karimli' })).not.toBeInTheDocument()
   })
 })

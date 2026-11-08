@@ -1,5 +1,20 @@
 import type { TeamPlan } from '../mocks/directory'
-import { addUser, clearTeams, createTeams, deleteUser, listTeams, listUsers, setLeft, setMentorTeam, setRoles, setTeam, setTeamMentor, updateUser } from '../mocks/directory'
+import {
+  addUser,
+  clearTeams,
+  createTeams,
+  deleteUser,
+  listTeams,
+  listUsers,
+  setLeft,
+  setMentorTeam,
+  setPassword,
+  setRoles,
+  setTeam,
+  setTeamMentor,
+  updateUser,
+} from '../mocks/directory'
+import { isValidPassword, MIN_SIGNUP_PASSWORD_LENGTH } from '../utils/validation'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { Role, User } from '../types/user'
 import { type UserDto, mapUser } from './auth.http'
@@ -19,15 +34,28 @@ import { ApiError, apiRequest, hasBackend } from './http'
  *      POST   /users       { email, name, password, roles }   (a staff account, e.g. a new mentor)
  *      PUT    /users/:id/roles  { roles: ["mentor", "lecturer"], expires_at: { "lecturer": "<ISO>" } }
  *                          (a role in expires_at ends by itself at that moment; null or missing = no end)
+ *      PUT    /users/:id/password { password }       (the admin sets a new password; sessions end)
  *    and say so plainly while the server does not have them.
  */
 const MOCK_LATENCY_MS = 300
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
 
-/** A user row, plus when they left the school (proposed: `left_at`, set while `active` is false). */
-type DirectoryDto = UserDto & { left_at?: string | null; active?: boolean }
+/**
+ * A user row, plus when they left the school (proposed: `left_at`, set while `active` is false) and
+ * the role the account was created with (proposed: `main_role`, it never changes).
+ */
+type DirectoryDto = UserDto & { left_at?: string | null; active?: boolean; main_role?: string | null }
 
-const toSchoolUser = (d: DirectoryDto): SchoolUser => ({ ...mapUser(d), ...(d.left_at ? { leftAt: d.left_at } : {}) })
+const MAIN_ROLES: readonly Role[] = ['student', 'mentor', 'lecturer', 'admin']
+
+const toSchoolUser = (d: DirectoryDto): SchoolUser => {
+  const main = d.main_role?.trim().toLowerCase() as Role | undefined
+  return {
+    ...mapUser(d),
+    ...(d.left_at ? { leftAt: d.left_at } : {}),
+    ...(main && MAIN_ROLES.includes(main) ? { mainRole: main } : {}),
+  }
+}
 
 export async function fetchUsers(): Promise<SchoolUser[]> {
   if (hasBackend()) {
@@ -205,7 +233,29 @@ export async function updateMentor(id: number, changes: MentorChanges): Promise<
   setMentorTeam(id, changes.teamId)
 }
 
-/** Sets someone's roles; `until` holds the roles given only for a while and when each ends. */
+/**
+ * Sets a new password for someone (the admin hands it over). Their old password stops working and the
+ * server should end their sessions on every device.
+ *   PUT /users/:id/password  { password }   -> 204
+ */
+export async function resetPassword(id: number, password: string): Promise<void> {
+  if (!isValidPassword(password, true)) throw new ApiError(400, 'bad_request', `At least ${MIN_SIGNUP_PASSWORD_LENGTH} characters.`)
+  if (hasBackend()) {
+    try {
+      await authedRequest<void>(`/users/${id}/password`, { method: 'PUT', body: { password } })
+    } catch (e) {
+      notYet(e, 'reset passwords')
+    }
+    return
+  }
+  await wait()
+  setPassword(id, password)
+}
+
+/**
+ * Sets someone's roles; `until` holds the roles given only for a while and when each ends.
+ * The main role must stay, with no end date: only the other staff role is added or taken back.
+ */
 export async function setUserRoles(id: number, roles: Role[], until: Partial<Record<Role, string>> = {}): Promise<void> {
   if (roles.length === 0) throw new ApiError(400, 'bad_request', 'Keep at least one role.')
   if (hasBackend()) {

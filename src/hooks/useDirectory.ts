@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { buildTeams, changeTeamMentor, createStaff, createStudent, deleteAccount, fetchTeams, fetchUsers, moveStudent, removeAllTeams, setStudentLeft, setUserRoles, updateMentor, updateStudent } from '../api/directory'
+import { buildTeams, changeTeamMentor, createStaff, createStudent, deleteAccount, fetchTeams, fetchUsers, moveStudent, removeAllTeams, resetPassword, setStudentLeft, setUserRoles, updateMentor, updateStudent } from '../api/directory'
 import type { MentorChanges, NewMentor, NewStudent, StudentChanges } from '../api/directory'
 import type { TeamPlan } from '../mocks/directory'
 import type { Role } from '../types/user'
@@ -103,6 +103,9 @@ export function useDirectory() {
     [refresh],
   )
 
+  /** Nothing on screen changes: the new password only matters when they sign in. */
+  const setNewPassword = useCallback((id: number, password: string) => resetPassword(id, password), [])
+
   const createTeams = useCallback(
     async (plan: TeamPlan[]) => {
       await buildTeams(plan)
@@ -129,5 +132,5 @@ export function useDirectory() {
     [refresh],
   )
 
-  return { createTeams, clearTeams, putStudentInTeam, setMentorOf, status, users, teams, reload, addStudent, editStudent, markLeft, removeStudent: removeAccount, removeAccount, addMentor, addLecturer, editMentor, changeRoles }
+  return { createTeams, clearTeams, putStudentInTeam, setMentorOf, status, users, teams, reload, addStudent, editStudent, markLeft, removeStudent: removeAccount, removeAccount, addMentor, addLecturer, editMentor, changeRoles, setNewPassword }
 }

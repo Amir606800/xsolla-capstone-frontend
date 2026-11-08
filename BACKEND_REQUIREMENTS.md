@@ -17,7 +17,8 @@ mentor/student features, **P3** are nice to have.
 | Area | Backend today | Front-end today | What is missing |
 |---|---|---|---|
 | Sign in / sign up / refresh / logout | Done | Done, real calls | Nothing (see 3.1 for small fixes) |
-| Roles (`student` `mentor` `lecturer` `admin`) | `users.roles TEXT[]` (migration 013) | Role *sets*, abilities checked per role | Changing roles, **temporary roles** (4.1) |
+| Roles (`student` `mentor` `lecturer` `admin`) | `users.roles TEXT[]` (migration 013) | Role *sets*, abilities checked per role | Changing roles, **temporary roles**, a fixed **main role** (4.1) |
+| Password reset by the admin | Nothing | Built (Students, Mentors, Lecturers) | `PUT /users/:id/password` (4.1) - P1 |
 | Modules (= weeks) | CRUD, enrollments | Real calls | `position`, week dates, a lecturer per week, auto-enrolment (3.2) |
 | Content items | `file`, `assignment`, `link` | Files + tasks real; **links/quizzes not yet wired** | Quiz type, per-item author (3.3) |
 | Files | S3, upload/download | Real calls | Nothing |
@@ -159,16 +160,21 @@ The admin section lists, adds, edits, removes people and changes roles. All rout
   `status`: `active` (default), `left`, `all`.
 - Returns **everyone** (no pagination needed: ~60 accounts). One row:
   ```json
-  { "id": 41, "email": "ann@x.co", "name": "Ann Lee", "roles": ["student"],
+  { "id": 41, "email": "ann@x.co", "name": "Ann Lee", "roles": ["student"], "main_role": "student",
     "role_expires_at": {}, "left_at": null, "created_at": "..." }
   ```
 - Roles in the response are **effective** ones (expired roles removed).
+- **`main_role`** is the role the account was **created with** (`student`, `mentor`, `lecturer` or `admin`). It is
+  stored once, at creation (the first role in `POST /users`, `student` for sign-up), and **never changes**. The
+  admin screens show it locked and only offer the *other* staff role on top. Without the field the front-end
+  guesses (the role held with no end date, mentor first), which is wrong for a lecturer who was later made a
+  mentor with no end date, so please send it.
 
 **`POST /users`** - create an account with a password the admin chose.
 ```json
 { "email": "nil@x.co", "name": "Nil Aydin", "password": "Secret123", "roles": ["mentor"] }
 ```
-`201` with the user. `409` if the e-mail exists (message: "There is already an account with this email."), `400`
+The first role in `roles` becomes `main_role`. `201` with the user. `409` if the e-mail exists (message: "There is already an account with this email."), `400`
 if the password is shorter than 8. Students may also be created this way (the front-end currently uses public
 `POST /auth/signup` for students and closes the session it opens; either works, `POST /users` is cleaner).
 A new student is enrolled in all modules (3.2).
@@ -179,7 +185,7 @@ A new student is enrolled in all modules (3.2).
 ```
 - `active:false` = **left the school**: set `left_at = now()`, sign them out (revoke refresh tokens), remove them
   from their team (4.2), keep the account, submissions and grades. `active:true` brings them back (no team).
-- Changing e-mail: unique, `409` otherwise. Passwords are never changed here.
+- Changing e-mail: unique, `409` otherwise. Passwords are never changed here (see the password route below).
 
 **`DELETE /users/:id`** - delete for good (for accounts made by mistake). Soft delete is fine, but the e-mail must
 become reusable. Their team slot is freed; if they mentor a team it is left without a mentor. `204`.
@@ -187,15 +193,30 @@ Refuse deleting the **last admin** (`422`).
 
 **`PUT /users/:id/roles`** - replace the whole role set, with optional end dates.
 ```json
-{ "roles": ["mentor", "lecturer"], "expires_at": { "lecturer": "2026-12-01T23:59:59Z" } }
+{ "roles": ["lecturer", "mentor"], "expires_at": { "mentor": "2026-12-01T23:59:59Z" } }
 ```
-- `roles` must be a non-empty subset of `student|mentor|lecturer|admin`.
-- A `student` cannot also be staff (`422`); staff keep at least one role.
+- **The main role is fixed.** `roles` must contain the user's `main_role`, and `expires_at` must not have an
+  entry for it. Otherwise `422` with a readable message, e.g. `"Elvin Huseynov is a lecturer: that role cannot be
+  taken away."` / `"The main role cannot end."`
+- For staff the only change allowed is adding or removing the **other** staff role: a mentor may get `lecturer`, a
+  lecturer may get `mentor`, each for a while (with a date) or with no end. `admin` and `student` are never given
+  or taken here (`422`). So in practice the body is always `[main]` or `[main, other]`.
 - `expires_at` keys must be in `roles`; a date in the past is `400`. Missing or `null` = no end.
-- Taking away `mentor` removes the person as mentor of their team (the team stays without one).
+- Taking away `mentor` (from a lecturer who had it) removes them as mentor of their team (the team stays without one).
 - **Expiry is automatic.** After the date the role no longer counts (rule 2.8); also run a daily job that deletes
   expired rows so the lists stay clean, and **notifies** the person ("Your lecturer role has ended") and the admin.
-- The front-end expects this to be how an admin makes a mentor a lecturer "for a while".
+- The front-end uses this for "make a mentor a lecturer for a while" and "make a lecturer a mentor for a while".
+
+**`PUT /users/:id/password`** - the admin sets a new password for someone who cannot sign in.
+```json
+{ "password": "fresh-start-1" }
+```
+- `204`. `400` if shorter than 8 characters (message: "At least 8 characters."). `404` for an unknown user.
+- Store it hashed like any password (bcrypt), **revoke all of that user's refresh tokens** (they are signed out
+  everywhere), and make sure the old password no longer works.
+- Admin only. An admin changing their **own** password should go through a separate "change my password" route
+  that asks for the current one (not built in the front-end yet).
+- Never return or log the password. The front-end shows it once to the admin so they can hand it over.
 
 **Bootstrap.** First registered user = `admin`. Provide a CLI or seed (`go run ./cmd/seed --admin email password`)
 to create more admins; the admin UI does not create admins.
@@ -306,6 +327,9 @@ Lecturers write short multiple-choice quizzes; students only see that a quiz exi
 -- 016_users_admin.up.sql
 ALTER TABLE users ADD COLUMN left_at timestamptz NULL;                 -- left the school
 ALTER TABLE users ADD COLUMN deleted_at timestamptz NULL;
+ALTER TABLE users ADD COLUMN main_role text NULL                       -- the role the account was created with
+  CHECK (main_role IN ('student','mentor','lecturer','admin'));
+UPDATE users SET main_role = roles[1] WHERE main_role IS NULL;         -- existing accounts: their first role
 CREATE TABLE user_role_expiry (                                        -- temporary roles
   user_id    bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role       text   NOT NULL CHECK (role IN ('student','mentor','lecturer','admin')),
@@ -390,6 +414,7 @@ Effective roles query: `SELECT r FROM unnest(u.roles) r WHERE NOT EXISTS (SELECT
 | Calendar events: write | - | - | own | any |
 | 1:1 slots | book own mentor's | manage own | - | - |
 | Users list / create / edit / delete / roles | - | - | - | **yes** |
+| Reset someone's password | - | - | - | **yes** |
 | Teams: read all / change | - | - | - | **yes** |
 | Team: read own | yes | yes | - | - |
 | Notifications: own | yes | yes | yes | yes |
@@ -443,6 +468,9 @@ store; the same flows are the acceptance tests):
 
 - [ ] Admin signs in at `/admin/login`; a student/mentor/lecturer is refused there.
 - [ ] Admin adds a student/mentor/lecturer with a password; that person signs in on the normal login with it.
+- [ ] Admin resets someone's password: the old one fails, the new one works, their open sessions end.
+- [ ] A lecturer can be given the mentor role (for a while or for good) and lose it again; trying to remove a
+      user's main role, or give it an end date, is refused with `422`.
 - [ ] A student added by the admin sees all weeks, with no manual enrolment.
 - [ ] Admin edits a name/e-mail; marks a student as left (cannot sign in, leaves the team, work kept); brings back; deletes.
 - [ ] Admin gives a mentor the lecturer role until a date; before it: lecturer rights; after it: none, without any action.

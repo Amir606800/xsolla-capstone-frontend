@@ -7,23 +7,33 @@ import { useDirectory } from '../../../hooks/useDirectory'
 import { useSort } from '../../../hooks/useSort'
 import type { SchoolUser } from '../../../types/admin'
 import { matchesQuery } from '../../../utils/adminPeople'
-import { roleBadges } from '../../../utils/adminRoles'
+import { isStaffRole, mainRoleOf, roleBadges, rolesSummary } from '../../../utils/adminRoles'
 import { canMentor, hasRole } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
 import { AssignWeeksForm } from './AssignWeeksForm'
+import { ResetPasswordForm } from './ResetPasswordForm'
+import { RolePills } from './RolePills'
+import { RolesForm } from './RolesForm'
 import { StudentForm } from './StudentForm'
 
 type Show = 'all' | 'only' | 'temporary'
-type Action = { kind: 'add' } | { kind: 'edit' | 'weeks' | 'delete'; person: SchoolUser }
+type Action = { kind: 'add' } | { kind: 'edit' | 'weeks' | 'roles' | 'password' | 'delete'; person: SchoolUser }
+
+/** The role the account was created with: lecturer, or mentor for a mentor who also lectures. */
+const mainOf = (u: SchoolUser) => {
+  const main = mainRoleOf(u)
+  return isStaffRole(main) ? main : 'lecturer'
+}
 
 /**
  * Admin: everyone who is a lecturer now, and the weeks they teach. Add a lecturer (with a password),
- * correct their details, give them weeks, or delete an account. A lecturer is only a lecturer: roles are
- * not changed here. (A mentor who lectures for a while is listed too; their roles are on the Mentors page.)
+ * correct their details, give them weeks, give or take the extra mentor role (the lecturer role they
+ * were created with stays), reset a password, or delete an account. Mentors who were given the lecturer
+ * role are listed too.
  */
 export default function AdminLecturersPage() {
-  const { status, users, teams, reload, addLecturer, editMentor, removeAccount } = useDirectory()
+  const { status, users, teams, reload, addLecturer, editMentor, changeRoles, setNewPassword, removeAccount } = useDirectory()
   const courses = useCourses()
   const [today] = useState(() => new Date())
   const [query, setQuery] = useState('')
@@ -191,18 +201,7 @@ export default function AdminLecturersPage() {
                         {weeksOf(l.id).length > 0 && <span className="admin-table__sub">{weeksText(l.id)}</span>}
                       </td>
                       <td>
-                        <span className="admin-roles-cell">
-                          {roleBadges(l, today).map((b) => (
-                            <span
-                              key={b.role}
-                              className={`admin-pill admin-pill--role${b.endingSoon ? ' admin-pill--hidden' : ''}`}
-                              title={b.detail}
-                            >
-                              {b.label}
-                              {b.detail && <span className="admin-pill__detail"> {b.detail}</span>}
-                            </span>
-                          ))}
-                        </span>
+                        <RolePills user={l} now={today} />
                       </td>
                       <td>
                         <div className="admin-actions">
@@ -223,6 +222,24 @@ export default function AdminLecturersPage() {
                             title="Assign weeks"
                           >
                             <Icon name="calendar" size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-icon-btn"
+                            onClick={() => open({ kind: 'roles', person: l })}
+                            aria-label={`Roles of ${l.name}`}
+                            title="Roles"
+                          >
+                            <Icon name="award" size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-icon-btn"
+                            onClick={() => open({ kind: 'password', person: l })}
+                            aria-label={`Reset the password of ${l.name}`}
+                            title="Reset password"
+                          >
+                            <Icon name="key" size={16} />
                           </button>
                           <button
                             type="button"
@@ -297,6 +314,36 @@ export default function AdminLecturersPage() {
               ]
               done(`${target.name} ${parts.filter(Boolean).join(' ')}.`)
             }}
+          />
+        )}
+      </Modal>
+
+      <Modal open={action?.kind === 'roles'} onClose={close} title={target ? `Roles of ${target.name}` : ''} initialFocus=".admin-dialog input">
+        {action?.kind === 'roles' && target && (
+          <RolesForm
+            user={target}
+            main={mainOf(target)}
+            teamName={teamOf.get(target.id)?.name}
+            now={today}
+            onCancel={close}
+            onSave={async (roles, until, extra) => {
+              await changeRoles(target.id, roles, until)
+              const main = mainOf(target)
+              if (main === 'mentor' && !extra.on) done(`${target.name} no longer lectures. You will find them under Mentors.`)
+              else if (main === 'lecturer' && extra.on && !teamOf.get(target.id))
+                done(`${target.name}: ${rolesSummary(main, extra)} Give them a team on the Mentors page.`)
+              else done(`${target.name}: ${rolesSummary(main, extra)}`)
+            }}
+          />
+        )}
+      </Modal>
+
+      <Modal open={action?.kind === 'password'} onClose={close} title={target ? `Reset ${target.name}’s password` : ''} size="sm" initialFocus=".admin-dialog input">
+        {action?.kind === 'password' && target && (
+          <ResetPasswordForm
+            user={target}
+            onSave={(password) => setNewPassword(target.id, password)}
+            onDone={(saved) => (saved ? done(`${target.name} has a new password.`) : close())}
           />
         )}
       </Modal>

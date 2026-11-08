@@ -11,11 +11,12 @@ import { formatShortDate } from '../../../utils/date'
 import { isStudent } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
+import { ResetPasswordForm } from './ResetPasswordForm'
 import { StudentForm } from './StudentForm'
 
 /** Who the list shows: students at the school now, those who left, or both. */
 type Status = 'current' | 'left' | 'all'
-type Action = { kind: 'add' } | { kind: 'edit' | 'leave' | 'return' | 'delete'; student: SchoolUser }
+type Action = { kind: 'add' } | { kind: 'edit' | 'password' | 'leave' | 'return' | 'delete'; student: SchoolUser }
 
 /**
  * Admin: every student, their team and mentor. Search, filter by team and status; add a student,
@@ -23,7 +24,7 @@ type Action = { kind: 'add' } | { kind: 'edit' | 'leave' | 'return' | 'delete'; 
  * or delete an account made by mistake.
  */
 export default function AdminStudentsPage() {
-  const { status, users, teams, reload, addStudent, editStudent, markLeft, removeStudent } = useDirectory()
+  const { status, users, teams, reload, addStudent, editStudent, markLeft, removeStudent, setNewPassword } = useDirectory()
   const [query, setQuery] = useState('')
   const [team, setTeam] = useState<TeamFilter>('all')
   const [state, setState] = useState<Status>('current')
@@ -187,6 +188,15 @@ export default function AdminStudentsPage() {
                                 <button
                                   type="button"
                                   className="admin-icon-btn"
+                                  onClick={() => open({ kind: 'password', student: s })}
+                                  aria-label={`Reset the password of ${s.name}`}
+                                  title="Reset password"
+                                >
+                                  <Icon name="key" size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-icon-btn"
                                   onClick={() => open({ kind: 'leave', student: s })}
                                   aria-label={`${s.name} left the school`}
                                   title="Left the school"
@@ -238,6 +248,16 @@ export default function AdminStudentsPage() {
               const name = teamName(input.teamId)
               done(`${user.name} added${name ? ` to ${name}` : ''}. They can sign in with ${user.email} and the password you set.`)
             }}
+          />
+        )}
+      </Modal>
+
+      <Modal open={action?.kind === 'password'} onClose={close} title={target ? `Reset ${target.name}’s password` : ''} size="sm" initialFocus=".admin-dialog input">
+        {action?.kind === 'password' && target && (
+          <ResetPasswordForm
+            user={target}
+            onSave={(password) => setNewPassword(target.id, password)}
+            onDone={(saved) => (saved ? done(`${target.name} has a new password.`) : close())}
           />
         )}
       </Modal>

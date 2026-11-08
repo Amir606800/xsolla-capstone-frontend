@@ -164,3 +164,54 @@ describe('adding a student', () => {
     await expect(createStudent(input)).rejects.toThrow('There is already an account with this email.')
   })
 })
+
+describe('main role and password reset', () => {
+  it('with a backend: main_role from the user list becomes the main role', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    const rows = [
+      { id: '5', email: 'l@x.co', name: 'Lee', roles: ['lecturer', 'mentor'], main_role: 'lecturer' },
+      { id: '6', email: 'm@x.co', name: 'Max', roles: ['mentor'], main_role: 'nonsense' },
+    ]
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(rows), { status: 200 })))
+    const { fetchUsers } = await import('./directory')
+    const [lee, max] = await fetchUsers()
+    expect(lee).toMatchObject({ id: 5, roles: ['mentor', 'lecturer'], mainRole: 'lecturer' })
+    expect(max.mainRole).toBeUndefined()
+  })
+
+  it('with a backend: PUT /users/:id/password with the new password', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    const fetchSpy = vi.fn(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchSpy)
+    const { resetPassword } = await import('./directory')
+    await resetPassword(901, 'fresh-start-1')
+    const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('https://api.test/users/901/password')
+    expect(init.method).toBe('PUT')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer acc')
+    expect(JSON.parse(init.body as string)).toEqual({ password: 'fresh-start-1' })
+  })
+
+  it('with a backend that cannot do it yet: a plain message; a short password is never sent', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    const fetchSpy = vi.fn(async () => new Response('{"error":"not found"}', { status: 404 }))
+    vi.stubGlobal('fetch', fetchSpy)
+    const { resetPassword } = await import('./directory')
+    await expect(resetPassword(901, 'fresh-start-1')).rejects.toThrow('The server cannot reset passwords yet.')
+    fetchSpy.mockClear()
+    await expect(resetPassword(901, 'short')).rejects.toThrow('At least 8 characters.')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('offline: the new password is the only one that signs them in', async () => {
+    vi.stubEnv('VITE_API_URL', '')
+    const { resetPassword } = await import('./directory')
+    const { passwordMatches } = await import('../mocks/directory')
+    await resetPassword(902, 'teach-again-1')
+    expect(passwordMatches(902, 'teach-again-1')).toBe(true)
+    expect(passwordMatches(902, 'demo')).toBe(false)
+  })
+})

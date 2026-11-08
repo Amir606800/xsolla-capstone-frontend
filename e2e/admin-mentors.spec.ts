@@ -17,7 +17,7 @@ test('a lecturer role given to a mentor for a week shows in the LMS when they si
   await form.getByRole('radio', { name: /^Lecturer for a while/ }).check()
   await form.getByRole('button', { name: '1 week' }).click()
   await form.getByRole('button', { name: 'Save roles' }).click()
-  await expect(page.getByText('Aysel Mammadova: mentor and lecturer for a while.')).toBeVisible()
+  await expect(page.getByText(/^Aysel Mammadova: Mentor, and lecturer until /)).toBeVisible()
   await expect(page.getByRole('row', { name: /Aysel Mammadova/ })).toContainText('7 days left')
 
   // Aysel signs in to the LMS (same browser, offline demo)

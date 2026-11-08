@@ -1,5 +1,5 @@
 import { DEMO_ACCOUNTS, DEMO_ADMIN } from '../mocks/accounts'
-import { listUsers } from '../mocks/directory'
+import { listUsers, passwordMatches } from '../mocks/directory'
 import type { User } from '../types/user'
 
 /** Offline mock, used when no backend URL is configured (VITE_API_URL is empty). Same signatures as auth.http.ts. */
@@ -23,9 +23,12 @@ export async function login(email: string, password: string): Promise<User> {
   // the admin's directory: accounts they added, and the roles they gave (lecturer until a date, ...)
   const known = listUsers().find((u) => u.email.toLowerCase() === key)
   if (known?.leftAt) throw new Error('This account is no longer active.')
+  // after the admin reset the password, only the new one works
+  if (known && !passwordMatches(known.id, password)) throw new Error('Invalid email or password')
   if (known) {
-    const { leftAt: _left, ...user } = known
+    const { leftAt: _left, mainRole: _main, ...user } = known
     void _left
+    void _main
     return user
   }
   const demo = DEMO_ACCOUNTS[key]
