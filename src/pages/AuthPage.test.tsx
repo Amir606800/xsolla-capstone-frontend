@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router'
 import { describe, expect, it } from 'vitest'
@@ -20,11 +20,13 @@ function submit() {
 }
 
 describe('AuthPage', () => {
-  it('shows the sign in form by default', () => {
+  it('is a sign-in form only: accounts are made by an admin, so there is no sign-up', () => {
     renderPage()
-    expect(screen.getByRole('tab', { name: 'Sign in' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument()
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
     expect(screen.getByLabelText('Password')).toBeInTheDocument()
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+    expect(screen.queryByText(/sign up/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Confirm password')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Name')).not.toBeInTheDocument()
     expect(screen.getByText('Forgot password?')).toBeInTheDocument()
@@ -43,48 +45,6 @@ describe('AuthPage', () => {
     await user.clear(screen.getByLabelText('Email'))
     await user.type(screen.getByLabelText('Email'), 'me@example.com')
     expect(submit()).toBeEnabled()
-  })
-
-  it('switches to sign up and shows name + confirm fields without forgot-password', async () => {
-    const user = userEvent.setup()
-    renderPage()
-    await user.click(screen.getByRole('tab', { name: 'Sign up' }))
-
-    expect(screen.getByRole('tab', { name: 'Sign up' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByLabelText('Name')).toBeInTheDocument()
-    expect(screen.getByLabelText('Confirm password')).toBeInTheDocument()
-    expect(screen.queryByText('Forgot password?')).not.toBeInTheDocument()
-  })
-
-  it('sign up requires a name, 8+ char password and a matching confirmation', async () => {
-    const user = userEvent.setup()
-    renderPage()
-    await user.click(screen.getByRole('tab', { name: 'Sign up' }))
-    await user.type(screen.getByLabelText('Email'), 'me@example.com')
-    await user.type(screen.getByLabelText('Password'), 'longenough1')
-    await user.type(screen.getByLabelText('Confirm password'), 'longenough1')
-    expect(submit()).toBeDisabled() // no name yet
-
-    await user.type(screen.getByLabelText('Name'), 'Sam')
-    expect(submit()).toBeEnabled()
-
-    await user.clear(screen.getByLabelText('Confirm password'))
-    await user.type(screen.getByLabelText('Confirm password'), 'different1')
-    expect(submit()).toBeDisabled()
-
-    await user.clear(screen.getByLabelText('Password'))
-    await user.clear(screen.getByLabelText('Confirm password'))
-    await user.type(screen.getByLabelText('Password'), 'short')
-    await user.type(screen.getByLabelText('Confirm password'), 'short')
-    expect(submit()).toBeDisabled()
-  })
-
-  it('clears password fields when switching tabs', async () => {
-    const user = userEvent.setup()
-    renderPage()
-    await user.type(screen.getByLabelText('Password'), 'secret')
-    await user.click(screen.getByRole('tab', { name: 'Sign up' }))
-    expect(screen.getByLabelText('Password')).toHaveValue('')
   })
 
   it('toggles password visibility', async () => {
@@ -125,20 +85,6 @@ describe('AuthPage', () => {
 
     expect(await screen.findByText('dashboard reached')).toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem('auth_user')!)).toMatchObject({ email: 'me@example.com' })
-  })
-
-  it('signs up with a name and navigates to the dashboard', async () => {
-    const user = userEvent.setup()
-    renderPage()
-    await user.click(screen.getByRole('tab', { name: 'Sign up' }))
-    await user.type(screen.getByLabelText('Name'), 'Sam')
-    await user.type(screen.getByLabelText('Email'), 'sam@example.com')
-    await user.type(screen.getByLabelText('Password'), 'longenough1')
-    await user.type(screen.getByLabelText('Confirm password'), 'longenough1')
-    await user.click(submit())
-
-    await waitFor(() => expect(screen.getByText('dashboard reached')).toBeInTheDocument())
-    expect(JSON.parse(localStorage.getItem('auth_user')!)).toMatchObject({ name: 'Sam' })
   })
 
   it('redirects an already signed-in user straight to the dashboard', () => {

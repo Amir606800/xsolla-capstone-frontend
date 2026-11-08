@@ -8,21 +8,17 @@ import officePhoto from '../assets/images/CrescentOfficesPhoto.webp'
 import { XsollaLogo } from '../components/XsollaLogo'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
-import { isValidEmail, isValidName, isValidPassword, passwordsMatch } from '../utils/validation'
+import { isValidEmail, isValidPassword } from '../utils/validation'
 import './AuthPage.css'
 
-type Mode = 'signin' | 'signup'
-
+// Accounts are created by an admin, so this page only signs in (the sign-up API is still in src/api).
 export default function AuthPage() {
-  const { isAuthenticated, signIn, signUp } = useAuth()
+  const { isAuthenticated, signIn } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
-  const [mode, setMode] = useState<Mode>('signin')
-  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [touched, setTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -30,20 +26,9 @@ export default function AuthPage() {
 
   if (isAuthenticated) return <Navigate to="/dashboard" replace />
 
-  const isSignup = mode === 'signup'
-  const nameOk = !isSignup || isValidName(name)
   const emailOk = isValidEmail(email)
-  const passwordOk = isValidPassword(password, isSignup)
-  const confirmOk = !isSignup || passwordsMatch(password, confirm)
-  const valid = nameOk && emailOk && passwordOk && confirmOk
-
-  function switchMode(next: Mode) {
-    setMode(next)
-    setTouched(false)
-    setFormError('')
-    setPassword('')
-    setConfirm('')
-  }
+  const passwordOk = isValidPassword(password, false)
+  const valid = emailOk && passwordOk
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -52,8 +37,7 @@ export default function AuthPage() {
     setSubmitting(true)
     setFormError('')
     try {
-      if (isSignup) await signUp(email, name.trim(), password)
-      else await signIn(email, password)
+      await signIn(email, password)
       navigate('/dashboard', { replace: true })
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Something went wrong')
@@ -87,26 +71,7 @@ export default function AuthPage() {
         <div className="auth__card">
           <h1 className="auth__title">Welcome</h1>
 
-          <div className="auth__tabs" role="tablist">
-            <button
-              role="tab"
-              aria-selected={!isSignup}
-              className={!isSignup ? 'is-active' : ''}
-              onClick={() => switchMode('signin')}
-            >
-              Sign in
-            </button>
-            <button
-              role="tab"
-              aria-selected={isSignup}
-              className={isSignup ? 'is-active' : ''}
-              onClick={() => switchMode('signup')}
-            >
-              Sign up
-            </button>
-          </div>
-
-          {!isSignup && !hasBackend() && (
+          {!hasBackend() && (
             <div className="auth__demo" role="group" aria-label="Demo accounts">
               <span>Offline demo, sign in as:</span>
               {Object.values(DEMO_ACCOUNTS).map((a) => (
@@ -127,23 +92,6 @@ export default function AuthPage() {
           )}
 
           <form onSubmit={handleSubmit} noValidate>
-            {isSignup && (
-              <>
-                <label className="auth__label" htmlFor="name">
-                  Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  autoComplete="name"
-                  className="auth__input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-                {touched && !nameOk && <p className="auth__error">Enter your name</p>}
-              </>
-            )}
-
             <label className="auth__label" htmlFor="email">
               Email
             </label>
@@ -164,7 +112,7 @@ export default function AuthPage() {
               <input
                 id="password"
                 type={showPw ? 'text' : 'password'}
-                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                autoComplete="current-password"
                 className="auth__input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -191,28 +139,7 @@ export default function AuthPage() {
                 </svg>
               </button>
             </div>
-            {touched && !passwordOk && (
-              <p className="auth__error">
-                {isSignup ? 'Password must be at least 8 characters' : 'Enter your password'}
-              </p>
-            )}
-
-            {isSignup && (
-              <>
-                <label className="auth__label" htmlFor="confirm">
-                  Confirm password
-                </label>
-                <input
-                  id="confirm"
-                  type={showPw ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  className="auth__input"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                />
-                {touched && !confirmOk && <p className="auth__error">Passwords do not match</p>}
-              </>
-            )}
+            {touched && !passwordOk && <p className="auth__error">Enter your password</p>}
 
             {formError && (
               <p className="auth__error" role="alert">
@@ -221,15 +148,13 @@ export default function AuthPage() {
             )}
 
             <button type="submit" className="auth__submit" disabled={!valid || submitting}>
-              {isSignup ? 'Sign up' : 'Sign in'}
+              Sign in
             </button>
           </form>
 
-          {!isSignup && (
-            <a href="#" className="auth__link">
-              Forgot password?
-            </a>
-          )}
+          <a href="#" className="auth__link">
+            Forgot password?
+          </a>
 
           <div className="auth__or">
             <span>OR</span>

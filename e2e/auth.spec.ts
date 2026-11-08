@@ -20,7 +20,13 @@ test('renders the split layout with branding and card', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'Xsolla' })).toBeVisible()
   await expect(page.getByText('SCHOOL BAKU')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible()
-  await expect(page.getByRole('tab', { name: 'Sign in' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible()
+})
+
+test('there is no sign-up: accounts are made by an admin', async ({ page }) => {
+  await expect(page.getByRole('tab')).toHaveCount(0)
+  await expect(page.getByText(/sign up/i)).toHaveCount(0)
+  await expect(page.getByLabel('Confirm password')).toHaveCount(0)
 })
 
 test('sign in button enables only with valid input', async ({ page }) => {
@@ -28,18 +34,6 @@ test('sign in button enables only with valid input', async ({ page }) => {
   await expect(submit).toBeDisabled()
   await page.getByLabel('Email').fill('me@example.com')
   await page.getByLabel('Password', { exact: true }).fill('secret')
-  await expect(submit).toBeEnabled()
-})
-
-test('sign up flow validates name and confirmation', async ({ page }) => {
-  await page.getByRole('tab', { name: 'Sign up' }).click()
-  const submit = page.locator('button[type="submit"]')
-  await page.getByLabel('Name').fill('Sam')
-  await page.getByLabel('Email').fill('me@example.com')
-  await page.getByLabel('Password', { exact: true }).fill('longenough1')
-  await page.getByLabel('Confirm password').fill('nope')
-  await expect(submit).toBeDisabled()
-  await page.getByLabel('Confirm password').fill('longenough1')
   await expect(submit).toBeEnabled()
 })
 

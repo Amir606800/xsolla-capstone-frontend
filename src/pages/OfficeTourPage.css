@@ -240,7 +240,15 @@
   }
 }
 
-/* ---------- teleport: the page blurs away, the frame grows and zooms in, then fades to dark ---------- */
+/*
+ * ---------- teleport ----------
+ * The page blurs away, the picture lifts out of the frame and grows to fill the screen while it zooms
+ * in and comes into focus, then everything fades to dark and the tour opens.
+ *
+ * Only transform and opacity are animated, so the browser runs it on the GPU and it stays smooth.
+ * The blur itself never changes: a blurred copy of the picture fades out over a sharp one, and the
+ * page blur is a fixed backdrop blur that fades in. Everything ends by 1s; the tour opens at 1.1s.
+ */
 .tour.is-launching .tour__play {
   opacity: 1;
   animation: tour-press 0.25s ease-out;
@@ -254,45 +262,68 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
+  overflow: hidden;
   pointer-events: all;
   cursor: progress;
-  /* the page behind goes out of focus as soon as the zoom starts */
-  animation: teleport-blur 0.6s ease-out both;
 }
-@keyframes teleport-blur {
-  from {
-    background: rgb(11 20 24 / 0);
-    backdrop-filter: blur(0);
-    -webkit-backdrop-filter: blur(0);
-  }
-  to {
-    background: rgb(11 20 24 / 0.45);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-  }
-}
-.teleport__portal {
-  position: fixed;
-  overflow: hidden;
-  background: #0b1418;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.45);
-  animation: teleport-grow 0.85s cubic-bezier(0.65, 0, 0.25, 1) 0.1s both;
-}
-.teleport__portal .tour__art,
-.teleport__portal .tour__img {
-  animation: teleport-zoom 1s cubic-bezier(0.5, 0, 0.3, 1) 0.1s both;
-}
-/* the last moment fades to the frame colour, so the hand-over to the tour is calm */
+.teleport__veil,
+.teleport__portal,
 .teleport__fade {
   position: fixed;
   inset: 0;
+}
+
+/* the page behind goes out of focus */
+.teleport__veil {
+  background: rgb(11 20 24 / 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  opacity: 0;
+  will-change: opacity;
+}
+
+/* full screen, shrunk onto the frame's picture at first, then grown back to full size */
+.teleport__portal {
+  overflow: hidden;
+  background: #0b1418;
+  /* 8px corners on screen at the start, like the frame's picture */
+  border-radius: calc(8px / var(--sx)) / calc(8px / var(--sy));
+  transform-origin: 0 0;
+  transform: translate3d(var(--l), var(--t), 0) scale(var(--sx), var(--sy));
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.teleport__scene {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.08);
+  will-change: transform;
+}
+.teleport__scene > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  transition: none;
+}
+.teleport__scene > .teleport__sharp {
+  filter: saturate(1.2);
+}
+.teleport__scene > .teleport__blurred {
+  filter: blur(8px) saturate(1.2);
+  will-change: opacity;
+}
+
+.teleport__fade {
   background: #0b1418;
   opacity: 0;
-  animation: teleport-fade 0.35s ease-in 0.75s both;
+  will-change: opacity;
 }
 .teleport__label {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 12%;
   margin: 0;
   color: #fff;
@@ -300,45 +331,72 @@
   font-size: 22px;
   font-weight: 600;
   letter-spacing: 0.5px;
+  text-align: center;
   text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
-  transform: translateX(-50%);
   opacity: 0;
-  animation: teleport-label 0.4s ease 0.45s both;
+  transform: translate3d(0, 12px, 0);
+  will-change: transform, opacity;
+}
+
+/* everything is laid out and painted first; the animations start a couple of frames later */
+.teleport.is-playing .teleport__veil {
+  animation: teleport-in 0.45s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+.teleport.is-playing .teleport__portal {
+  animation: teleport-grow 0.8s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.teleport.is-playing .teleport__scene {
+  animation: teleport-zoom 1s cubic-bezier(0.33, 0, 0.2, 1) both;
+}
+.teleport.is-playing .teleport__blurred {
+  animation: teleport-out 0.65s cubic-bezier(0.45, 0, 0.55, 1) 0.15s both;
+}
+.teleport.is-playing .teleport__label {
+  animation: teleport-label 0.4s cubic-bezier(0.25, 1, 0.5, 1) 0.3s both;
+}
+.teleport.is-playing .teleport__fade {
+  animation: teleport-in 0.25s cubic-bezier(0.5, 0, 0.75, 0) 0.75s both;
 }
 @keyframes teleport-grow {
   from {
-    top: var(--t);
-    left: var(--l);
-    width: var(--w);
-    height: var(--h);
-    border-radius: 14px;
+    transform: translate3d(var(--l), var(--t), 0) scale(var(--sx), var(--sy));
   }
   to {
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    border-radius: 0;
+    transform: translate3d(0, 0, 0) scale(1, 1);
   }
 }
-/* the picture comes into focus while it zooms in */
 @keyframes teleport-zoom {
   from {
-    filter: blur(10px) saturate(1.1);
-    transform: scale(1.04);
+    transform: scale(1.08);
   }
   to {
-    filter: blur(0) saturate(1.2);
-    transform: scale(1.4);
+    transform: scale(1.35);
   }
 }
-@keyframes teleport-fade {
+@keyframes teleport-in {
+  from {
+    opacity: 0;
+  }
   to {
     opacity: 1;
+  }
+}
+@keyframes teleport-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 @keyframes teleport-label {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
   to {
     opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
+

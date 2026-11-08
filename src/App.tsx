@@ -64,6 +64,7 @@ export default function App() {
             <Route path="/admin/mentors" element={<AdminMentorsPage />} />
             <Route path="/admin/teams" element={<AdminTeamsPage />} />
             <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
+            <Route path="/admin/office-tour" element={<OfficeTourPage />} />
             {/* the lecturers page counts each lecturer's modules, so it loads the course */}
             <Route path="/admin/lecturers" element={<AdminCoursesLayout />}>
               <Route index element={<AdminLecturersPage />} />

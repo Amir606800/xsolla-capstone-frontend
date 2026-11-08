@@ -95,25 +95,6 @@
   font-weight: 500;
 }
 
-.auth__tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  margin-bottom: 12px;
-}
-.auth__tabs button {
-  height: 40px;
-  border: 0;
-  background: var(--tab-bg);
-  color: var(--text);
-  font: inherit;
-  font-size: 15px;
-  cursor: pointer;
-}
-.auth__tabs button.is-active {
-  background: var(--tab-active-bg);
-  color: var(--tab-active-text);
-}
-
 .auth__label {
   display: block;
   margin: 12px 0 6px;

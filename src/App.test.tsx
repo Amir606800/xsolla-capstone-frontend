@@ -13,7 +13,7 @@ const signedIn = () =>
 describe('App routing', () => {
   it('redirects guests from a protected route to the login page', async () => {
     renderWithProviders(<App />, { route: '/dashboard' })
-    expect(await screen.findByRole('tab', { name: 'Sign in' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Welcome' })).toBeInTheDocument()
   })
 
   it('redirects unknown URLs to the dashboard for signed-in users', async () => {
@@ -57,7 +57,7 @@ describe('App routing', () => {
     expect(screen.getByText('sam@example.com')).toBeInTheDocument()
     await user.click(screen.getByRole('menuitem', { name: 'Log out' }))
 
-    expect(await screen.findByRole('tab', { name: 'Sign in' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Welcome' })).toBeInTheDocument()
     expect(localStorage.getItem('auth_user')).toBeNull()
   })
 

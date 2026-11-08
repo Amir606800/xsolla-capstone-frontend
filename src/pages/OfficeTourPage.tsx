@@ -10,28 +10,48 @@ import './OfficeTourPage.css'
 /** A screenshot of the tour, shown blurred so it does not spoil it. Put the real one here. */
 const PREVIEW_SRC = '/office-tour/preview.jpg'
 
-/** How long the teleport plays before the tour page takes over (matches OfficeTourPage.css). */
+/** How long the teleport plays before the tour page takes over (OfficeTourPage.css ends by 1s). */
 export const TELEPORT_MS = 1100
 
-/** Where the frame was on screen when it was clicked: the teleport starts from there. */
-type Launch = { top: number; left: number; width: number; height: number }
+/** Where the frame's picture was on screen when it was clicked, as a share of the screen. */
+type Launch = { top: number; left: number; sx: number; sy: number }
+
+/** Runs `fn` after the browser has painted twice, so new layers are ready before anything moves. */
+function afterPaint(fn: () => void): () => void {
+  if (typeof window.requestAnimationFrame !== 'function') {
+    fn()
+    return () => {}
+  }
+  let second = 0
+  const first = window.requestAnimationFrame(() => {
+    second = window.requestAnimationFrame(fn)
+  })
+  return () => {
+    window.cancelAnimationFrame(first)
+    window.cancelAnimationFrame(second)
+  }
+}
 
 /**
  * Office tour: a short story about the office, then a blurred preview of the 360° tour in a
- * viewfinder frame. Hovering (or focusing) shows the play button. Clicking "teleports": the frame
- * grows to fill the screen, the picture zooms in and sharpens, a flash, and the tour opens in this
- * tab (Back returns here). Ctrl/Cmd/middle click still opens a new tab, without the animation.
+ * viewfinder frame. Hovering (or focusing) shows the play button. Clicking "teleports": the page
+ * blurs, the picture grows to fill the screen while it zooms in and sharpens, a fade to dark, and the
+ * tour opens in this tab (Back returns here). Ctrl/Cmd/middle click still opens a new tab, without the animation.
  * The text is a first draft: edit it freely.
  */
 export default function OfficeTourPage() {
   // without a screenshot yet, an abstract picture stands in (it is blurred anyway)
   const [hasPreview, setHasPreview] = useState(true)
   const [launch, setLaunch] = useState<Launch | null>(null)
+  const [playing, setPlaying] = useState(false)
 
   // coming back with the Back button may restore this page as it was left: clear the teleport
   useEffect(() => {
     const reset = (e: PageTransitionEvent) => {
-      if (e.persisted) setLaunch(null)
+      if (e.persisted) {
+        setLaunch(null)
+        setPlaying(false)
+      }
     }
     window.addEventListener('pageshow', reset)
     return () => window.removeEventListener('pageshow', reset)
@@ -39,8 +59,12 @@ export default function OfficeTourPage() {
 
   useEffect(() => {
     if (!launch) return
+    const cancel = afterPaint(() => setPlaying(true))
     const timer = window.setTimeout(() => goTo(LINKS.officeTour), TELEPORT_MS)
-    return () => window.clearTimeout(timer)
+    return () => {
+      cancel()
+      window.clearTimeout(timer)
+    }
   }, [launch])
 
   function startTour(e: MouseEvent<HTMLAnchorElement>) {
@@ -52,9 +76,16 @@ export default function OfficeTourPage() {
       goTo(LINKS.officeTour)
       return
     }
-    const box = e.currentTarget.getBoundingClientRect()
-    setLaunch({ top: box.top, left: box.left, width: box.width, height: box.height })
+    // start from the picture inside the frame, so the frame stays behind and the picture lifts out
+    const picture = e.currentTarget.querySelector('.tour__view') ?? e.currentTarget
+    const box = picture.getBoundingClientRect()
+    const w = window.innerWidth || 1
+    const h = window.innerHeight || 1
+    setLaunch({ top: box.top, left: box.left, sx: Math.max(box.width / w, 0.01), sy: Math.max(box.height / h, 0.01) })
   }
+
+  const scene = (cls: string) =>
+    hasPreview ? <img className={`tour__img ${cls}`} src={PREVIEW_SRC} alt="" decoding="sync" /> : <span className={`tour__art ${cls}`} />
 
   return (
     <section className="office">
@@ -116,19 +147,23 @@ export default function OfficeTourPage() {
       {launch &&
         createPortal(
           <div
-            className="teleport"
+            className={`teleport${playing ? ' is-playing' : ''}`}
             style={
               {
                 '--t': `${launch.top}px`,
                 '--l': `${launch.left}px`,
-                '--w': `${launch.width}px`,
-                '--h': `${launch.height}px`,
+                '--sx': launch.sx,
+                '--sy': launch.sy,
               } as CSSProperties
             }
           >
+            <div className="teleport__veil" aria-hidden="true" />
             <div className="teleport__portal" aria-hidden="true">
-              <span className="tour__art" />
-              {hasPreview && <img className="tour__img" src={PREVIEW_SRC} alt="" />}
+              <div className="teleport__scene">
+                {/* the sharp picture under a blurred copy that fades away */}
+                {scene('teleport__sharp')}
+                {scene('teleport__blurred')}
+              </div>
             </div>
             <div className="teleport__fade" aria-hidden="true" />
             <p className="teleport__label" role="status">

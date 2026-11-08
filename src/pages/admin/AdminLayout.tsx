@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router'
+import { GitLabLogo, SlackLogo } from '../../components/BrandLogos'
 import { Icon } from '../../components/Icon'
+import { LINKS } from '../../config/links'
 import { XsollaLogo } from '../../components/XsollaLogo'
 import { ADMIN_NAV } from '../../config/adminNav'
 import { useAuth } from '../../hooks/useAuth'
@@ -8,6 +10,12 @@ import '../../styles/ui.css'
 import './admin.css'
 
 const linkClass = ({ isActive }: { isActive: boolean }) => `admin-nav__link${isActive ? ' is-active' : ''}`
+
+/** Slack and GitLab, at the bottom of the section list. They open in a new tab. */
+const TOOLS = [
+  { name: 'Slack', href: LINKS.slack, logo: <SlackLogo /> },
+  { name: 'GitLab', href: LINKS.gitlab, logo: <GitLabLogo /> },
+]
 
 /** The admin section's frame: a plain top bar, the section list on the left, the page on the right. */
 export default function AdminLayout() {
@@ -57,6 +65,33 @@ export default function AdminLayout() {
               ))}
             </div>
           ))}
+
+          <div className="admin-nav__group" role="group" aria-labelledby="admin-nav-community">
+            <p id="admin-nav-community" className="admin-nav__heading">
+              Community
+            </p>
+            <NavLink to="/admin/office-tour" className={linkClass}>
+              <Icon name="tour" size={18} /> Office tour
+            </NavLink>
+          </div>
+
+          <div className="admin-nav__group admin-nav__tools" role="group" aria-label="Team tools">
+            {TOOLS.map((t) => (
+              <a
+                key={t.name}
+                className="admin-nav__link admin-nav__tool"
+                href={t.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${t.name} (opens in a new tab)`}
+              >
+                {t.logo} {t.name}
+                <span className="admin-nav__ext" aria-hidden="true">
+                  <Icon name="external" size={13} />
+                </span>
+              </a>
+            ))}
+          </div>
         </nav>
 
         <main className="admin__main">

@@ -22,7 +22,7 @@ test('without the font files the page still renders with the stand-in font', asy
   await page.route('**/fonts/sharp-grotesk/SharpGroteskBook20.woff', (route) => route.fulfill({ status: 404 }))
   await page.route('**/fonts/sharp-grotesk/Sharp*Grotesk*Book*', (route) => route.fulfill({ status: 404 }))
   await page.goto('/login')
-  await expect(page.getByRole('tab', { name: 'Sign in' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible()
 
   const families = await loadedFamilies(page)
   expect(families).toContain('Hanken Grotesk Variable')
@@ -32,7 +32,7 @@ test('without the font files the page still renders with the stand-in font', asy
 test('dropping the font file into public/fonts/sharp-grotesk/ is enough to use it', async ({ page }) => {
   await page.route(FONT_URL, (route) => route.fulfill({ path: STAND_IN, contentType: 'font/woff2' }))
   await page.goto('/login')
-  await expect(page.getByRole('tab', { name: 'Sign in' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible()
 
   await expect.poll(() => loadedFamilies(page)).toContain('SharpGrotesk20')
 })
@@ -40,7 +40,7 @@ test('dropping the font file into public/fonts/sharp-grotesk/ is enough to use i
 test('headings do not get a faux bold when only the Book weight exists', async ({ page }) => {
   await page.route(FONT_URL, (route) => route.fulfill({ path: STAND_IN, contentType: 'font/woff2' }))
   await page.goto('/login')
-  await page.getByRole('tab', { name: 'Sign in' }).waitFor()
+  await page.getByRole('heading', { name: 'Welcome' }).waitFor()
   const weights = await page.evaluate(() => {
     const rule = [...document.styleSheets]
       .flatMap((s) => [...s.cssRules])
