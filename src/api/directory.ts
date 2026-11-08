@@ -17,7 +17,7 @@ import {
   updateUser,
 } from '../mocks/directory'
 import type { NewTeam } from '../mocks/directory'
-import { isValidPassword, MIN_SIGNUP_PASSWORD_LENGTH } from '../utils/validation'
+import { emailError, nameError, passwordError } from '../utils/credentials'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { Role, User } from '../types/user'
 import { type UserDto, mapUser } from './auth.http'
@@ -94,8 +94,15 @@ interface SignupResponse {
 
 const TAKEN = 'There is already an account with this email.'
 
+/** The name, e-mail and password of a new account must pass the rules in utils/credentials. */
+function checkNewAccount(input: { name: string; email: string; password: string }): void {
+  const problem = nameError(input.name) || emailError(input.email) || passwordError(input.password, input)
+  if (problem) throw new ApiError(400, 'bad_request', problem)
+}
+
 /** Creates a student account with the e-mail and password the admin chose, then puts them in a team. */
 export async function createStudent(input: NewStudent): Promise<User> {
+  checkNewAccount(input)
   let user: User
   if (hasBackend()) {
     let res: SignupResponse
@@ -194,6 +201,7 @@ export interface NewMentor {
 
 /** A new staff account with the given role, the chosen password, and (mentors only) the team they mentor. */
 export async function createStaff(input: NewMentor, role: 'mentor' | 'lecturer'): Promise<User> {
+  checkNewAccount(input)
   let user: User
   if (hasBackend()) {
     try {
@@ -242,7 +250,8 @@ export async function updateMentor(id: number, changes: MentorChanges): Promise<
  *   PUT /users/:id/password  { password }   -> 204
  */
 export async function resetPassword(id: number, password: string): Promise<void> {
-  if (!isValidPassword(password, true)) throw new ApiError(400, 'bad_request', `At least ${MIN_SIGNUP_PASSWORD_LENGTH} characters.`)
+  const weak = passwordError(password)
+  if (weak) throw new ApiError(400, 'bad_request', weak)
   if (hasBackend()) {
     try {
       await authedRequest<void>(`/users/${id}/password`, { method: 'PUT', body: { password } })

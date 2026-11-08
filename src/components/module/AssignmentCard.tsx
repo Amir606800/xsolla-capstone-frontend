@@ -65,7 +65,7 @@ function AssignmentCardBase({ assignment, now, onSubmit, context }: AssignmentCa
               </ul>
             </>
           )}
-          <SubmissionPanel assignment={assignment} onSubmit={onSubmit} />
+          <SubmissionPanel assignment={assignment} onSubmit={onSubmit} now={now} />
         </div>
       )}
     </li>

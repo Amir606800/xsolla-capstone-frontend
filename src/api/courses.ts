@@ -1,6 +1,6 @@
 import { addModule, listModules, type ModulePatch, putItem, putModule, removeItem, removeModule } from '../mocks/contentEdits'
 import { handIn, submissionsOf } from '../mocks/submissions'
-import type { ContentItem, CourseModule, Submission } from '../types/course'
+import type { ContentItem, CourseModule, Submission, SubmissionFile } from '../types/course'
 import * as http from './courses.http'
 import { hasBackend } from './http'
 
@@ -39,7 +39,10 @@ export async function fetchModules(opts: { student?: boolean; userId?: number } 
 
 export interface SubmitPayload {
   textBody: string
+  /** New files to upload. */
   files: File[]
+  /** Files of the current version that are handed in again with the new one. */
+  keep?: SubmissionFile[]
 }
 
 /** Who hands in, and the module the task belongs to (the backend's URL needs it). */
@@ -57,7 +60,7 @@ export async function submitWork(assignmentId: string, payload: SubmitPayload, c
   const submission: Submission = {
     submittedAt: new Date().toISOString(),
     textBody: payload.textBody || undefined,
-    files: payload.files.map((f) => ({ name: f.name, sizeBytes: f.size })),
+    files: [...(payload.keep ?? []), ...payload.files.map((f) => ({ name: f.name, sizeBytes: f.size }))],
   }
   // kept so the student's mentor can review it
   return ctx.studentId === undefined ? submission : handIn(ctx.studentId, assignmentId, submission)

@@ -557,3 +557,50 @@
 .resources__group {
   padding: 0 20px;
 }
+
+/* ---------- submissions: versions until the deadline ---------- */
+.submission__version-tag,
+.submission__kept-tag {
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--main-bg);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.submission__history {
+  margin-top: 12px;
+}
+.submission__history > summary {
+  width: fit-content;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+.submission__history > summary:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.submission__versions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.submission__version {
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--main-bg);
+}
+.submission__version-head {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+}
+.submission__version .submission__files {
+  margin-bottom: 0;
+}

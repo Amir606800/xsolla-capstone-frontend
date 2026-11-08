@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import { assignLecturer as apiAssignLecturer, createModule as apiCreateModule, deleteItem as apiDeleteItem, deleteModule as apiDeleteModule, fetchModules, saveItem as apiSaveItem, saveModule as apiSaveModule, submitWork } from '../api/courses'
 import type { ModulePatch, SubmitPayload } from '../api/courses'
 import { useAuth } from '../hooks/useAuth'
-import type { ContentItem, CourseModule, Submission } from '../types/course'
-import { isModuleLocked } from '../utils/progress'
+import type { ContentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
+import { DEADLINE_PASSED, isModuleLocked, isPastDue } from '../utils/progress'
 import { canAuthor, isStudent } from '../utils/roles'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
@@ -16,13 +16,21 @@ function withSubmission(modules: CourseModule[], assignmentId: string, result: S
           ...m,
           items: m.items.map((i) =>
             i.id === assignmentId && i.type === 'assignment'
-              // resubmitting updates the work but keeps an existing grade/feedback
-              ? { ...i, submission: { ...i.submission, ...result } }
+              // resubmitting updates the work but keeps an existing grade/feedback; the version it
+              // replaces goes to the top of the history (unless the server already sent the history)
+              ? { ...i, submission: { ...i.submission, ...result, history: result.history ?? historyAfter(i.submission) } }
               : i,
           ),
         }
       : m,
   )
+}
+
+/** The earlier versions once a new one is handed in: the current one first, then the ones before it. */
+function historyAfter(current: Submission | undefined): SubmissionVersion[] | undefined {
+  if (!current) return undefined
+  const { submittedAt, textBody, files } = current
+  return [{ submittedAt, ...(textBody !== undefined ? { textBody } : {}), ...(files !== undefined ? { files } : {}) }, ...(current.history ?? [])]
 }
 
 /** Students never get quiz answers (the backend must strip them too). */
@@ -86,6 +94,10 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       const target = owner?.items.find((i) => i.id === assignmentId)
       if (target?.type === 'assignment' && target.submission?.gradedAt !== undefined) {
         throw new Error('This task has already been graded')
+      }
+      // Work is handed in until the deadline; after it the task is closed. The backend must refuse it too.
+      if (student && target?.type === 'assignment' && isPastDue(target, new Date())) {
+        throw new Error(DEADLINE_PASSED)
       }
       const result = await submitWork(assignmentId, payload, { studentId: user?.id, moduleId: owner?.id })
       setModules((prev) => withSubmission(prev, assignmentId, result))

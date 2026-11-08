@@ -58,6 +58,21 @@ describe('rules', () => {
     expect(submissionsOf(101, NOW)['m5-a1']).toMatchObject({ textBody: 'v2', feedback: 'Fix the tests' })
   })
 
+  it('every new version keeps the ones before it, newest first (without the comment)', () => {
+    handIn(1, 'm6-a2', { submittedAt: '2026-11-08T10:00:00.000Z', textBody: 'v1', files: [{ name: 'a.pdf', sizeBytes: 1 }] }, NOW)
+    handIn(1, 'm6-a2', { submittedAt: '2026-11-08T11:00:00.000Z', textBody: 'v2' }, NOW)
+    const third = handIn(1, 'm6-a2', { submittedAt: '2026-11-08T12:00:00.000Z', textBody: 'v3' }, NOW)
+    expect(third.history?.map((v) => v.textBody)).toEqual(['v2', 'v1'])
+    const stored = submissionsOf(1, NOW)['m6-a2']
+    expect(stored).toMatchObject({ textBody: 'v3' })
+    expect(stored.history).toEqual([
+      { submittedAt: '2026-11-08T11:00:00.000Z', textBody: 'v2' },
+      { submittedAt: '2026-11-08T10:00:00.000Z', textBody: 'v1', files: [{ name: 'a.pdf', sizeBytes: 1 }] },
+    ])
+    // the mentor sees the history too
+    expect(teamSubmissions(RASHAD, NOW).find((s) => s.studentId === 1 && s.assignmentId === 'm6-a2')!.history).toHaveLength(2)
+  })
+
   it("a mentor cannot comment on another team's student, or on work never handed in", () => {
     expect(() => comment(AYSEL, 101, 'm5-a1', 'x', NOW)).toThrow('not in your team')
     expect(() => comment(RASHAD, 102, 'm5-a2', 'x', NOW)).toThrow('has not handed anything in')

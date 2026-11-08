@@ -5,7 +5,8 @@ import { Icon } from '../../../components/Icon'
 import type { SchoolTeam } from '../../../types/admin'
 import type { User } from '../../../types/user'
 import { generatePassword, TEAM_LIMIT } from '../../../utils/adminPeople'
-import { isValidEmail, isValidName, isValidPassword, MIN_SIGNUP_PASSWORD_LENGTH } from '../../../utils/validation'
+import { emailError, nameError, passwordError } from '../../../utils/credentials'
+import { PasswordChecklist } from './PasswordChecklist'
 
 /**
  * Admin: a student's or a mentor's account. New: name, e-mail, the password the admin chooses and
@@ -50,13 +51,9 @@ export function StudentForm({
 
   const taken = users.some((u) => u.id !== student?.id && u.email.toLowerCase() === email.trim().toLowerCase())
   const errors = {
-    name: isValidName(name) ? '' : 'Enter their name.',
-    email: !isValidEmail(email.trim())
-      ? 'Enter a valid email address.'
-      : taken
-        ? 'There is already an account with this email.'
-        : '',
-    password: editing || isValidPassword(password, true) ? '' : `At least ${MIN_SIGNUP_PASSWORD_LENGTH} characters.`,
+    name: nameError(name),
+    email: emailError(email) || (taken ? 'There is already an account with this email.' : ''),
+    password: editing ? '' : passwordError(password, { name, email }),
   }
   const team = teams.find((t) => t.id === teamId)
   // a full team counts the student themselves when they are already in it
@@ -72,7 +69,7 @@ export function StudentForm({
     setBusy(true)
     setError('')
     try {
-      await onSave({ name: name.trim(), email: email.trim(), password, teamId: teamId || null })
+      await onSave({ name: name.trim().replace(/\s+/g, ' '), email: email.trim(), password, teamId: teamId || null })
     } catch (err) {
       setError(
         err instanceof Error ? err.message : editing ? 'The changes could not be saved.' : `The ${noun} could not be added.`,
@@ -143,7 +140,7 @@ export function StudentForm({
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
                 aria-invalid={!!show('password')}
-                aria-describedby={`${id}-password-hint${show('password') ? ` ${id}-password-error` : ''}`}
+                aria-describedby={`${id}-password-hint ${id}-password-rules${show('password') ? ` ${id}-password-error` : ''}`}
               />
               <button
                 type="button"
@@ -158,7 +155,7 @@ export function StudentForm({
               type="button"
               className="admin-btn"
               onClick={() => {
-                setPassword(generatePassword())
+                setPassword(generatePassword(12, undefined, { name, email }))
                 setShowPw(true)
               }}
             >
@@ -166,8 +163,9 @@ export function StudentForm({
             </button>
           </div>
           <span id={`${id}-password-hint`} className="admin-hint">
-            Give it to the {noun} so they can sign in. At least {MIN_SIGNUP_PASSWORD_LENGTH} characters.
+            Give it to the {noun} so they can sign in.
           </span>
+          <PasswordChecklist id={`${id}-password-rules`} password={password} owner={{ name, email }} />
           {show('password') && (
             <span id={`${id}-password-error`} className="admin-field__error">
               {show('password')}

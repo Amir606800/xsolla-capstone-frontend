@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SchoolTeam } from '../types/admin'
+import { passwordProblems } from './credentials'
 import { generatePassword, inTeamFilter, matchesQuery, teamByStudent } from './adminPeople'
 
 const teams: SchoolTeam[] = [
@@ -38,5 +39,19 @@ describe('admin people helpers', () => {
     expect(pw).not.toMatch(/[0O1lI]/)
     expect(generatePassword(16)).toHaveLength(16)
     expect(generatePassword(4, () => new Uint32Array([0, 1, 2, 3]))).toBe('abcd')
+  })
+
+  it('a generated password always passes the password rules, also for the person it is for', () => {
+    const owner = { name: 'Leyla Hasanova', email: 'leyla.hasanova@example.com' }
+    for (let i = 0; i < 200; i++) expect(passwordProblems(generatePassword(12, undefined, owner), owner)).toEqual([])
+  })
+
+  it('a draw that breaks a rule is drawn again', () => {
+    // first draw: lowercase only; second draw: a good mix
+    const draws = [Array.from({ length: 12 }, (_, i) => i), [0, 1, 2, 3, 24, 25, 26, 48, 49, 50, 4, 27]]
+    const random = () => new Uint32Array(draws.shift() ?? [])
+    const pw = generatePassword(12, random)
+    expect(pw).toBe('abcdABC234eD')
+    expect(passwordProblems(pw)).toEqual([])
   })
 })

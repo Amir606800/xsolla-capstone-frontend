@@ -1,4 +1,4 @@
-import type { AssignmentItem, CourseModule, Submission } from '../types/course'
+import type { AssignmentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
 import type { TeamSubmission } from '../types/review'
 import type { Person } from '../types/team'
 import { buildMockModules } from './courses'
@@ -129,14 +129,23 @@ export function submissionsOf(studentId: number, now: Date = new Date()): Record
       ...(s.files !== undefined ? { files: s.files } : {}),
       ...(s.feedback !== undefined ? { feedback: s.feedback } : {}),
       ...(s.gradedAt !== undefined ? { gradedAt: s.gradedAt } : {}),
+      ...(s.history?.length ? { history: s.history } : {}),
     }
   }
   return out
 }
 
+/** Just the handed-in part of a submission (no comment), for the list of earlier versions. */
+export const versionOf = (s: SubmissionVersion): SubmissionVersion => ({
+  submittedAt: s.submittedAt,
+  ...(s.textBody !== undefined ? { textBody: s.textBody } : {}),
+  ...(s.files !== undefined ? { files: s.files } : {}),
+})
+
 /**
- * A student hands in (or replaces) their work. The mentor's comment on the earlier version stays
- * until they write a new one. (Older demo work marked graded stays final.)
+ * A student hands in a new version of their work. The version before it is kept in `history` (newest
+ * first), so every version stays visible. The mentor's comment stays until they write a new one.
+ * (Older demo work marked graded stays final.)
  */
 export function handIn(studentId: number, assignmentId: string, submission: Submission, now: Date = new Date()): Submission {
   const store = load(now)
@@ -146,9 +155,11 @@ export function handIn(studentId: number, assignmentId: string, submission: Subm
   const kept = before?.feedback
     ? { feedback: before.feedback, commentedAt: before.commentedAt, commentedBy: before.commentedBy }
     : {}
-  store[k] = { ...submission, ...kept, assignmentId, studentId }
+  const history = before ? [versionOf(before), ...(before.history ?? [])] : []
+  const next = { ...versionOf(submission), ...(history.length ? { history } : {}) }
+  store[k] = { ...next, ...kept, assignmentId, studentId }
   save(store)
-  return { ...submission, ...(before?.feedback ? { feedback: before.feedback } : {}) }
+  return { ...next, ...(before?.feedback ? { feedback: before.feedback } : {}) }
 }
 
 export interface Grader {

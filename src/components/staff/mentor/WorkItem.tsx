@@ -4,6 +4,7 @@ import { rowId } from '../../../utils/review'
 import { formatDateTime } from '../../../utils/date'
 import { DownloadButton } from '../../DownloadButton'
 import { Icon } from '../../Icon'
+import { EarlierVersions } from '../../module/SubmissionVersions'
 import { Avatar } from '../../team/People'
 
 const STATUS: Record<WorkStatus, { label: string; className: string }> = {
@@ -103,6 +104,10 @@ export function WorkItem({
                 </li>
               ))}
             </ul>
+          )}
+
+          {submission.history && submission.history.length > 0 && (
+            <EarlierVersions history={submission.history} total={submission.history.length + 1} />
           )}
 
           {!editing && existing ? (

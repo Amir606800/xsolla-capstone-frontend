@@ -95,6 +95,22 @@ describe('mapSubmission', () => {
     expect(s).toEqual({ submittedAt: '2026-10-05T10:00:00Z', files: [{ id: '3', name: 'a.zip', sizeBytes: 10 }] })
   })
 
+  it('maps earlier attempts (proposed `history`) newest first; none means no history', () => {
+    const s = mapSubmission(
+      submission({
+        history: [
+          { id: 1, content_item_id: 41, text_body: 'first', submitted_at: '2026-10-01T10:00:00Z' },
+          { id: 2, content_item_id: 41, text_body: 'second', submitted_at: '2026-10-03T10:00:00Z', files: [{ id: 5, original_name: 'b.md', mime_type: 'text/markdown', size_bytes: 4 }] },
+        ],
+      }),
+    )
+    expect(s.history).toEqual([
+      { submittedAt: '2026-10-03T10:00:00Z', textBody: 'second', files: [{ id: '5', name: 'b.md', sizeBytes: 4 }] },
+      { submittedAt: '2026-10-01T10:00:00Z', textBody: 'first' },
+    ])
+    expect(mapSubmission(submission({ history: null }))).not.toHaveProperty('history')
+  })
+
   it('has no grade value: the program grades weeks, not tasks', () => {
     expect(mapSubmission(submission({ grade: 80, graded_at: '2026-10-06T09:00:00Z' }))).not.toHaveProperty('grade')
   })

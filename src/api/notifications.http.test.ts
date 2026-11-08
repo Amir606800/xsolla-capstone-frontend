@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stubHttp } from '../test/stubHttp'
 import { saveTokens } from './session'
 
 // test/setup.ts swaps ./notifications for instant stubs; the real one is tested here
@@ -16,7 +17,7 @@ describe('announcements: with a backend', () => {
   it('POST /notifications/broadcast with the message, link and audience', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     const fetchSpy = vi.fn(async () => new Response(JSON.stringify(row), { status: 201 }))
-    vi.stubGlobal('fetch', fetchSpy)
+    await stubHttp(fetchSpy)
     const { sendBroadcast } = await real()
 
     const sent = await sendBroadcast({ message: '  No classes on Friday. ', link: '/calendar', audience: 'students' }, 'School Admin')
@@ -31,18 +32,18 @@ describe('announcements: with a backend', () => {
   it('GET /notifications/broadcasts: newest first, an empty list when none', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     const older = { ...row, id: 6, sent_at: '2026-11-01T10:00:00Z', link: null }
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([older, row]), { status: 200 })))
+    await stubHttp(vi.fn(async () => new Response(JSON.stringify([older, row]), { status: 200 })))
     const { fetchBroadcasts } = await real()
     expect((await fetchBroadcasts()).map((b) => [b.id, b.link])).toEqual([['7', '/calendar'], ['6', '']])
 
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('null', { status: 200 })))
+    await stubHttp(vi.fn(async () => new Response('null', { status: 200 })))
     expect(await fetchBroadcasts()).toEqual([])
   })
 
   it('the bell gets announcements from the normal notification list, so nothing extra is fetched', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     const fetchSpy = vi.fn()
-    vi.stubGlobal('fetch', fetchSpy)
+    await stubHttp(fetchSpy)
     const { fetchAnnouncements } = await real()
     expect(await fetchAnnouncements({ id: 1, roles: ['student'] })).toEqual([])
     expect(fetchSpy).not.toHaveBeenCalled()

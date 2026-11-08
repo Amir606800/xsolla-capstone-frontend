@@ -11,13 +11,23 @@ export interface SubmissionFile {
   id?: string
 }
 
-export interface Submission {
+/** One handed-in version of a student's work. */
+export interface SubmissionVersion {
   submittedAt: string // ISO
   textBody?: string
   files?: SubmissionFile[]
+}
+
+/**
+ * The student's current work on a task. Until the deadline they may hand in a new version as often as
+ * they like; the versions before it stay in `history` (newest first) so nothing they sent is lost.
+ */
+export interface Submission extends SubmissionVersion {
   /** Set when the work was graded and given feedback. A graded submission can no longer be changed. */
   feedback?: string
   gradedAt?: string // ISO
+  /** Earlier versions, newest first. */
+  history?: SubmissionVersion[]
 }
 
 interface BaseItem {

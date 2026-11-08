@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+import { restoreHttp } from './stubHttp'
 
 // pages load several mock APIs at once; on a busy machine 1 s (the default) is sometimes too short
 configure({ asyncUtilTimeout: 4000 })
@@ -39,10 +40,10 @@ vi.mock('../api/courses', async () => {
   const store = await import('../mocks/contentEdits')
   return {
     fetchModules: vi.fn(async () => store.listModules(new Date())),
-    submitWork: vi.fn(async (_id: string, p: { textBody: string; files: File[] }) => ({
+    submitWork: vi.fn(async (_id: string, p: import('../api/courses').SubmitPayload) => ({
       submittedAt: new Date().toISOString(),
       textBody: p.textBody || undefined,
-      files: p.files.map((f) => ({ name: f.name, sizeBytes: f.size })),
+      files: [...(p.keep ?? []), ...p.files.map((f) => ({ name: f.name, sizeBytes: f.size }))],
     })),
     saveModule: vi.fn(async (id: string, patch: import('../mocks/contentEdits').ModulePatch) => store.putModule(id, patch)),
     saveItem: vi.fn(async (item: import('../types/course').ContentItem) => store.putItem(item)),
@@ -131,6 +132,7 @@ vi.mock('../api/notifications', async () => {
 
 afterEach(() => {
   cleanup()
+  restoreHttp()
   localStorage.clear()
   delete document.documentElement.dataset.theme
 })

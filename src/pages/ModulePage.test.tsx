@@ -111,12 +111,12 @@ describe('ModulePage - submitting work', () => {
     // as this student (id 1), so their mentor can review it, under its module (the backend URL needs it)
     expect(submitWork).toHaveBeenLastCalledWith(
       'm6-a2',
-      { textBody: 'https://github.com/me/http-server', files: [] },
+      { textBody: 'https://github.com/me/http-server', files: [], keep: [] },
       { studentId: 1, moduleId: 'm6' },
     )
     expect(screen.getByRole('button', { name: /HTTP server/ })).toHaveTextContent('Submitted')
     expect(screen.getByText('https://github.com/me/http-server', { selector: 'p' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Resubmit' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hand in new version' })).toBeInTheDocument()
     // header progress moved from 1/2 to 2/2
     expect(screen.getByRole('progressbar', { name: 'Tasks submitted' })).toHaveAttribute('aria-valuenow', '2')
   })
@@ -187,7 +187,7 @@ describe('ModulePage - submitting work', () => {
     expect(screen.getByText(/This task has been graded, so it can no longer be changed/)).toBeInTheDocument()
     // nothing to type into or hand in
     expect(screen.queryByLabelText(/Answer or link/)).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^(Submit|Resubmit)$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^(Submit|Hand in new version)$/ })).not.toBeInTheDocument()
     expect(screen.queryByText(/Files \(/)).not.toBeInTheDocument()
   })
 
@@ -198,11 +198,12 @@ describe('ModulePage - submitting work', () => {
     expect(screen.getByText(/^Submitted /)).toBeInTheDocument()
   })
 
-  it('work that is submitted but not graded yet can still be replaced', async () => {
+  it('work that is submitted but not graded yet can get a new version until the deadline', async () => {
     const user = userEvent.setup()
     renderAt('/courses/m6')
     await openAssignment(user, /CLI tool/)
-    expect(screen.getByText(/Resubmitting replaces your previous submission until it is graded/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Hand in a new version' })).toBeInTheDocument()
+    expect(screen.getByText(/You can hand in a new version as often as you like until/)).toBeInTheDocument()
     expect(screen.getByLabelText(/Answer or link/)).toBeEnabled()
   })
 
@@ -231,5 +232,75 @@ describe('ModulePage - shared state', () => {
       'aria-valuenow',
       String(before + 1),
     )
+  })
+})
+
+describe('ModulePage - versions until the deadline', () => {
+  it('every version handed in stays listed, newest first, with its own text and files', async () => {
+    const user = userEvent.setup()
+    renderAt('/courses/m6')
+    await openAssignment(user, /HTTP server/)
+
+    await user.type(screen.getByLabelText(/Answer or link/), 'first try')
+    await user.upload(screen.getByLabelText(/^Files/), pdf('v1.pdf'))
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+    await screen.findByText('Your work was submitted.')
+
+    // the second version: new text, one more file, and v1.pdf carried over
+    expect(within(screen.getByRole('list', { name: 'Kept from the current version' })).getByText('v1.pdf')).toBeInTheDocument()
+    await user.clear(screen.getByLabelText(/Answer or link/))
+    await user.type(screen.getByLabelText(/Answer or link/), 'second try')
+    await user.upload(screen.getByLabelText(/^Files/), pdf('v2.pdf'))
+    await user.click(screen.getByRole('button', { name: 'Hand in new version' }))
+    expect(await screen.findByText('version 2')).toBeInTheDocument()
+
+    const current = screen.getByRole('list', { name: 'Submitted files' })
+    expect(within(current).getByText('v1.pdf')).toBeInTheDocument()
+    expect(within(current).getByText('v2.pdf')).toBeInTheDocument()
+    expect(screen.getByText('second try', { selector: 'p' })).toBeInTheDocument()
+
+    // the first version is still there
+    await user.click(screen.getByText('Earlier versions (1)'))
+    const earlier = within(screen.getByRole('list', { name: 'Earlier versions' }))
+    expect(earlier.getByText(/^Version 1 · /)).toBeInTheDocument()
+    expect(earlier.getByText('first try')).toBeInTheDocument()
+    expect(within(earlier.getByRole('list', { name: 'Files of version 1' })).getByText('v1.pdf')).toBeInTheDocument()
+    expect(earlier.queryByText('v2.pdf')).not.toBeInTheDocument()
+  })
+
+  it('a kept file can be left out of the next version', async () => {
+    const user = userEvent.setup()
+    renderAt('/courses/m6')
+    await openAssignment(user, /HTTP server/)
+    await user.upload(screen.getByLabelText(/^Files/), [pdf('a.pdf'), pdf('b.pdf')])
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+    await screen.findByText('Your work was submitted.')
+
+    await user.click(screen.getByRole('button', { name: 'Leave out b.pdf' }))
+    await user.click(screen.getByRole('button', { name: 'Hand in new version' }))
+    expect(await screen.findByText('version 2')).toBeInTheDocument()
+    expect(submitWork).toHaveBeenLastCalledWith('m6-a2', expect.objectContaining({ keep: [{ name: 'a.pdf', sizeBytes: 1024 }], files: [] }), expect.anything())
+    expect(within(screen.getByRole('list', { name: 'Submitted files' })).queryByText('b.pdf')).not.toBeInTheDocument()
+  })
+
+  it('at most 10 files in one version', async () => {
+    const user = userEvent.setup()
+    renderAt('/courses/m6')
+    await openAssignment(user, /HTTP server/)
+    await user.upload(
+      screen.getByLabelText(/^Files/),
+      Array.from({ length: 12 }, (_, i) => pdf(`part-${i + 1}.pdf`)),
+    )
+    expect(within(screen.getByRole('list', { name: 'Files to upload' })).getAllByRole('listitem')).toHaveLength(10)
+    expect(screen.getByRole('alert')).toHaveTextContent('You can hand in up to 10 files at a time.')
+  })
+
+  it('after the deadline nothing new can be handed in; what was sent stays visible', async () => {
+    const user = userEvent.setup()
+    renderAt('/courses/m4')
+    await openAssignment(user, /Migrate a module/)
+    expect(screen.getByText(/The deadline \(.+\) has passed\. Nothing was handed in\./)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Answer or link/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Submit' })).not.toBeInTheDocument()
   })
 })

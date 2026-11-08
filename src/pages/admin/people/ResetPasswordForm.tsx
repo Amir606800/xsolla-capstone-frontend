@@ -3,7 +3,8 @@ import type { FormEvent } from 'react'
 import { Icon } from '../../../components/Icon'
 import type { SchoolUser } from '../../../types/admin'
 import { generatePassword } from '../../../utils/adminPeople'
-import { isValidPassword, MIN_SIGNUP_PASSWORD_LENGTH } from '../../../utils/validation'
+import { passwordError } from '../../../utils/credentials'
+import { PasswordChecklist } from './PasswordChecklist'
 
 /**
  * Admin: set a new password for someone who cannot sign in. Type one or generate one, save, then the
@@ -28,7 +29,7 @@ export function ResetPasswordForm({
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState<'' | 'yes' | 'no'>('')
 
-  const invalid = isValidPassword(password, true) ? '' : `At least ${MIN_SIGNUP_PASSWORD_LENGTH} characters.`
+  const invalid = passwordError(password, user)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -105,7 +106,7 @@ export function ResetPasswordForm({
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               aria-invalid={touched && !!invalid}
-              aria-describedby={`${id}-hint${touched && invalid ? ` ${id}-error` : ''}`}
+              aria-describedby={`${id}-hint ${id}-rules${touched && invalid ? ` ${id}-error` : ''}`}
             />
             <button
               type="button"
@@ -120,7 +121,7 @@ export function ResetPasswordForm({
             type="button"
             className="admin-btn"
             onClick={() => {
-              setPassword(generatePassword())
+              setPassword(generatePassword(12, undefined, user))
               setShowPw(true)
             }}
           >
@@ -128,8 +129,9 @@ export function ResetPasswordForm({
           </button>
         </div>
         <span id={`${id}-hint`} className="admin-hint">
-          At least {MIN_SIGNUP_PASSWORD_LENGTH} characters. You will see it again after saving, to copy it.
+          You will see it again after saving, to copy it.
         </span>
+        <PasswordChecklist id={`${id}-rules`} password={password} owner={user} />
         {touched && invalid && (
           <span id={`${id}-error`} className="admin-field__error">
             {invalid}

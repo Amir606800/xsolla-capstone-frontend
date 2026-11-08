@@ -101,7 +101,7 @@ test.describe('A graded task is final', () => {
     await page.getByRole('button', { name: /Typed utils/ }).click()
     await expect(page.getByText('This task has been graded, so it can no longer be changed.')).toBeVisible()
     await expect(page.getByLabel('Answer or link')).toHaveCount(0)
-    await expect(page.getByRole('button', { name: /^(Submit|Resubmit)$/ })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^(Submit|Hand in new version)$/ })).toHaveCount(0)
     await expect(page.locator('input[type="file"]')).toHaveCount(0)
   })
 
@@ -110,14 +110,14 @@ test.describe('A graded task is final', () => {
     const first = page.getByRole('region', { name: 'Tasks' }).locator('li.assignment').first()
     await first.getByRole('button').first().click()
     await expect(first).toContainText('can no longer be changed')
-    await expect(first.getByRole('button', { name: /^(Submit|Resubmit)$/ })).toHaveCount(0)
+    await expect(first.getByRole('button', { name: /^(Submit|Hand in new version)$/ })).toHaveCount(0)
   })
 
   test('work that is only submitted, not graded, can still be replaced', async ({ page }) => {
     await page.goto('/courses/m6')
     await page.getByRole('button', { name: /CLI tool/ }).click()
     await expect(page.getByLabel('Answer or link')).toBeVisible()
-    await expect(page.getByText('Resubmitting replaces your previous submission until it is graded.')).toBeVisible()
+    await expect(page.getByText(/You can hand in a new version as often as you like until/)).toBeVisible()
   })
 })
 

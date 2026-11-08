@@ -1320,3 +1320,23 @@ button.admin-table__title:hover {
   width: 30px;
   height: 30px;
 }
+
+/* ---------- password rules, ticked off while typing ---------- */
+.admin-pw-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.admin-pw-rules li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-pw-rules li.is-met {
+  color: var(--ok, #1d8a4e);
+}

@@ -16,7 +16,7 @@ test('the admin adds a lecturer, who signs in and gets the lecturer pages', asyn
   const form = page.getByRole('dialog')
   await form.getByLabel('Full name').fill('Lea Lecturer')
   await form.getByLabel('Email').fill('lea@example.com')
-  await form.getByLabel('Password', { exact: true }).fill('secret123')
+  await form.getByLabel('Password', { exact: true }).fill('Kp7mWz4qTx')
   await form.getByRole('button', { name: 'Add lecturer' }).click()
   await expect(page.getByText(/^Lea Lecturer added as a lecturer\./)).toBeVisible()
 
@@ -24,7 +24,7 @@ test('the admin adds a lecturer, who signs in and gets the lecturer pages', asyn
   await expect(page).toHaveURL(/\/admin\/login$/)
   await page.goto('/login')
   await page.getByLabel('Email').fill('lea@example.com')
-  await page.getByLabel('Password', { exact: true }).fill('secret123')
+  await page.getByLabel('Password', { exact: true }).fill('Kp7mWz4qTx')
   await page.locator('button[type="submit"]').click()
   const nav = page.getByRole('navigation', { name: 'Main navigation' })
   await expect(nav.getByRole('link', { name: 'Course content' })).toBeVisible()

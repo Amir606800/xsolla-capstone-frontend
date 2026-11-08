@@ -1,4 +1,4 @@
-import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission } from '../types/course'
+import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission, SubmissionFile } from '../types/course'
 import { authedRequest } from './authed'
 import { ApiError } from './http'
 import { isServerId, joinDescription, mapModules, mapSubmission, taskToApi } from './mappers'
@@ -65,12 +65,16 @@ async function upload(file: File): Promise<number> {
 
 export interface SubmitPayload {
   textBody: string
+  /** New files to upload. */
   files: File[]
+  /** Files of the current version handed in again (already uploaded: sent by id, not uploaded twice). */
+  keep?: SubmissionFile[]
 }
 
 export async function submitWork(moduleId: string, assignmentId: string, payload: SubmitPayload): Promise<Submission> {
   // files first: the submission refers to them by id
-  const fileIds: number[] = []
+  const kept = (payload.keep ?? []).filter((f) => f.id !== undefined)
+  const fileIds: number[] = kept.map((f) => Number(f.id))
   for (const file of payload.files) fileIds.push(await upload(file))
 
   const res = await authedRequest<ApiSubmission>(`/modules/${moduleId}/content-items/${assignmentId}/submissions`, {
@@ -79,7 +83,7 @@ export async function submitWork(moduleId: string, assignmentId: string, payload
   })
   const mapped = mapSubmission(res)
   // the response may leave out the files; show the ones just sent
-  return mapped.files ? mapped : { ...mapped, files: payload.files.map((f) => ({ name: f.name, sizeBytes: f.size })) }
+  return mapped.files ? mapped : { ...mapped, files: [...kept, ...payload.files.map((f) => ({ name: f.name, sizeBytes: f.size }))] }
 }
 
 /** Module title and description. The backend has no week dates yet, so those are not sent. */

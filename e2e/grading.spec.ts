@@ -50,7 +50,7 @@ test('a student hands in work, the mentor comments, the student reads it and can
   await expect(page.getByText('Comment from your mentor')).toBeVisible()
   await expect(page.getByText('Add a test for the 404 route.')).toBeVisible()
   // a comment is not a grade: the task stays open
-  await expect(page.getByRole('button', { name: 'Resubmit' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Hand in new version' })).toBeVisible()
 })
 
 test('the dashboard links straight to a week grade still to give', async ({ page }) => {

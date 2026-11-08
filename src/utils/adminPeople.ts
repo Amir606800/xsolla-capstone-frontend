@@ -1,3 +1,5 @@
+import { passwordProblems } from './credentials'
+import type { PasswordOwner } from './credentials'
 import type { SchoolTeam } from '../types/admin'
 import type { User } from '../types/user'
 
@@ -30,7 +32,20 @@ export function inTeamFilter(userId: number, filter: TeamFilter, byStudent: Map<
 // no 0/O or 1/l/I, so a password read out or copied by hand is not mistyped
 const ALPHABET = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
-/** A random password the admin can hand to a new student (they can change it later). */
-export function generatePassword(length = 12, random: (n: number) => Uint32Array = (n) => crypto.getRandomValues(new Uint32Array(n))): string {
-  return Array.from(random(length), (v) => ALPHABET[v % ALPHABET.length]).join('')
+/**
+ * A random password the admin can hand to someone. It always passes the password rules (lowercase,
+ * uppercase, a number, nothing easy to guess, nothing from their name or e-mail): a draw that does not
+ * is simply drawn again.
+ */
+export function generatePassword(
+  length = 12,
+  random: (n: number) => Uint32Array = (n) => crypto.getRandomValues(new Uint32Array(n)),
+  owner: PasswordOwner = {},
+): string {
+  let password = ''
+  for (let attempt = 0; attempt < 50; attempt++) {
+    password = Array.from(random(length), (v) => ALPHABET[v % ALPHABET.length]).join('')
+    if (passwordProblems(password, owner).length === 0) break
+  }
+  return password
 }

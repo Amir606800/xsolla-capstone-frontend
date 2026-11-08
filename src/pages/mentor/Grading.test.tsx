@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
 import { standingsOf } from '../../mocks/standings'
-import { submissionsOf } from '../../mocks/submissions'
+import { handIn, submissionsOf } from '../../mocks/submissions'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import type { Role } from '../../types/user'
 
@@ -81,6 +81,19 @@ describe('Grading page: one grade per student per week', () => {
     await user.type(box, 'Nice structure, add tests.')
     await user.click(screen.getByRole('button', { name: 'Save comment' }))
     expect(await screen.findByText('Nice structure, add tests.')).toBeInTheDocument()
+  })
+
+  it('the mentor sees every version a student handed in, the newest on top', async () => {
+    // Leyla hands in a second version of Components
+    handIn(101, 'm5-a1', { submittedAt: new Date(2026, 9, 30, 9).toISOString(), textBody: 'Second version with tests' })
+    const user = userEvent.setup()
+    renderAs(['mentor'], '/grading?week=m5')
+    await user.click(await screen.findByRole('button', { name: "Open Leyla Hasanova's Components" }))
+    expect(screen.getByText('Second version with tests')).toBeInTheDocument()
+    await user.click(screen.getByText('Earlier versions (1)'))
+    const earlier = within(screen.getByRole('list', { name: 'Earlier versions' }))
+    expect(earlier.getByText(/^Version 1 · /)).toBeInTheDocument()
+    expect(earlier.getByText(/github.com\/xsolla-school\/team-3\/components/)).toBeInTheDocument()
   })
 
   it('a week that has not started has nothing to grade', async () => {

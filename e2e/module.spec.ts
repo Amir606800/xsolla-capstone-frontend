@@ -56,7 +56,7 @@ test('submit work with text and a file from the module page', async ({ page }) =
   await expect(page.getByText('Your work was submitted.')).toBeVisible()
   await expect(page.getByRole('list', { name: 'Submitted files' })).toContainText('report.pdf')
   await expect(page.getByRole('button', { name: /HTTP server/ })).toContainText('Submitted')
-  await expect(page.getByRole('button', { name: 'Resubmit' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Hand in new version' })).toBeVisible()
 })
 
 test('rejects a disallowed file type', async ({ page }) => {

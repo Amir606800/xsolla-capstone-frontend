@@ -1,5 +1,5 @@
 import type { CalendarEvent, EventKind } from '../types/calendar'
-import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission } from '../types/course'
+import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission, SubmissionVersion } from '../types/course'
 import type { WeeklyStanding } from '../types/standing'
 import { parseStandingLevel } from '../utils/standing'
 import type { ApiContentItem, ApiEvent, ApiModule, ApiSubmission, ApiWeeklyStanding } from './types'
@@ -39,14 +39,22 @@ export function splitDescription(text: string | null | undefined): { description
   return { ...(description ? { description } : {}), ...(requirements.length ? { requirements } : {}) }
 }
 
-export function mapSubmission(s: ApiSubmission): Submission {
+function mapVersion(s: Omit<ApiSubmission, 'history'>): SubmissionVersion {
   return {
     submittedAt: s.submitted_at,
     ...(s.text_body ? { textBody: s.text_body } : {}),
     ...(s.files?.length ? { files: s.files.map((f) => ({ id: String(f.id), name: f.original_name, sizeBytes: f.size_bytes })) } : {}),
+  }
+}
+
+export function mapSubmission(s: ApiSubmission): Submission {
+  const history = (s.history ?? []).map(mapVersion).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
+  return {
+    ...mapVersion(s),
     ...(s.feedback ? { feedback: s.feedback } : {}),
     // null (not graded) -> undefined so `gradedAt !== undefined` means "graded"
     ...(s.graded_at ? { gradedAt: s.graded_at } : {}),
+    ...(history.length ? { history } : {}),
   }
 }
 

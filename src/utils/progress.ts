@@ -62,6 +62,14 @@ export function isActiveModule(module: CourseModule, now: Date): boolean {
 
 export type AssignmentStatus = 'open' | 'overdue' | 'submitted' | 'graded'
 
+/** The error a hand-in after the deadline gets (the screen tells the student in its own words). */
+export const DEADLINE_PASSED = 'The deadline for this task has passed'
+
+/** The deadline has passed: no new version can be handed in (what was sent before stays). */
+export function isPastDue(a: Pick<AssignmentItem, 'dueAt'>, now: Date): boolean {
+  return new Date(a.dueAt).getTime() < now.getTime()
+}
+
 export function assignmentStatus(a: AssignmentItem, now: Date): AssignmentStatus {
   if (a.submission?.gradedAt !== undefined) return 'graded'
   if (a.submission) return 'submitted'

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stubHttp } from '../test/stubHttp'
 import { login, logout, mapUser, signup } from './auth.http'
 import { ApiError } from './http'
 import { getTokens, saveTokens } from './session'
@@ -27,34 +28,34 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function mockFetch(status: number, body?: unknown) {
+async function mockFetch(status: number, body?: unknown) {
   fetchMock = reply(status, body)
-  vi.stubGlobal('fetch', fetchMock)
+  await stubHttp(fetchMock)
 }
 
 describe('login', () => {
   it('posts { login, password } to /auth/login as JSON', async () => {
-    mockFetch(200, authBody)
-    await login('alice@xsolla.com', 'secret123')
+    await mockFetch(200, authBody)
+    await login('alice@xsolla.com', 'Kp7mWz4qTx')
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(url).toBe(`${BASE}/auth/login`)
     expect(init.method).toBe('POST')
     expect(init.headers).toMatchObject({ 'Content-Type': 'application/json' })
-    expect(JSON.parse(init.body as string)).toEqual({ login: 'alice@xsolla.com', password: 'secret123' })
+    expect(JSON.parse(init.body as string)).toEqual({ login: 'alice@xsolla.com', password: 'Kp7mWz4qTx' })
   })
 
   it('returns the user for the app and stores both tokens', async () => {
-    mockFetch(200, authBody)
-    const user = await login('alice@xsolla.com', 'secret123')
+    await mockFetch(200, authBody)
+    const user = await login('alice@xsolla.com', 'Kp7mWz4qTx')
 
     expect(user).toEqual({ id: 7, name: 'Alice', email: 'alice@xsolla.com', roles: ['student'] })
     expect(getTokens()).toEqual({ accessToken: 'access-1', refreshToken: 'refresh-1' })
   })
 
   it('does not send a custom header that the backend CORS rules would reject', async () => {
-    mockFetch(200, authBody)
+    await mockFetch(200, authBody)
     await login('a@b.co', 'x')
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     const names = Object.keys(init.headers as Record<string, string>).map((h) => h.toLowerCase())
@@ -62,7 +63,7 @@ describe('login', () => {
   })
 
   it('turns the backend error into an ApiError with a readable message', async () => {
-    mockFetch(401, { error: 'invalid_credentials', message: 'invalid email or password', status: 401 })
+    await mockFetch(401, { error: 'invalid_credentials', message: 'invalid email or password', status: 401 })
     const err = await login('a@b.co', 'wrong').catch((e: unknown) => e)
 
     expect(err).toBeInstanceOf(ApiError)
@@ -71,7 +72,7 @@ describe('login', () => {
   })
 
   it('shows field messages from a 400 response', async () => {
-    mockFetch(400, {
+    await mockFetch(400, {
       error: 'validation_error',
       message: 'invalid request',
       status: 400,
@@ -84,26 +85,26 @@ describe('login', () => {
   })
 
   it('reports an unreachable server', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    await stubHttp(vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
     const err = await login('a@b.co', 'x').catch((e: unknown) => e)
     expect(err).toMatchObject({ status: 0, code: 'network_error' })
     expect((err as Error).message).toMatch(/can't reach the server/i)
   })
 
   it('copes with a non-JSON error page (e.g. a proxy)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>Bad gateway</html>', { status: 502 })))
+    await stubHttp(vi.fn(async () => new Response('<html>Bad gateway</html>', { status: 502 })))
     await expect(login('a@b.co', 'x')).rejects.toMatchObject({ status: 502, message: 'Something went wrong' })
   })
 })
 
 describe('signup', () => {
   it('posts email, name and password, then signs the user in', async () => {
-    mockFetch(200, authBody)
-    const user = await signup('alice@xsolla.com', 'Alice', 'secret123')
+    await mockFetch(200, authBody)
+    const user = await signup('alice@xsolla.com', 'Alice', 'Kp7mWz4qTx')
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(url).toBe(`${BASE}/auth/signup`)
-    expect(JSON.parse(init.body as string)).toEqual({ email: 'alice@xsolla.com', name: 'Alice', password: 'secret123' })
+    expect(JSON.parse(init.body as string)).toEqual({ email: 'alice@xsolla.com', name: 'Alice', password: 'Kp7mWz4qTx' })
     expect(user.name).toBe('Alice')
     expect(getTokens()?.accessToken).toBe('access-1')
   })
@@ -112,7 +113,7 @@ describe('signup', () => {
 describe('logout', () => {
   it('sends the refresh token, then forgets the tokens', async () => {
     saveTokens({ accessToken: 'a', refreshToken: 'r' })
-    mockFetch(204)
+    await mockFetch(204)
     await logout()
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
@@ -124,13 +125,13 @@ describe('logout', () => {
 
   it('still signs out on this device when the server fails', async () => {
     saveTokens({ accessToken: 'a', refreshToken: 'r' })
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')))
+    await stubHttp(vi.fn().mockRejectedValue(new TypeError('offline')))
     await expect(logout()).resolves.toBeUndefined()
     expect(getTokens()).toBeNull()
   })
 
   it('does not call the server when nobody was signed in', async () => {
-    mockFetch(204)
+    await mockFetch(204)
     await logout()
     expect(fetchMock).not.toHaveBeenCalled()
   })

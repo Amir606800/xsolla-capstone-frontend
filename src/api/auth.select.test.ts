@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { stubHttp } from '../test/stubHttp'
 
 // the real ../api/auth is replaced in test/setup.ts; load the real one to test how it picks mock vs backend
 afterEach(() => {
@@ -10,7 +11,7 @@ describe('auth API selection', () => {
   it('uses the offline mock when no backend URL is configured', async () => {
     vi.stubEnv('VITE_API_URL', '')
     const fetchSpy = vi.fn()
-    vi.stubGlobal('fetch', fetchSpy)
+    await stubHttp(fetchSpy)
 
     const { login } = await vi.importActual<typeof import('./auth')>('./auth')
     const user = await login('sam@example.com', 'pw')
@@ -32,7 +33,7 @@ describe('auth API selection', () => {
           { status: 200 },
         ),
     )
-    vi.stubGlobal('fetch', fetchSpy)
+    await stubHttp(fetchSpy)
 
     const { login } = await vi.importActual<typeof import('./auth')>('./auth')
     const user = await login('x@y.co', 'pw')

@@ -59,3 +59,23 @@ test('the row buttons sit side by side, so rows stay one line tall', async ({ pa
   const boxes = await Promise.all([0, 1, 2].map(async (i) => (await buttons.nth(i).boundingBox())!))
   for (const b of boxes) expect(Math.abs(b.y - boxes[0].y)).toBeLessThan(2)
 })
+
+test('a made-up name, e-mail or weak password cannot be used for an account', async ({ page }) => {
+  await openStudents(page)
+  await page.getByRole('button', { name: 'Add student' }).click()
+  const form = page.getByRole('dialog')
+  await form.getByLabel('Full name').fill('asdf')
+  await form.getByLabel('Email').fill('asdf@asdf')
+  await form.getByLabel('Password', { exact: true }).fill('12345678')
+  await form.getByRole('button', { name: 'Add student' }).click()
+  await expect(form.getByText('Enter their first and last name.')).toBeVisible()
+  await expect(form.getByText('Enter a real e-mail address, like name@example.com.')).toBeVisible()
+  await expect(form.getByText('Use 10 to 72 characters.')).toBeVisible()
+  await expect(form).toBeVisible() // nothing was created
+
+  await form.getByLabel('Full name').fill('Ann Lee')
+  await form.getByLabel('Email').fill('ann.lee@example.com')
+  await form.getByLabel('Password', { exact: true }).fill('Tq7mWz4kPd')
+  await form.getByRole('button', { name: 'Add student' }).click()
+  await expect(page.getByText(/^Ann Lee added/)).toBeVisible()
+})

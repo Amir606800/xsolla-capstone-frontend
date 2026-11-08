@@ -65,6 +65,8 @@ export interface ApiSubmission {
   feedback?: string | null
   graded_at?: string | null
   files?: ApiFile[] | null
+  /** Proposed: the earlier attempts, newest first (on GET .../submissions/me). */
+  history?: Omit<ApiSubmission, 'history'>[] | null
 }
 
 /** GET /events (dto.EventResponse) */

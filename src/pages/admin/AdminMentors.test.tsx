@@ -51,7 +51,7 @@ describe('Admin: mentors', () => {
     const form = within(await dialog())
     await user.type(form.getByLabelText('Full name'), 'Nil Aydin')
     await user.type(form.getByLabelText('Email'), 'nil@example.com')
-    await user.type(form.getByLabelText('Password'), 'secret123')
+    await user.type(form.getByLabelText('Password'), 'Kp7mWz4qTx')
     await user.selectOptions(form.getByLabelText('Team they mentor'), 'Team 4 (mentor: Aysel Mammadova)')
     expect(form.getByText('Team 4 is mentored by Aysel Mammadova now. Aysel Mammadova will have no team.')).toBeInTheDocument()
     await user.click(form.getByRole('button', { name: 'Add mentor' }))
@@ -177,16 +177,16 @@ describe('Admin: resetting a password', () => {
     let form = within(await dialog())
     expect(form.getByText(/Their old password stops working/)).toBeInTheDocument()
     await user.click(form.getByRole('button', { name: 'Set new password' }))
-    expect(form.getByText('At least 8 characters.', { selector: '.admin-field__error' })).toBeInTheDocument()
+    expect(form.getByText('Enter a password.', { selector: '.admin-field__error' })).toBeInTheDocument()
 
-    await user.type(form.getByLabelText('New password'), 'fresh-start-1')
+    await user.type(form.getByLabelText('New password'), 'Fresh-Start-7q')
     await user.click(form.getByRole('button', { name: 'Set new password' }))
     form = within(await screen.findByRole('group', { name: 'New password for Aysel Mammadova' }))
     expect(form.getByText('Aysel Mammadova’s password has been changed.')).toBeInTheDocument()
-    expect(form.getByLabelText('New password')).toHaveTextContent('fresh-start-1')
+    expect(form.getByLabelText('New password')).toHaveTextContent('Fresh-Start-7q')
     await user.click(form.getByRole('button', { name: 'Copy' }))
     // user-event gives the page a clipboard: what was copied can be read back
-    expect(await navigator.clipboard.readText()).toBe('fresh-start-1')
+    expect(await navigator.clipboard.readText()).toBe('Fresh-Start-7q')
     expect(form.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
     await user.click(form.getByRole('button', { name: 'Done' }))
     expect(await screen.findByText('Aysel Mammadova has a new password.')).toBeInTheDocument()
@@ -194,7 +194,7 @@ describe('Admin: resetting a password', () => {
     // offline sign-in: the old password no longer works, the new one does
     const { login } = await vi.importActual<typeof import('../../api/auth.mock')>('../../api/auth.mock')
     await expect(login('mentor@xsolla.school', 'demo')).rejects.toThrow('Invalid email or password')
-    await expect(login('mentor@xsolla.school', 'fresh-start-1')).resolves.toMatchObject({ id: 901 })
+    await expect(login('mentor@xsolla.school', 'Fresh-Start-7q')).resolves.toMatchObject({ id: 901 })
   })
 
   it('Generate fills in a strong password and shows it; Cancel changes nothing', async () => {
