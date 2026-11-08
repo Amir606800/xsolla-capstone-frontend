@@ -243,6 +243,20 @@ random split itself is made in the browser and shown to the admin first, then se
 Names are generated `Team 1..n`. Validate: every id exists and is an active student/mentor, no duplicates, `422`
 otherwise. `[]` is allowed and means "no teams" (the **Remove all teams** button). Returns the new `GET /teams`.
 
+**`POST /teams`** (admin) - add **one** team without touching the others (the **Add team** button):
+```json
+{ "name": "Team 7", "mentor_id": 906, "student_ids": [161, 162] }
+```
+- `name` is required and unique among the teams (case-insensitive, trimmed), `409` with
+  `"There is already a team called Team 7."` otherwise. The front-end suggests the next `Team N` but any name is fine.
+- `mentor_id` may be `null`. If that mentor leads another team they are taken off it (one team per mentor).
+- `student_ids` may be empty; students in other teams are moved out of them (one team per student).
+- `201` with the new team in the `GET /teams` row shape.
+
+**`DELETE /teams/:id`** (admin) - delete **one** team. Its students are left without a team and its mentor without
+one to mentor; accounts, submissions and grades are kept. The other teams keep their ids and names (no renumbering).
+`204`; `404` for an unknown team.
+
 **`PUT /students/:id/team`** (admin) - add, move or remove a student: `{ "team_id": 5 }` or `{ "team_id": null }`.
 **`PUT /teams/:id/mentor`** (admin) - `{ "mentor_id": 902 }` or `null`. If that mentor leads another team they
 are taken off it (one team per mentor). Both are repeat-safe; a team may go over 5 students (the admin is warned
@@ -475,7 +489,7 @@ store; the same flows are the acceptance tests):
 - [ ] Admin edits a name/e-mail; marks a student as left (cannot sign in, leaves the team, work kept); brings back; deletes.
 - [ ] Admin gives a mentor the lecturer role until a date; before it: lecturer rights; after it: none, without any action.
 - [ ] Admin assigns a week to a lecturer and takes it off again.
-- [ ] Admin replaces all teams; moves a student; changes a mentor; removes all teams; each repeat is safe.
+- [ ] Admin replaces all teams; adds one team (name must be new); deletes one team (its students are left without a team, the others keep their names); moves a student; changes a mentor; removes all teams; each repeat is safe.
 - [ ] A mentor sees only their team's work and grades, comments on a submission, sets a week's colour.
 - [ ] A student books and cancels a 1:1 with their own mentor; another student never sees who booked.
 - [ ] Admin broadcasts an announcement; every active user gets it; deadline reminders arrive once.

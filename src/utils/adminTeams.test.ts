@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { planTeams, shuffle, teamSizes } from './adminTeams'
+import { nextTeamName, planTeams, shuffle, teamSizes } from './adminTeams'
 
 const ids = (n: number, from = 1) => Array.from({ length: n }, (_, i) => from + i)
 /** A repeatable "random": a simple counter-based sequence. */
@@ -58,5 +58,14 @@ describe('planTeams', () => {
     const a = planTeams(ids(29), ids(6, 900), 5, seeded())
     const b = planTeams(ids(29), ids(6, 900), 5, () => 0.3)
     expect(a).not.toEqual(b)
+  })
+})
+
+describe('nextTeamName', () => {
+  it('is the number after the highest "Team N", whatever the others are called', () => {
+    expect(nextTeamName([])).toBe('Team 1')
+    expect(nextTeamName(['Team 1', 'Team 2', 'Team 6'])).toBe('Team 7')
+    expect(nextTeamName(['Team 2', 'Rockets', 'team 4 '])).toBe('Team 5')
+    expect(nextTeamName(['Rockets'])).toBe('Team 1')
   })
 })

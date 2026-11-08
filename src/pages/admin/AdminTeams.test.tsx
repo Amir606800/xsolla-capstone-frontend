@@ -163,3 +163,83 @@ describe('Admin: teams', () => {
     expect(tile).toHaveTextContent('0No teams yet')
   })
 })
+
+// many clicks on a page of six teams with a select per student: slow when the whole suite runs at once
+describe('Admin: one team at a time', { timeout: 15_000 }, () => {
+  it('adds a team: the next name, a free mentor and students without a team', async () => {
+    renderWithProviders(<App />, { route: '/admin/teams' })
+    const user = userEvent.setup()
+    // free a mentor and two students first
+    await team('Team 6')
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Mentor of Team 6' }), 'No mentor')
+    await screen.findByText('Team 6 has no mentor now.')
+    for (const name of ['Anar Novruzov', 'Gulnar Mammadova']) {
+      await user.selectOptions(screen.getByRole('combobox', { name: `Move ${name} to another team` }), 'Take out of Team 6')
+      await screen.findByText(`${name} is out of Team 6.`)
+    }
+
+    await user.click(screen.getByRole('button', { name: 'Add team' }))
+    const form = within(await dialog())
+    expect(form.getByLabelText('Name')).toHaveValue('Team 7')
+    expect(form.getByLabelText('Mentor')).toHaveDisplayValue('Sevinj Gasimova') // the one without a team
+    await user.click(form.getByRole('checkbox', { name: 'Anar Novruzov' }))
+    await user.click(form.getByRole('checkbox', { name: 'Gulnar Mammadova' }))
+    expect(form.getByText('2 students.')).toBeInTheDocument()
+    await user.click(form.getByRole('button', { name: 'Add team' }))
+
+    expect(await screen.findByText('Team 7 added: mentor Sevinj Gasimova, 2 students.')).toBeInTheDocument()
+    const t7 = await team('Team 7')
+    expect(t7.getByRole('combobox', { name: 'Mentor of Team 7' })).toHaveDisplayValue('Sevinj Gasimova')
+    expect(t7.getByText('Anar Novruzov')).toBeInTheDocument()
+    expect(screen.getByText('7 teams · 29 students')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Students without a team' })).not.toBeInTheDocument()
+  })
+
+  it('the name must be new; a mentor taken from another team is told', async () => {
+    renderWithProviders(<App />, { route: '/admin/teams' })
+    const user = userEvent.setup()
+    await team('Team 1')
+    await user.click(screen.getByRole('button', { name: 'Add team' }))
+    const form = within(await dialog())
+    await user.clear(form.getByLabelText('Name'))
+    await user.type(form.getByLabelText('Name'), 'team 2')
+    await user.click(form.getByRole('button', { name: 'Add team' }))
+    expect(form.getByText('There is already a team called team 2.')).toBeInTheDocument()
+
+    await user.clear(form.getByLabelText('Name'))
+    await user.type(form.getByLabelText('Name'), 'Rockets')
+    await user.selectOptions(form.getByLabelText('Mentor'), 'Aysel Mammadova (now Team 4)')
+    expect(form.getByText('They leave Team 4, which will have no mentor.')).toBeInTheDocument()
+    expect(form.getByText(/Every student is in a team/)).toBeInTheDocument()
+    await user.click(form.getByRole('button', { name: 'Add team' }))
+    expect(await screen.findByText('Rockets added: mentor Aysel Mammadova, no students yet. Team 4 has no mentor now.')).toBeInTheDocument()
+    expect((await team('Team 4')).getByRole('combobox', { name: 'Mentor of Team 4' })).toHaveDisplayValue('No mentor')
+    expect((await team('Rockets')).getByText('No students yet.')).toBeInTheDocument()
+  })
+
+  it('deletes one team after asking: its students wait under "Without a team"', async () => {
+    renderWithProviders(<App />, { route: '/admin/teams' })
+    const user = userEvent.setup()
+    await team('Team 3')
+    await user.click(screen.getByRole('button', { name: 'Delete Team 3' }))
+    const confirm = within(await dialog())
+    expect(confirm.getByText(/Its 5 students will be without a team until you put them in another one\. Rashad Aliyev will have no team to mentor\./)).toBeInTheDocument()
+    await user.click(confirm.getByRole('button', { name: 'Delete team' }))
+
+    expect(await screen.findByText('Team 3 deleted. 5 students are without a team now.')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Team 3' })).not.toBeInTheDocument())
+    const loose = await team('Students without a team')
+    expect(loose.getByText('Sam Student')).toBeInTheDocument()
+    expect(screen.getByText('5 teams · 29 students · 5 without a team')).toBeInTheDocument()
+    expect(listTeams().map((t) => t.name)).toEqual(['Team 1', 'Team 2', 'Team 4', 'Team 5', 'Team 6'])
+  })
+
+  it('Cancel keeps the team', async () => {
+    renderWithProviders(<App />, { route: '/admin/teams' })
+    const user = userEvent.setup()
+    await team('Team 2')
+    await user.click(screen.getByRole('button', { name: 'Delete Team 2' }))
+    await user.click(within(await dialog()).getByRole('button', { name: 'Cancel' }))
+    expect(listTeams()).toHaveLength(6)
+  })
+})

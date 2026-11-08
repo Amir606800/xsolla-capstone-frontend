@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { buildMentorTeam, buildMockTeam } from './teams'
 import {
+  addTeam,
   addUser,
   clearTeams,
   createTeams,
+  deleteTeam,
   deleteUser,
   listTeams,
   listUsers,
@@ -247,5 +249,58 @@ describe('admin changes to the directory', () => {
     localStorage.setItem('school_directory', '{nope')
     expect(listUsers().filter(isStudent)).toHaveLength(29)
     expect(listTeams()).toHaveLength(6)
+  })
+})
+
+describe('adding and deleting one team', () => {
+  const byName = (name: string) => listTeams().find((t) => t.name === name)
+
+  it('adds a team; the six demo teams stay exactly as they were', () => {
+    const before = listTeams()
+    const made = addTeam({ name: '  Team   7 ', mentorId: null, studentIds: [] })
+    expect(made).toEqual({ id: 't7', name: 'Team 7', mentorId: null, studentIds: [] })
+    expect(listTeams().slice(0, 6)).toEqual(before)
+    expect(listTeams()).toHaveLength(7)
+  })
+
+  it('a new team takes its students from wherever they were, and its mentor from their old team', () => {
+    setTeam(121, null) // Ali has no team
+    addTeam({ name: 'Rockets', mentorId: 903, studentIds: [121, 122] }) // Farid mentored Team 1, Banu was in it
+    expect(byName('Rockets')).toMatchObject({ mentorId: 903, studentIds: [121, 122] })
+    expect(byName('Team 1')).toMatchObject({ mentorId: null })
+    expect(byName('Team 1')!.studentIds).not.toContain(122)
+  })
+
+  it('names must be new and not empty', () => {
+    expect(() => addTeam({ name: 'team 3', mentorId: null, studentIds: [] })).toThrow('There is already a team called team 3.')
+    expect(() => addTeam({ name: '   ', mentorId: null, studentIds: [] })).toThrow('Give the team a name.')
+  })
+
+  it('deleting a team leaves its students and mentor without one; the other teams stay', () => {
+    const others = listTeams().filter((t) => t.id !== 't3')
+    deleteTeam('t3')
+    expect(listTeams().map((t) => t.name)).toEqual(['Team 1', 'Team 2', 'Team 4', 'Team 5', 'Team 6'])
+    expect(listTeams()).toEqual(others)
+    const placed = new Set(listTeams().flatMap((t) => t.studentIds))
+    for (const id of [1, 101, 102, 103, 104]) expect(placed.has(id)).toBe(false)
+    expect(listTeams().some((t) => t.mentorId === 900)).toBe(false)
+    expect(() => deleteTeam('t3')).toThrow('This team does not exist')
+  })
+
+  it('a new id is never one in use, even after a delete', () => {
+    deleteTeam('t2')
+    expect(addTeam({ name: 'Team 7', mentorId: null, studentIds: [] }).id).toBe('t7')
+    expect(addTeam({ name: 'Team 8', mentorId: null, studentIds: [] }).id).toBe('t8')
+  })
+
+  it('deleting the last team leaves no teams; a team can be added after random teams were made', () => {
+    for (const t of listTeams()) deleteTeam(t.id)
+    expect(listTeams()).toEqual([])
+    createTeams([{ mentorId: 901, studentIds: [1, 101] }])
+    addTeam({ name: 'Team 2', mentorId: null, studentIds: [102] })
+    expect(listTeams().map((t) => [t.name, t.studentIds])).toEqual([
+      ['Team 1', [1, 101]],
+      ['Team 2', [102]],
+    ])
   })
 })

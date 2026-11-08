@@ -369,6 +369,58 @@ export function clearTeams(): void {
   save(edits)
 }
 
+/**
+ * Turns the six demo teams into an editable list (once): their demo mentors and students are written
+ * down as if the admin had put them there, so adding or deleting one team keeps all the others as they are.
+ */
+function ownTeams(edits: DirectoryEdits): { id: string; name: string }[] {
+  if (edits.custom) return edits.custom
+  for (const seed of TEAM_SEEDS) {
+    if (!(seed.id in edits.mentorOf)) edits.mentorOf[seed.id] = seed.mentor.id
+    for (const st of seed.students) if (!(String(st.id) in edits.teamOf)) edits.teamOf[String(st.id)] = seed.id
+  }
+  edits.custom = TEAM_SEEDS.map((t) => ({ id: t.id, name: t.name }))
+  return edits.custom
+}
+
+export interface NewTeam {
+  name: string
+  mentorId: number | null
+  studentIds: number[]
+}
+
+/**
+ * Adds one team. The name must be new. The mentor leaves the team they mentored before (it is left
+ * without one); the students leave their old teams.
+ */
+export function addTeam(team: NewTeam): SchoolTeam {
+  const name = team.name.trim().replace(/\s+/g, ' ')
+  if (!name) throw new Error('Give the team a name.')
+  const edits = load()
+  const list = ownTeams(edits)
+  if (list.some((t) => t.name.toLowerCase() === name.toLowerCase())) throw new Error(`There is already a team called ${name}.`)
+  const id = `t${Math.max(0, ...list.map((t) => Number(t.id.replace(/\D/g, '')) || 0)) + 1}`
+  list.push({ id, name })
+  if (team.mentorId !== null) {
+    for (const [teamId, mentorId] of Object.entries(edits.mentorOf)) if (mentorId === team.mentorId) edits.mentorOf[teamId] = null
+  }
+  edits.mentorOf[id] = team.mentorId
+  for (const studentId of team.studentIds) edits.teamOf[String(studentId)] = id
+  save(edits)
+  return listTeams().find((t) => t.id === id)!
+}
+
+/** Deletes one team: its students are left without a team and its mentor without one to mentor. */
+export function deleteTeam(teamId: string): void {
+  const edits = load()
+  const list = ownTeams(edits)
+  if (!list.some((t) => t.id === teamId)) throw new Error('This team does not exist')
+  edits.custom = list.filter((t) => t.id !== teamId)
+  for (const [studentId, inTeam] of Object.entries(edits.teamOf)) if (inTeam === teamId) edits.teamOf[studentId] = null
+  delete edits.mentorOf[teamId]
+  save(edits)
+}
+
 /** Sets who mentors a team: a mentor leaves their old team for it; null leaves the team without one. */
 export function setTeamMentor(teamId: string, mentorId: number | null): void {
   if (mentorId !== null) return setMentorTeam(mentorId, teamId)

@@ -60,3 +60,31 @@ test('the teams page fits a phone screen', async ({ page }) => {
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Replace teams' })).toBeVisible()
   expect(await overflow()).toBeLessThanOrEqual(0)
 })
+
+test('the admin deletes a team and puts its students into a new one', async ({ page }) => {
+  await openTeams(page)
+  await page.getByRole('button', { name: 'Delete Team 6' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete team' }).click()
+  await expect(page.getByText('Team 6 deleted. 4 students are without a team now.')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Team 6' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Students without a team' })).toContainText('Anar Novruzov')
+
+  await page.getByRole('button', { name: 'Add team' }).click()
+  const form = page.getByRole('dialog')
+  await expect(form.getByLabel('Name')).toHaveValue('Team 6')
+  await form.getByLabel('Name').fill('Rockets')
+  for (const name of ['Anar Novruzov', 'Gulnar Mammadova', 'Ramil Shirinov', 'Vusala Karimli']) await form.getByRole('checkbox', { name }).check()
+  await form.getByRole('button', { name: 'Add team' }).click()
+  await expect(page.getByText('Rockets added: mentor Sevinj Gasimova, 4 students.')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Rockets' })).toContainText('Vusala Karimli')
+  await expect(page.getByRole('region', { name: 'Students without a team' })).toHaveCount(0)
+})
+
+test('the add-team dialog fits a phone screen', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 })
+  await openTeams(page)
+  await page.getByRole('button', { name: 'Add team' }).click()
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Add team' })).toBeVisible()
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow).toBeLessThanOrEqual(0)
+})

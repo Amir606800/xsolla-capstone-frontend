@@ -1309,3 +1309,14 @@ button.admin-table__title:hover {
   overflow-wrap: anywhere;
   user-select: all;
 }
+
+/* ---------- teams: one team added or deleted ---------- */
+.admin-team__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-team__tools .admin-icon-btn {
+  width: 30px;
+  height: 30px;
+}

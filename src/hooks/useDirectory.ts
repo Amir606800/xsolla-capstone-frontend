@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { buildTeams, changeTeamMentor, createStaff, createStudent, deleteAccount, fetchTeams, fetchUsers, moveStudent, removeAllTeams, resetPassword, setStudentLeft, setUserRoles, updateMentor, updateStudent } from '../api/directory'
+import { buildTeams, changeTeamMentor, createStaff, createStudent, createTeam, deleteAccount, fetchTeams, fetchUsers, moveStudent, removeAllTeams, removeTeam, resetPassword, setStudentLeft, setUserRoles, updateMentor, updateStudent } from '../api/directory'
 import type { MentorChanges, NewMentor, NewStudent, StudentChanges } from '../api/directory'
-import type { TeamPlan } from '../mocks/directory'
+import type { NewTeam, TeamPlan } from '../mocks/directory'
 import type { Role } from '../types/user'
 import type { LoadStatus } from '../context/courses'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
@@ -113,6 +113,21 @@ export function useDirectory() {
     },
     [refresh],
   )
+  const addTeam = useCallback(
+    async (team: NewTeam) => {
+      const made = await createTeam(team)
+      await refresh()
+      return made
+    },
+    [refresh],
+  )
+  const deleteTeam = useCallback(
+    async (teamId: string) => {
+      await removeTeam(teamId)
+      await refresh()
+    },
+    [refresh],
+  )
   const clearTeams = useCallback(async () => {
     await removeAllTeams()
     await refresh()
@@ -132,5 +147,5 @@ export function useDirectory() {
     [refresh],
   )
 
-  return { createTeams, clearTeams, putStudentInTeam, setMentorOf, status, users, teams, reload, addStudent, editStudent, markLeft, removeStudent: removeAccount, removeAccount, addMentor, addLecturer, editMentor, changeRoles, setNewPassword }
+  return { createTeams, addTeam, deleteTeam, clearTeams, putStudentInTeam, setMentorOf, status, users, teams, reload, addStudent, editStudent, markLeft, removeStudent: removeAccount, removeAccount, addMentor, addLecturer, editMentor, changeRoles, setNewPassword }
 }

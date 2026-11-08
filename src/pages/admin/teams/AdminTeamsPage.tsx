@@ -8,20 +8,23 @@ import type { SchoolTeam, SchoolUser } from '../../../types/admin'
 import { TEAM_LIMIT } from '../../../utils/adminPeople'
 import { canMentor, isStudent } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
+import { AddTeamForm } from './AddTeamForm'
 import { CreateTeamsPanel } from './CreateTeamsPanel'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /**
- * Admin: every team with its mentor and students. Move a student to another team, take them out of
- * their team, put a student without a team into one, or change a team's mentor. Creating random teams
- * is the big action: with no teams yet it is the only thing on the page, and later it asks for a tick
- * because it replaces every team.
+ * Admin: every team with its mentor and students. Add one team or delete one, move a student to another
+ * team, take them out of their team, put a student without a team into one, or change a team's mentor.
+ * Creating random teams is the big action: with no teams yet it is the only thing on the page, and later
+ * it asks for a tick because it replaces every team.
  */
 export default function AdminTeamsPage() {
-  const { status, users, teams, reload, createTeams, clearTeams, putStudentInTeam, setMentorOf } = useDirectory()
+  const { status, users, teams, reload, createTeams, addTeam, deleteTeam, clearTeams, putStudentInTeam, setMentorOf } = useDirectory()
   const [rebuilding, setRebuilding] = useState(false)
   const [clearing, setClearing] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [deleting, setDeleting] = useState<SchoolTeam | null>(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -75,6 +78,9 @@ export default function AdminTeamsPage() {
         </div>
         {status === 'ready' && teams.length > 0 && (
           <div className="admin-actions">
+            <button type="button" className="admin-btn admin-btn--primary" onClick={() => (setMessage(''), setAdding(true))}>
+              <Icon name="plus" size={16} /> Add team
+            </button>
             <button type="button" className="admin-btn" onClick={() => setRebuilding(true)}>
               <Icon name="reset" size={16} /> Create random teams…
             </button>
@@ -137,7 +143,18 @@ export default function AdminTeamsPage() {
                 <section key={team.id} className="admin-team" aria-label={team.name}>
                   <header className="admin-team__head">
                     <h2>{team.name}</h2>
-                    <span className={`admin-pill${over ? ' admin-pill--hidden' : ''}`}>{plural(members.length, 'student')}</span>
+                    <span className="admin-team__tools">
+                      <span className={`admin-pill${over ? ' admin-pill--hidden' : ''}`}>{plural(members.length, 'student')}</span>
+                      <button
+                        type="button"
+                        className="admin-icon-btn admin-icon-btn--danger"
+                        onClick={() => (setMessage(''), setDeleting(team))}
+                        aria-label={`Delete ${team.name}`}
+                        title="Delete team"
+                      >
+                        <Icon name="trash" size={16} />
+                      </button>
+                    </span>
                   </header>
 
                   <label className="admin-team__mentor">
@@ -265,6 +282,53 @@ export default function AdminTeamsPage() {
           </div>
         )}
       </Modal>
+
+      <Modal open={adding} onClose={() => setAdding(false)} title="Add a team" initialFocus=".admin-dialog input">
+        {adding && (
+          <AddTeamForm
+            teams={teams}
+            mentors={mentors}
+            loose={loose}
+            onCancel={() => setAdding(false)}
+            onSave={async (input) => {
+              const old = input.mentorId !== null ? teamOfMentor.get(input.mentorId) : undefined
+              const made = await addTeam(input)
+              setAdding(false)
+              setError('')
+              const parts = [
+                input.mentorId !== null ? `mentor ${nameOf(input.mentorId)}` : 'no mentor yet',
+                input.studentIds.length ? plural(input.studentIds.length, 'student') : 'no students yet',
+              ]
+              setMessage(`${made.name} added: ${parts.join(', ')}.${old ? ` ${old.name} has no mentor now.` : ''}`)
+            }}
+          />
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={deleting !== null}
+        title={deleting ? `Delete ${deleting.name}?` : ''}
+        confirmLabel="Delete team"
+        busyLabel="Deleting…"
+        onClose={() => setDeleting(null)}
+        onConfirm={async () => {
+          if (!deleting) return
+          await deleteTeam(deleting.id)
+          const left = deleting.studentIds.length
+          setDeleting(null)
+          setError('')
+          setMessage(`${deleting.name} deleted.${left ? ` ${plural(left, 'student')} ${left === 1 ? 'is' : 'are'} without a team now.` : ''}`)
+        }}
+      >
+        {deleting && (
+          <p>
+            {deleting.studentIds.length
+              ? `Its ${plural(deleting.studentIds.length, 'student')} will be without a team until you put them in another one.`
+              : 'It has no students.'}
+            {deleting.mentorId !== null ? ` ${nameOf(deleting.mentorId)} will have no team to mentor.` : ''} Accounts and work are kept.
+          </p>
+        )}
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={clearing}

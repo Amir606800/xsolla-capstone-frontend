@@ -1,8 +1,10 @@
 import type { TeamPlan } from '../mocks/directory'
 import {
+  addTeam,
   addUser,
   clearTeams,
   createTeams,
+  deleteTeam,
   deleteUser,
   listTeams,
   listUsers,
@@ -14,6 +16,7 @@ import {
   setTeamMentor,
   updateUser,
 } from '../mocks/directory'
+import type { NewTeam } from '../mocks/directory'
 import { isValidPassword, MIN_SIGNUP_PASSWORD_LENGTH } from '../utils/validation'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { Role, User } from '../types/user'
@@ -276,6 +279,18 @@ export async function setUserRoles(id: number, roles: Role[], until: Partial<Rec
 export async function buildTeams(plan: TeamPlan[]): Promise<void> {
   await wait()
   createTeams(plan)
+}
+
+/** Adds one team (a name, optionally a mentor and students). Proposed: POST /teams. */
+export async function createTeam(team: NewTeam): Promise<SchoolTeam> {
+  await wait()
+  return addTeam(team)
+}
+
+/** Deletes one team; its students and mentor are left without a team. Proposed: DELETE /teams/:id. */
+export async function removeTeam(teamId: string): Promise<void> {
+  await wait()
+  deleteTeam(teamId)
 }
 
 /** Removes every team. */

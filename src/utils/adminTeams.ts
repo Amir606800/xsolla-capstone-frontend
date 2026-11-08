@@ -41,3 +41,9 @@ export function planTeams(studentIds: number[], mentorIds: number[], maxSize: nu
     return team
   })
 }
+
+/** The name a new team gets by default: "Team 7" after the highest "Team N" there is now. */
+export function nextTeamName(names: readonly string[]): string {
+  const numbers = names.map((n) => Number(/^Team (\d+)$/i.exec(n.trim())?.[1] ?? 0))
+  return `Team ${Math.max(0, ...numbers) + 1}`
+}
