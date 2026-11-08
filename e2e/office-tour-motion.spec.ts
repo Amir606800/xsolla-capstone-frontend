@@ -32,22 +32,62 @@ test('the teleport only animates transform and opacity, so it runs on the GPU', 
   expect(new Set(animated)).toEqual(new Set(['transform', 'opacity']))
 })
 
-test('the picture grows from the frame to the whole screen and the screen ends dark', async ({ page }) => {
+test('the picture grows from the frame to the whole screen', async ({ page }) => {
   await asStudent(page)
   const link = await openTourPage(page)
+  await link.scrollIntoViewIfNeeded()
   const start = (await link.locator('.tour__view').boundingBox())!
   await link.click()
+  await expect(page.locator('.teleport.is-playing')).toBeAttached()
 
+  // stop the clock of every part at the same moment (before the tour opens) and measure
+  const at = (ms: number) =>
+    page.evaluate((t) => {
+      for (const a of document.getAnimations()) {
+        a.pause()
+        a.currentTime = t
+      }
+    }, ms)
   const portal = page.locator('.teleport__portal')
-  // first painted frame: right where the picture was
-  const first = (await portal.boundingBox())!
-  expect(Math.abs(first.x - start.x)).toBeLessThan(4)
-  expect(Math.abs(first.width - start.width)).toBeLessThan(8)
 
-  // at the end it covers the screen and the fade is fully dark
+  await at(0) // right where the picture was
+  const first = (await portal.boundingBox())!
+  expect(Math.abs(first.x - start.x)).toBeLessThan(2)
+  expect(Math.abs(first.y - start.y)).toBeLessThan(2)
+  expect(Math.abs(first.width - start.width)).toBeLessThan(2)
+
+  await at(400) // on its way
+  const middle = (await portal.boundingBox())!
+  expect(middle.width).toBeGreaterThan(start.width)
+
+  await at(800) // the whole screen
   const viewport = page.viewportSize()!
-  await expect.poll(async () => (await portal.boundingBox())!.width, { timeout: 3000 }).toBeGreaterThanOrEqual(viewport.width - 1)
-  await expect(page.locator('.teleport__fade')).toHaveCSS('opacity', '1', { timeout: 3000 })
+  const last = (await portal.boundingBox())!
+  expect(last.x).toBeCloseTo(0, 0)
+  expect(last.y).toBeCloseTo(0, 0)
+  expect(last.width).toBeGreaterThanOrEqual(viewport.width - 1)
+  expect(last.height).toBeGreaterThanOrEqual(viewport.height - 1)
+})
+
+test('every part of the teleport has finished, on a dark screen, before the tour opens', async ({ page }) => {
+  await asStudent(page)
+  const link = await openTourPage(page)
+  await link.click()
+  await expect(page.locator('.teleport.is-playing')).toBeAttached()
+  const parts = await page.evaluate(() =>
+    document
+      .getAnimations()
+      .filter((a) => (a.effect as KeyframeEffect | null)?.target?.closest('.teleport'))
+      .map((a) => {
+        const effect = a.effect as KeyframeEffect
+        const frames = effect.getKeyframes()
+        return { end: effect.getComputedTiming().endTime as number, cls: effect.target!.className, last: frames[frames.length - 1] }
+      }),
+  )
+  const TELEPORT_MS = 1100
+  for (const p of parts) expect(p.end, p.cls).toBeLessThanOrEqual(TELEPORT_MS - 100)
+  const fade = parts.find((p) => p.cls === 'teleport__fade')!
+  expect(fade.last.opacity).toBe('1')
 })
 
 test('the admin can open the office tour and the team tools from their section list', async ({ page }) => {
