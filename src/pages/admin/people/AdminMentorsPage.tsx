@@ -159,9 +159,13 @@ export default function AdminMentorsPage() {
                     const t = teamOf.get(m.id)
                     return (
                       <tr key={m.id}>
-                        <td className="admin-table__strong">{m.name}</td>
+                        <td className="admin-table__strong">
+                          <span className="admin-cell" title={m.name}>
+                            {m.name}
+                          </span>
+                        </td>
                         <td>
-                          <a className="admin-link" href={`mailto:${m.email}`}>
+                          <a className="admin-link admin-cell" href={`mailto:${m.email}`} title={m.email}>
                             {m.email}
                           </a>
                         </td>

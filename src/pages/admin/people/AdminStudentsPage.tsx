@@ -158,9 +158,13 @@ export default function AdminStudentsPage() {
                     const t = byStudent.get(s.id)
                     return (
                       <tr key={s.id} className={s.leftAt ? 'is-left' : undefined}>
-                        <td className="admin-table__strong">{s.name}</td>
+                        <td className="admin-table__strong">
+                          <span className="admin-cell" title={s.name}>
+                            {s.name}
+                          </span>
+                        </td>
                         <td>
-                          <a className="admin-link" href={`mailto:${s.email}`}>
+                          <a className="admin-link admin-cell" href={`mailto:${s.email}`} title={s.email}>
                             {s.email}
                           </a>
                         </td>

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const FONT_URL = '**/fonts/sharp-grotesk/SharpGroteskBook20.woff2'
+const FONT_URL = '**/fonts/sharp-grotesk/Sharp*Book*20*Regular.woff2'
 // A free font stands in for the licensed file, so we can prove the drop-in wiring works.
 const STAND_IN = 'node_modules/@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2'
 
@@ -19,8 +19,6 @@ test('SharpGrotesk20 comes first in the font stack', async ({ page }) => {
 
 test('without the font files the page still renders with the stand-in font', async ({ page }) => {
   await page.route(FONT_URL, (route) => route.fulfill({ status: 404 }))
-  await page.route('**/fonts/sharp-grotesk/SharpGroteskBook20.woff', (route) => route.fulfill({ status: 404 }))
-  await page.route('**/fonts/sharp-grotesk/Sharp*Grotesk*Book*', (route) => route.fulfill({ status: 404 }))
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible()
 
@@ -29,7 +27,7 @@ test('without the font files the page still renders with the stand-in font', asy
   expect(families).not.toContain('SharpGrotesk20')
 })
 
-test('dropping the font file into public/fonts/sharp-grotesk/ is enough to use it', async ({ page }) => {
+test('the font file named in the stylesheet is the one that gets used', async ({ page }) => {
   await page.route(FONT_URL, (route) => route.fulfill({ path: STAND_IN, contentType: 'font/woff2' }))
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible()

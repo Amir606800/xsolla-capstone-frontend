@@ -1,17 +1,16 @@
 SharpGrotesk20 (Sharp Grotesk Book 20) - Xsolla brand font
 ==========================================================
 
-This font is licensed, so the files are not committed by default.
-Get them from Xsolla's brand / design team, then put them in this folder:
+This font is licensed. The body font file in this folder is:
 
-    SharpGroteskBook20.woff2     <- preferred (smallest)
-    SharpGroteskBook20.woff      <- optional fallback
+    Sharp Grotesk Book 20 Regular.woff2
 
-The app picks them up automatically (see src/styles/typography.css).
-No code change, no rebuild of anything else is needed - just refresh the page.
+src/styles/typography.css names exactly that file. To use a different file, change the name there
+(and keep it in this folder): every url() in that stylesheet must point at a file that exists,
+otherwise the dev server answers with index.html and the browser logs an "OTS parsing error".
+src/styles/typography.test.ts fails when a file is missing.
 
-If the files are missing, the app falls back to "Hanken Grotesk" and works normally.
-(You may see a 404 for these two files in the browser's Network tab until they exist.)
+If the font cannot be loaded, the app falls back to "Hanken Grotesk" and works normally.
 
 Other weights (Medium / Bold): add the files here and add one @font-face per weight in
 src/styles/typography.css, then narrow the existing rule's font-weight from "400 700" to "400".

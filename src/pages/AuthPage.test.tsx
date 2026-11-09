@@ -47,6 +47,35 @@ describe('AuthPage', () => {
     expect(submit()).toBeEnabled()
   })
 
+  it('tells you what is wrong as soon as you leave a field, not only on submit', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    expect(screen.queryByText('Enter a valid email address')).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('Email'), 'test')
+    expect(screen.queryByText('Enter a valid email address')).not.toBeInTheDocument() // still typing
+    await user.tab()
+    expect(screen.getByText('Enter a valid email address')).toBeInTheDocument()
+    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
+    expect(submit()).toBeDisabled()
+
+    await user.click(screen.getByLabelText('Email'))
+    await user.clear(screen.getByLabelText('Email'))
+    await user.type(screen.getByLabelText('Email'), 'me@example.com')
+    expect(screen.queryByText('Enter a valid email address')).not.toBeInTheDocument()
+  })
+
+  it('the password message waits until you leave the password field; the eye button does not count as leaving', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByLabelText('Password'))
+    await user.click(screen.getByRole('button', { name: 'Show password' }))
+    expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'text')
+    expect(screen.queryByText('Enter your password')).not.toBeInTheDocument()
+    await user.click(screen.getByLabelText('Email'))
+    expect(screen.getByText('Enter your password')).toBeInTheDocument()
+    expect(screen.getByLabelText('Password')).toHaveAttribute('aria-invalid', 'true')
+  })
+
   it('toggles password visibility', async () => {
     const user = userEvent.setup()
     renderPage()

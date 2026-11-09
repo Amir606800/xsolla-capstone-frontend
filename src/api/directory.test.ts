@@ -43,8 +43,8 @@ describe('directory API', () => {
     const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
     expect(url).toBe('https://api.test/users?search=')
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer acc')
-    // teams still come from the mock, and the admin is told so
-    expect(teamsAreDemoData()).toBe(true)
+    // teams come from the server too now: nothing is demo data any more
+    expect(teamsAreDemoData()).toBe(false)
   })
 })
 
@@ -90,7 +90,7 @@ describe('adding a student', () => {
   it('with a backend: edit, left the school and delete use the proposed routes', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
-    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ id: 41 }), { status: 200 }))
+    const fetchSpy = vi.fn(async (url: string) => new Response(JSON.stringify(url.endsWith('/teams') ? [] : { id: 41 }), { status: 200 }))
     await stubHttp(fetchSpy)
     const { deleteStudent, setStudentLeft, updateStudent } = await import('./directory')
     await updateStudent(41, { name: 'Ann Lee', email: 'ann@x.co', teamId: null })
@@ -99,6 +99,7 @@ describe('adding a student', () => {
     const sent = (fetchSpy.mock.calls as unknown as [string, RequestInit][]).map(([url, init]) => [init.method, url, init.body ? JSON.parse(init.body as string) : undefined])
     expect(sent).toEqual([
       ['PATCH', 'https://api.test/users/41', { name: 'Ann Lee', email: 'ann@x.co' }],
+      ['GET', 'https://api.test/teams', undefined], // and out of any team they are in (none here)
       ['PATCH', 'https://api.test/users/41', { active: false }],
       ['DELETE', 'https://api.test/users/41', undefined],
     ])

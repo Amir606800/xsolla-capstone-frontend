@@ -6,9 +6,10 @@
  *   2. GraphikLC / Pilat / Aktiv Grotesk - the xsolla.com fonts
  *   3. Hanken Grotesk  - free stand-in (self-hosted via @fontsource), always available
  *
- * The Xsolla fonts are commercial: their files are NOT in the repo. Put the files in
- * public/fonts/sharp-grotesk/ (see the README.txt there) and they are picked up
- * automatically - no code change needed. Until then the stand-in is shown.
+ * The Xsolla fonts are commercial. Every url() below must name a file that exists in
+ * public/fonts/sharp-grotesk/ (src/styles/typography.test.ts checks it): a missing file is not a 404 in
+ * the dev server but index.html, which the browser then fails to read as a font (a console warning
+ * "OTS parsing error" per request). To use another file, change the name here and in the README.txt there.
  *
  * Only the Book (regular) weight of SharpGrotesk20 is known. It is declared for the whole
  * 400-700 range so the browser never fakes a bold (which looks smeared). When real Medium /
@@ -20,9 +21,7 @@
     local('SharpGrotesk20'),
     local('Sharp Grotesk Book 20'),
     local('SharpGroteskBook20'),
-    url('/fonts/sharp-grotesk/SharpGroteskBook20.woff2') format('woff2'),
-    url('/fonts/sharp-grotesk/Sharp Grotesk Book 20 Regular.woff2') format('woff2'),
-    url('/fonts/sharp-grotesk/SharpGroteskBook20.woff') format('woff');
+    url('/fonts/sharp-grotesk/Sharp Grotesk Book 20 Regular.woff2') format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;

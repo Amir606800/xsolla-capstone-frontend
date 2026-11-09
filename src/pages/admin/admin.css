@@ -1340,3 +1340,29 @@ button.admin-table__title:hover {
 .admin-pw-rules li.is-met {
   color: var(--ok, #1d8a4e);
 }
+
+/*
+ * Names and e-mail addresses in a table are cut to one line with "…" (the full text is the tooltip).
+ * overflow: hidden also clips stacked combining marks (Zalgo text), which would otherwise be drawn over
+ * the rows above and below, and a very long address can no longer push the action buttons off the table.
+ */
+.admin-cell {
+  display: block;
+  max-width: 26ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+a.admin-cell {
+  display: block;
+}
+.admin-table td:has(> .admin-cell) {
+  max-width: 28ch;
+  overflow: hidden;
+}
+@media (max-width: 600px) {
+  .admin-cell {
+    max-width: 18ch;
+  }
+}

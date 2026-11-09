@@ -23,12 +23,13 @@ import type { Role, User } from '../types/user'
 import { type UserDto, mapUser } from './auth.http'
 import { authedRequest } from './authed'
 import { ApiError, apiRequest, hasBackend } from './http'
+import * as teamsApi from './teams.http'
 
 /**
  * The admin section's directory of people and teams.
  *  - Users: GET /users?search= (API_CONTRACT.md, admin only) with a backend, the offline mock otherwise.
  *    The backend does not serve that route yet, so with a backend this fails until it does.
- *  - Teams: the backend has no teams yet, so they always come from the mock (like the LMS team pages).
+ *  - Teams: the backend's /teams routes (./teams.http) with a backend, the offline mock otherwise.
  *  - New students: POST /auth/signup (it makes a student account with the chosen password). The session
  *    signup opens for the new student is closed straight away; the admin stays signed in as themselves.
  *  - Changing or removing an account is not in the backend yet. These calls use the shape proposed to it:
@@ -69,14 +70,24 @@ export async function fetchUsers(): Promise<SchoolUser[]> {
   return listUsers()
 }
 
-/** Always the mock: see above. */
 export async function fetchTeams(): Promise<SchoolTeam[]> {
+  if (hasBackend()) return teamsApi.listTeams()
   await wait()
   return listTeams()
 }
 
-/** True while teams come from the mock even though a backend is configured (the admin is told so). */
-export const teamsAreDemoData = () => hasBackend()
+/** Teams used to be demo data even with a backend; the server has them now, so never. */
+export const teamsAreDemoData = () => false
+
+/** A team route the server rejects: say what it is about, in plain words (422 and the like pass through). */
+function teamCall<T>(run: () => Promise<T>, what: string): Promise<T> {
+  return run().catch((e: unknown) => {
+    if (e instanceof ApiError && (e.status === 405 || e.status === 501 || (e.status === 404 && e.code !== 'not_found'))) {
+      throw new ApiError(501, 'not_supported', `The server cannot ${what} yet.`)
+    }
+    throw e
+  })
+}
 
 export interface NewStudent {
   name: string
@@ -123,8 +134,10 @@ export async function createStudent(input: NewStudent): Promise<User> {
     await wait()
     user = addUser({ name: input.name, email: input.email, roles: ['student'] })
   }
-  // teams are not in the backend yet: always the mock
-  if (input.teamId) setTeam(user.id, input.teamId)
+  if (input.teamId) {
+    if (hasBackend()) await teamsApi.placeStudent(user.id, input.teamId)
+    else setTeam(user.id, input.teamId)
+  }
   return user
 }
 
@@ -155,7 +168,8 @@ export async function updateStudent(id: number, changes: StudentChanges): Promis
     await wait()
     updateUser(id, { name: changes.name, email: changes.email })
   }
-  setTeam(id, changes.teamId)
+  if (hasBackend()) await teamsApi.placeStudent(id, changes.teamId)
+  else setTeam(id, changes.teamId)
 }
 
 /** The student left the school (they can no longer sign in, their work is kept), or comes back. */
@@ -166,7 +180,7 @@ export async function setStudentLeft(id: number, left: boolean): Promise<void> {
     } catch (e) {
       notYet(e, 'mark students as left')
     }
-    if (left) setTeam(id, null)
+    // the server takes a student who left out of their team
     return
   }
   await wait()
@@ -181,9 +195,7 @@ export async function deleteAccount(id: number): Promise<void> {
     } catch (e) {
       notYet(e, 'delete accounts')
     }
-    // teams are demo data: take them out of it too
-    setTeam(id, null)
-    setMentorTeam(id, null)
+    // the server frees their team slot (or leaves the team without a mentor)
     return
   }
   await wait()
@@ -217,7 +229,10 @@ export async function createStaff(input: NewMentor, role: 'mentor' | 'lecturer')
     await wait()
     user = addUser({ name: input.name, email: input.email, roles: [role] })
   }
-  if (role === 'mentor' && input.teamId) setMentorTeam(user.id, input.teamId)
+  if (role === 'mentor' && input.teamId) {
+    if (hasBackend()) await teamsApi.placeMentor(user.id, input.teamId)
+    else setMentorTeam(user.id, input.teamId)
+  }
   return user
 }
 
@@ -241,7 +256,8 @@ export async function updateMentor(id: number, changes: MentorChanges): Promise<
     await wait()
     updateUser(id, { name: changes.name, email: changes.email })
   }
-  setMentorTeam(id, changes.teamId)
+  if (hasBackend()) await teamsApi.placeMentor(id, changes.teamId)
+  else setMentorTeam(id, changes.teamId)
 }
 
 /**
@@ -282,40 +298,64 @@ export async function setUserRoles(id: number, roles: Role[], until: Partial<Rec
   setRoles(id, roles, until)
 }
 
-// ---------- teams (not in the backend yet: always the demo store) ----------
+// ---------- teams (the server's /teams routes, or the demo store offline) ----------
 
-/** Replaces every team with these: random teams the admin has looked at and agreed to. */
+/** Replaces every team with these: random teams the admin has looked at and agreed to (PUT /teams). */
 export async function buildTeams(plan: TeamPlan[]): Promise<void> {
+  if (hasBackend()) {
+    await teamCall(() => teamsApi.replaceTeams(plan), 'make teams')
+    return
+  }
   await wait()
   createTeams(plan)
 }
 
-/** Adds one team (a name, optionally a mentor and students). Proposed: POST /teams. */
+/** Adds one team: a name, optionally a mentor and students without a team (POST /teams). */
 export async function createTeam(team: NewTeam): Promise<SchoolTeam> {
+  if (hasBackend()) return teamCall(() => teamsApi.createTeam(team), 'add a team')
   await wait()
   return addTeam(team)
 }
 
-/** Deletes one team; its students and mentor are left without a team. Proposed: DELETE /teams/:id. */
+/**
+ * Deletes one team; its students and mentor are left without a team. The server has no route for this
+ * yet (proposed: DELETE /teams/:id), so with a backend this says so instead of pretending.
+ */
 export async function removeTeam(teamId: string): Promise<void> {
+  if (hasBackend()) {
+    await teamCall(() => teamsApi.deleteTeam(teamId), 'delete a single team')
+    return
+  }
   await wait()
   deleteTeam(teamId)
 }
 
-/** Removes every team. */
+/** Removes every team (PUT /teams with no teams). */
 export async function removeAllTeams(): Promise<void> {
+  if (hasBackend()) {
+    await teamCall(() => teamsApi.replaceTeams([]), 'remove teams')
+    return
+  }
   await wait()
   clearTeams()
 }
 
 /** Puts a student in a team, or takes them out of theirs (null). */
 export async function moveStudent(studentId: number, teamId: string | null): Promise<void> {
+  if (hasBackend()) {
+    await teamCall(() => teamsApi.placeStudent(studentId, teamId), 'change teams')
+    return
+  }
   await wait()
   setTeam(studentId, teamId)
 }
 
 /** Sets a team's mentor (they leave their old team); null leaves the team without one. */
 export async function changeTeamMentor(teamId: string, mentorId: number | null): Promise<void> {
+  if (hasBackend()) {
+    await teamCall(() => teamsApi.setTeamMentor(teamId, mentorId), 'change mentors')
+    return
+  }
   await wait()
   setTeamMentor(teamId, mentorId)
 }

@@ -190,11 +190,15 @@ export default function AdminLecturersPage() {
                 <tbody>
                   {shown.map((l) => (
                     <tr key={l.id}>
-                      <td className="admin-table__strong">{l.name}</td>
+                      <td className="admin-table__strong">
+                          <span className="admin-cell" title={l.name}>
+                            {l.name}
+                          </span>
+                        </td>
                       <td>
-                        <a className="admin-link" href={`mailto:${l.email}`}>
-                          {l.email}
-                        </a>
+                        <a className="admin-link admin-cell" href={`mailto:${l.email}`} title={l.email}>
+                            {l.email}
+                          </a>
                       </td>
                       <td className="admin-table__muted" title={weeksText(l.id)}>
                         {modulesLine(l.id)}

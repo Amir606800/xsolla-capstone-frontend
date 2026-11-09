@@ -20,7 +20,8 @@ export default function AuthPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
-  const [touched, setTouched] = useState(false)
+  // an error shows once the person has left that field (or tried to sign in): the button stays off until it is fixed
+  const [touched, setTouched] = useState({ email: false, password: false })
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -32,7 +33,7 @@ export default function AuthPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setTouched(true)
+    setTouched({ email: true, password: true })
     if (!valid || submitting) return
     setSubmitting(true)
     setFormError('')
@@ -102,8 +103,15 @@ export default function AuthPage() {
               className="auth__input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+              aria-invalid={touched.email && !emailOk}
+              aria-describedby={touched.email && !emailOk ? 'email-error' : undefined}
             />
-            {touched && !emailOk && <p className="auth__error">Enter a valid email address</p>}
+            {touched.email && !emailOk && (
+              <p id="email-error" className="auth__error">
+                Enter a valid email address
+              </p>
+            )}
 
             <label className="auth__label" htmlFor="password">
               Password
@@ -116,10 +124,18 @@ export default function AuthPage() {
                 className="auth__input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                // clicking the eye button (inside the same box) is not leaving the field
+                onBlur={(e) => {
+                  if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) setTouched((t) => ({ ...t, password: true }))
+                }}
+                aria-invalid={touched.password && !passwordOk}
+                aria-describedby={touched.password && !passwordOk ? 'password-error' : undefined}
               />
               <button
                 type="button"
                 className="auth__eye"
+                // pressing it must not take the focus out of the password field (that would count as leaving it)
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setShowPw(!showPw)}
                 aria-label={showPw ? 'Hide password' : 'Show password'}
               >
@@ -139,7 +155,11 @@ export default function AuthPage() {
                 </svg>
               </button>
             </div>
-            {touched && !passwordOk && <p className="auth__error">Enter your password</p>}
+            {touched.password && !passwordOk && (
+              <p id="password-error" className="auth__error">
+                Enter your password
+              </p>
+            )}
 
             {formError && (
               <p className="auth__error" role="alert">

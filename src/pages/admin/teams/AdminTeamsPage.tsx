@@ -193,7 +193,9 @@ export default function AdminTeamsPage() {
                     <ul className="admin-team__students">
                       {members.map((s) => (
                         <li key={s.id}>
-                          <span className="admin-team__name">{s.name}</span>
+                          <span className="admin-team__name" title={s.name}>
+                            {s.name}
+                          </span>
                           <select
                             className="admin-field__input admin-team__move"
                             aria-label={`Move ${s.name} to another team`}
@@ -250,7 +252,9 @@ export default function AdminTeamsPage() {
                 <ul className="admin-team__students">
                   {loose.map((s) => (
                     <li key={s.id}>
-                      <span className="admin-team__name">{s.name}</span>
+                      <span className="admin-team__name" title={s.name}>
+                            {s.name}
+                          </span>
                       <select
                         className="admin-field__input admin-team__move"
                         aria-label={`Put ${s.name} in a team`}

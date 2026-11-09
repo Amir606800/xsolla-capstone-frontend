@@ -25,7 +25,7 @@ mentor/student features, **P3** are nice to have.
 | Submissions | Multiple attempts, grade endpoint | Real calls (one attempt assumed) | Mentor comment without a grade, team scoping (3.4) |
 | Calendar events | CRUD | Real calls | Admin must see every event (3.5) |
 | **Users list / create / edit / delete** | Only `GET /users/me` | Admin screens built | **Whole group (4.1) - P1** |
-| **Teams** | Nothing | Admin + student + mentor screens built | **Whole group (4.2) - P1** |
+| **Teams** | Admin routes done (`GET/PUT/POST /teams`, students, mentor), checked at `4de5fd0` | Admin screens call them; student and mentor pages still on demo data | **`DELETE /teams/:id`** (one team); `GET /teams/me` and `/mentors/me/team` are not used by the LMS pages yet (4.2) |
 | **Weekly grades** (green/yellow/red) | Nothing | Built on demo data | **Group 4.3 - P2** |
 | **1:1 slots** | In the contract, **not registered** in `main.go` | Built on demo data | **Group 4.4 - P2** |
 | **Notifications** | Nothing | Bell + list built on demo data; admin "send to everyone" next | **Group 4.5 - P2** |
@@ -253,7 +253,7 @@ otherwise. `[]` is allowed and means "no teams" (the **Remove all teams** button
 - `student_ids` may be empty; students in other teams are moved out of them (one team per student).
 - `201` with the new team in the `GET /teams` row shape.
 
-**`DELETE /teams/:id`** (admin) - delete **one** team. Its students are left without a team and its mentor without
+**`DELETE /teams/:id`** (admin) - delete **one** team. **Missing on the server today** (commit `4de5fd0`: it answers 405), so the Delete team button shows "The server cannot delete a single team yet." and nothing is deleted. The front-end already sends this exact call. Its students are left without a team and its mentor without
 one to mentor; accounts, submissions and grades are kept. The other teams keep their ids and names (no renumbering).
 `204`; `404` for an unknown team.
 
