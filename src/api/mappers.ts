@@ -166,6 +166,7 @@ export function mapEvent(e: ApiEvent): CalendarEvent {
     ...(e.all_day ? { allDay: true } : {}),
     ...(e.location ? { location: e.location } : {}),
     ...(e.description ? { description: e.description } : {}),
+    ...(e.meeting_url ? { meetingUrl: e.meeting_url } : {}),
     ...(e.module_id != null ? { moduleId: String(e.module_id) } : {}),
   }
 }
@@ -180,6 +181,8 @@ export function eventToApi(e: CalendarEvent) {
     all_day: !!e.allDay,
     ...(e.location ? { location: e.location } : {}),
     ...(e.description ? { description: e.description } : {}),
+    // null (not left out) so editing an event can also take the link away
+    meeting_url: e.meetingUrl ?? null,
     ...(e.moduleId && /^\d+$/.test(e.moduleId) ? { module_id: Number(e.moduleId) } : {}),
   }
 }

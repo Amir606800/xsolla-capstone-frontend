@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 type Pg = import('@playwright/test').Page
 /** Opens the search the way a user of that screen size would: the bar on desktop, the icon on a phone. */
@@ -47,16 +48,16 @@ test.describe('header balance (desktop)', () => {
     await expect(page.getByRole('button', { name: /^Notifications/ })).toBeVisible()
   })
 
-  test('there is no redundant search icon between the current-module chip and the theme button', async ({ page }) => {
+  test('there is no redundant search icon between the current-module chip and the bell', async ({ page }) => {
     await page.goto('/calendar')
     await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeHidden()
     await expect(page.getByRole('link', { name: /Current module/ })).toBeVisible() // wait for the data to load
     await expect(page.getByRole('button', { name: 'Notifications, 4 unread' })).toBeVisible()
-    // order on the right: chip, theme, bell, account - nothing in between
+    // order on the right: chip, bell, account - nothing in between (the theme switch is in the account menu)
     const names = await page
       .locator('.header__actions > *:visible')
       .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.className))
-    expect(names).toEqual(['Current module: Go Basics', 'Toggle theme', expect.stringMatching(/^Notifications/), 'header__user'])
+    expect(names).toEqual(['Current module: Go Basics', expect.stringMatching(/^Notifications/), 'header__user'])
   })
 
   test('on the dashboard the chip is hidden because the Current task widget shows it', async ({ page }) => {
@@ -188,6 +189,6 @@ test('no horizontal overflow with the new header and sidebar, light and dark', a
   const overflow = () =>
     page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
   expect(await overflow()).toBe(false)
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   expect(await overflow()).toBe(false)
 })

@@ -22,6 +22,7 @@ import { collectTasks } from '../utils/tasks'
 import '../styles/ui.css'
 import '../components/module/module.css'
 import './GradesPage.css'
+import { Loading } from '../components/loading/Loading'
 
 /**
  * "My grades". Every week the mentor rates the student: green (on track), yellow (falling behind)
@@ -62,9 +63,7 @@ export default function GradesPage() {
       </div>
 
       {status === 'loading' && (
-        <p className="module__state" role="status">
-          Loading your grades…
-        </p>
+        <Loading className="module__state">Loading your grades…</Loading>
       )}
 
       {status === 'error' && (

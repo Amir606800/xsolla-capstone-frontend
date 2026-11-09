@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
 import { ResetPasswordForm } from './ResetPasswordForm'
 import { StudentForm } from './StudentForm'
+import { Loading } from '../../../components/loading/Loading'
 
 /** Who the list shows: students at the school now, those who left, or both. */
 type Status = 'current' | 'left' | 'all'
@@ -83,9 +84,7 @@ export default function AdminStudentsPage() {
       </p>
 
       {status === 'loading' && (
-        <p className="admin-muted" role="status">
-          Loading the students…
-        </p>
+        <Loading className="admin-muted">Loading the students…</Loading>
       )}
       {status === 'error' && (
         <div className="admin-empty" role="alert">

@@ -26,6 +26,7 @@ import '../../components/module/module.css'
 import '../../components/authoring/authoring.css'
 import '../../components/staff/staff.css'
 import './mentor.css'
+import { Loading } from '../../components/loading/Loading'
 
 /**
  * MENTOR: grading. Each week every student gets ONE grade - green, yellow or red - for the week as
@@ -76,9 +77,7 @@ export default function GradingPage() {
       </div>
 
       {loading && (
-        <p className="module__state" role="status">
-          Loading your team&apos;s weeks…
-        </p>
+        <Loading className="module__state">Loading your team&apos;s weeks…</Loading>
       )}
       {!loading && failed && (
         <div className="module__state" role="alert">

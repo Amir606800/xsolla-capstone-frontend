@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { BrowserContext, Page } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 const STUDENT = { id: 1, name: 'Sam', email: 'sam@example.com', role: 'student' }
 const MENTOR = { id: 900, name: 'Rashad Aliyev', email: 'rashad@example.com', role: 'teacher' }
@@ -83,7 +84,7 @@ test.describe('Student: 1:1 times', () => {
     expect(box.x + box.width).toBeLessThanOrEqual(vp.width)
     expect(await overflow(page)).toBe(false)
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Toggle theme' }).click()
+    await toggleTheme(page)
     await page.locator('.cell:has(.ev--availability)').first().click()
     await expect(page.getByRole('dialog').getByRole('list', { name: '1:1 times' })).toBeVisible()
     expect(await overflow(page)).toBe(false)
@@ -154,7 +155,7 @@ test.describe('Mentor: availability', () => {
     expect(box.x + box.width).toBeLessThanOrEqual(vp.width)
     expect(await overflow(page)).toBe(false)
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Toggle theme' }).click()
+    await toggleTheme(page)
     await page.locator('.cell.is-today + .cell').click()
     await expect(page.getByRole('dialog').getByRole('button', { name: 'Add availability' })).toBeVisible()
     expect(await overflow(page)).toBe(false)

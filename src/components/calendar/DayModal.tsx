@@ -3,7 +3,10 @@ import { Link } from 'react-router'
 import type { CalendarEvent, EventKind } from '../../types/calendar'
 import { formatDuration, formatEventTime, fullDateLabel } from '../../utils/calendar'
 import { formatTimeLeft } from '../../utils/date'
+import { useAuth } from '../../hooks/useAuth'
+import { isStudent } from '../../utils/roles'
 import { Icon } from '../Icon'
+import { JoinMeeting } from './JoinMeeting'
 import { Modal } from '../Modal'
 import '../authoring/authoring.css'
 import { eventClass, isPastEvent } from './eventClass'
@@ -88,6 +91,7 @@ function EventTools({ event, editing }: { event: CalendarEvent; editing: EventEd
 }
 
 function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date; editing?: EventEditing }) {
+  const { user } = useAuth()
   const duration = formatDuration(event)
   const past = isPastEvent(event, now)
 
@@ -130,6 +134,8 @@ function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date
         </dl>
 
         {event.description && <p className="event-card__desc">{event.description}</p>}
+
+        <JoinMeeting event={event} now={now} always={!isStudent(user)} />
 
         {event.moduleId && (
           <Link className="btn btn--ghost event-card__link" to={`/courses/${event.moduleId}`}>

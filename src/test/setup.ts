@@ -58,7 +58,12 @@ vi.mock('../api/events', async () => {
   const store = await import('../mocks/contentEdits')
   return {
     fetchEvents: vi.fn(async () => store.listEvents(new Date())),
-    saveEvent: vi.fn(async (e: import('../types/calendar').CalendarEvent) => store.putEvent(e)),
+    saveEvent: vi.fn(async (e: import('../types/calendar').CalendarEvent) => {
+      const before = store.listEvents().find((x) => x.id === e.id)
+      const saved = store.putEvent(e)
+      ;(await import('../mocks/broadcasts')).noticeForSavedEvent(before, e)
+      return saved
+    }),
     deleteEvent: vi.fn(async (id: string) => store.removeEvent(id)),
   }
 })

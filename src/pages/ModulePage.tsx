@@ -11,6 +11,7 @@ import { quizzesOf } from '../utils/content'
 import { assignmentsOf, resourcesOf } from '../utils/progress'
 import '../styles/ui.css'
 import '../components/module/module.css'
+import { Loading } from '../components/loading/Loading'
 
 export default function ModulePage() {
   const { moduleId } = useParams()
@@ -19,9 +20,7 @@ export default function ModulePage() {
 
   if (status === 'loading') {
     return (
-      <p className="module__state" role="status">
-        Loading module…
-      </p>
+      <Loading className="module__state">Loading module…</Loading>
     )
   }
 

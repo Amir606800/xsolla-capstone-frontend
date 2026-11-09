@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -89,7 +90,7 @@ test.describe('My grades', () => {
     await page.goto('/grades')
     await expect(page.getByRole('list', { name: 'Weekly standing' })).toBeVisible()
     expect(await overflow(page)).toBe(false)
-    await page.getByRole('button', { name: 'Toggle theme' }).click()
+    await toggleTheme(page)
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
     expect(await overflow(page)).toBe(false)
   })
@@ -155,7 +156,7 @@ test.describe('My team', () => {
     await page.goto('/team')
     await expect(page.getByRole('heading', { name: 'Your mentor' })).toBeVisible()
     expect(await overflow(page)).toBe(false)
-    await page.getByRole('button', { name: 'Toggle theme' }).click()
+    await toggleTheme(page)
     expect(await overflow(page)).toBe(false)
   })
 

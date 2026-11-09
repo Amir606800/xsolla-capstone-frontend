@@ -69,3 +69,25 @@ test('the admin sign-in fits a phone screen', async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(overflow).toBeLessThanOrEqual(0)
 })
+
+test('the overview shows this week’s module: lecturer, lectures and tasks', async ({ page }) => {
+  await page.goto('/admin/login')
+  await page.getByRole('button', { name: 'use the demo admin account' }).click()
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  const card = page.getByRole('region', { name: 'Current week' })
+  await expect(card.getByRole('heading', { name: 'Week 6 · Go Basics' })).toBeVisible()
+  await expect(card).toContainText('Elvin Huseynov')
+  await expect(card.getByRole('list', { name: 'Events this week' })).toContainText('Main hall')
+  await expect(card.getByRole('list', { name: 'Tasks of the week' })).toContainText('CLI tool')
+  await card.getByRole('link', { name: 'Open module' }).click()
+  await expect(page).toHaveURL(/\/admin\/modules\/m6$/)
+})
+
+test('the overview fits a phone screen with the week card', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 })
+  await page.goto('/admin/login')
+  await page.getByRole('button', { name: 'use the demo admin account' }).click()
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page.getByRole('region', { name: 'Current week' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0)
+})

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 const KEY = 'dashboard_layout:1'
 
@@ -111,7 +112,7 @@ test('edit mode keeps the page free of horizontal overflow, light and dark', asy
   await page.getByRole('button', { name: 'Edit dashboard' }).click()
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
   expect(await overflow()).toBe(false)
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   expect(await overflow()).toBe(false)
 })
 

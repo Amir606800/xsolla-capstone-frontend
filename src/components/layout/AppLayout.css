@@ -463,6 +463,29 @@
   }
 }
 
+/* the narrowest phones (320px): menu | logo | search, bell, account must still fit one row */
+@media (max-width: 400px) {
+  .header {
+    gap: 6px;
+    padding: 0 10px;
+  }
+  .header__brand {
+    min-width: 0;
+  }
+  .header__logo {
+    height: 20px;
+  }
+  .header__actions {
+    gap: 4px;
+  }
+  .header__icon-btn {
+    width: 36px;
+  }
+  .header__user-btn {
+    padding: 0 8px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar {
     transition: none;

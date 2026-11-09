@@ -12,6 +12,7 @@ import type { IconName } from '../Icon'
 import { Modal } from '../Modal'
 import '../../styles/ui.css'
 import './notifications.css'
+import { Loading } from '../../components/loading/Loading'
 
 const TYPE_ICON: Record<NotificationType, IconName> = {
   task: 'tasks',
@@ -82,9 +83,7 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
 
   if (status === 'loading') {
     return (
-      <p className="card__empty" role="status">
-        Loading notifications…
-      </p>
+      <Loading className="card__empty">Loading notifications…</Loading>
     )
   }
 

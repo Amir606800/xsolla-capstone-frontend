@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CalendarEvent } from '../../types/calendar'
 import type { CourseModule } from '../../types/course'
 import { EVENT_KINDS, eventToDraft, hasErrors, validateEvent } from '../../utils/authoring'
+import { canHaveMeeting, JOIN_OPENS_MINUTES } from '../../utils/meeting'
 import type { EditableKind, EventDraft } from '../../utils/authoring'
 import { Field, FormActions } from './Field'
 import { useSave } from './useSave'
@@ -75,6 +76,27 @@ export function EventForm({
       <Field label="Where" optional>
         {(p) => <input {...p} className="field__input form__input" value={d.location} onChange={(e) => set({ location: e.target.value })} />}
       </Field>
+      {canHaveMeeting(d.kind) && (
+        <Field
+          label="Meeting link"
+          optional
+          error={touched ? errors.meetingUrl : undefined}
+          hint={`Students see a Join button from ${JOIN_OPENS_MINUTES} minutes before the start, and get a notification when you add it. For Google Meet: https://meet.google.com/abc-defg-hij`}
+        >
+          {(p) => (
+            <input
+              {...p}
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              className="field__input form__input"
+              placeholder="https://meet.google.com/…"
+              value={d.meetingUrl}
+              onChange={(e) => set({ meetingUrl: e.target.value })}
+            />
+          )}
+        </Field>
+      )}
       <Field label="Module" optional hint="Students get a link to the module's materials.">
         {(p) => (
           <select {...p} className="field__input form__input" value={d.moduleId} onChange={(e) => set({ moduleId: e.target.value })}>

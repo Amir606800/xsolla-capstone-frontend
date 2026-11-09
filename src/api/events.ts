@@ -1,3 +1,4 @@
+import { noticeForSavedEvent } from '../mocks/broadcasts'
 import { listEvents, putEvent, removeEvent } from '../mocks/contentEdits'
 import type { CalendarEvent } from '../types/calendar'
 import * as http from './events.http'
@@ -20,7 +21,12 @@ export async function fetchEvents(): Promise<CalendarEvent[]> {
 export async function saveEvent(event: CalendarEvent): Promise<CalendarEvent[]> {
   if (hasBackend()) return http.saveEvent(event)
   await wait()
-  return putEvent(event)
+  const before = listEvents().find((e) => e.id === event.id)
+  const saved = putEvent(event)
+  // a lecture got a meeting link (or a different one): the students are told.
+  // (With a backend the server does this; see BACKEND_REQUIREMENTS 4.5.)
+  noticeForSavedEvent(before, event)
+  return saved
 }
 
 export async function deleteEvent(id: string): Promise<CalendarEvent[]> {

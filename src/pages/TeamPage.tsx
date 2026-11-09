@@ -11,6 +11,7 @@ import { myNextBooking } from '../utils/slots'
 import '../styles/ui.css'
 import '../components/module/module.css'
 import './TeamPage.css'
+import { Loading } from '../components/loading/Loading'
 
 /**
  * "My team": the student's own team (4-5 students from a cohort of about 30) and the one mentor
@@ -40,9 +41,7 @@ export default function TeamPage() {
       </div>
 
       {status === 'loading' && (
-        <p className="module__state" role="status">
-          Loading your team…
-        </p>
+        <Loading className="module__state">Loading your team…</Loading>
       )}
 
       {status === 'error' && (

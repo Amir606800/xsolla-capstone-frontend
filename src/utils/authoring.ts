@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '../types/calendar'
 import type { AssignmentItem, CourseModule, QuizItem, QuizQuestion, ResourceItem } from '../types/course'
+import { canHaveMeeting, meetingUrlError } from './meeting'
 
 /**
  * Lecturer forms: drafts (what the inputs hold), validation and turning a draft into the item
@@ -308,13 +309,15 @@ export interface EventDraft {
   end: string
   location: string
   description: string
+  /** Optional online meeting link (lectures and meetings): https only. */
+  meetingUrl: string
   /** Optional: the module this lecture belongs to (students get a link to its materials). */
   moduleId: string
 }
 
 export function eventToDraft(e: CalendarEvent | undefined, dayKey: string): EventDraft {
   if (!e) {
-    return { title: '', kind: 'lecture', date: dayKey, allDay: false, start: '10:00', end: '12:00', location: '', description: '', moduleId: '' }
+    return { title: '', kind: 'lecture', date: dayKey, allDay: false, start: '10:00', end: '12:00', location: '', description: '', meetingUrl: '', moduleId: '' }
   }
   return {
     title: e.title,
@@ -325,12 +328,14 @@ export function eventToDraft(e: CalendarEvent | undefined, dayKey: string): Even
     end: e.allDay ? '12:00' : toTimeInput(e.endsAt),
     location: e.location ?? '',
     description: e.description ?? '',
+    meetingUrl: e.meetingUrl ?? '',
     moduleId: e.moduleId ?? '',
   }
 }
 
-export function validateEvent(d: EventDraft): Errors<'title' | 'date' | 'time'> {
-  const e: Errors<'title' | 'date' | 'time'> = { title: titleError(d.title) }
+export function validateEvent(d: EventDraft): Errors<'title' | 'date' | 'time' | 'meetingUrl'> {
+  const e: Errors<'title' | 'date' | 'time' | 'meetingUrl'> = { title: titleError(d.title) }
+  if (canHaveMeeting(d.kind)) e.meetingUrl = meetingUrlError(d.meetingUrl)
   if (!fromInputs(d.date, '00:00')) e.date = 'Pick a day.'
   else if (!d.allDay) {
     const start = fromInputs(d.date, d.start)
@@ -351,6 +356,8 @@ export function draftToEvent(d: EventDraft, id: string): CalendarEvent {
     allDay: d.allDay || undefined,
     location: d.location.trim() || undefined,
     description: d.description.trim() || undefined,
+    // an off-campus day has no meeting, even if a link was typed before the type was switched
+    meetingUrl: canHaveMeeting(d.kind) ? d.meetingUrl.trim() || undefined : undefined,
     moduleId: d.moduleId || undefined,
   }
 }

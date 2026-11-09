@@ -1,4 +1,8 @@
+import { Suspense } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
+import { PageLoader } from '../../components/loading/PageLoader'
+import { AdminAlertsProvider } from '../../context/AdminAlertsProvider'
+import { useAdminAlerts } from '../../hooks/useAdminAlerts'
 import { GitLabLogo, SlackLogo } from '../../components/BrandLogos'
 import { Icon } from '../../components/Icon'
 import { LINKS } from '../../config/links'
@@ -19,7 +23,16 @@ const TOOLS = [
 
 /** The admin section's frame: a plain top bar, the section list on the left, the page on the right. */
 export default function AdminLayout() {
+  return (
+    <AdminAlertsProvider>
+      <AdminFrame />
+    </AdminAlertsProvider>
+  )
+}
+
+function AdminFrame() {
   const { user, signOut } = useAuth()
+  const { attention } = useAdminAlerts()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
@@ -61,6 +74,11 @@ export default function AdminLayout() {
               {group.sections.map((s) => (
                 <NavLink key={s.key} to={s.path} className={linkClass}>
                   <Icon name={s.icon} size={18} /> {s.label}
+                  {s.key === 'notifications' && attention > 0 && (
+                    <span className="admin-nav__badge" aria-label={`${attention} need attention`}>
+                      {attention > 9 ? '9+' : attention}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -95,7 +113,9 @@ export default function AdminLayout() {
         </nav>
 
         <main className="admin__main">
-          <Outlet />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

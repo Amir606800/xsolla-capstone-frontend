@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -83,7 +84,7 @@ test('hands in a task from this page and it leaves the To do list', async ({ pag
 test('works in dark theme and has no horizontal overflow', async ({ page }) => {
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
   expect(await overflow()).toBe(false)
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   expect(await overflow()).toBe(false)
   await rows(page).first().getByRole('button').first().click() // expanded task fits too

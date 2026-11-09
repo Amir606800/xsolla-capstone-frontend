@@ -1,6 +1,6 @@
 /** Client-side pre-check only; the server enforces the same rules (413 / 415). */
 export const ALLOWED_EXTENSIONS = ['pdf', 'pptx', 'md', 'zip'] as const
-export const MAX_FILE_BYTES = 50 * 1024 * 1024
+export const MAX_FILE_BYTES = 20 * 1024 * 1024
 
 export function extensionOf(name: string): string {
   const dot = name.lastIndexOf('.')

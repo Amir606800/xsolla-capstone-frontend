@@ -228,7 +228,7 @@ describe('calendar events', () => {
   it('creates a new event with POST and edits an existing one with PATCH', async () => {
     await backend({ ...LIST, 'POST /events': () => ({ status: 201, body: {} }), 'PATCH /events/5': () => ({ status: 200, body: {} }) })
     await saveEvent({ id: 'ev-new', title: 'Talk', kind: 'meeting', startsAt: 's', endsAt: 'e', moduleId: '4' })
-    expect(json(find('POST', '/events'))).toEqual({ title: 'Talk', kind: 'meeting', starts_at: 's', ends_at: 'e', all_day: false, module_id: 4 })
+    expect(json(find('POST', '/events'))).toEqual({ title: 'Talk', kind: 'meeting', starts_at: 's', ends_at: 'e', all_day: false, meeting_url: null, module_id: 4 })
     await saveEvent({ id: '5', title: 'Lecture 2', kind: 'lecture', startsAt: 's', endsAt: 'e' })
     expect(json(find('PATCH', '/events/5'))).toMatchObject({ title: 'Lecture 2' })
   })

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -113,7 +114,7 @@ test('the modal fits the screen in light and dark, on desktop and phone', async 
   await fits()
 
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await bell(page).click()
   await fits()

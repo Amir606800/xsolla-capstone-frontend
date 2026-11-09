@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 const overflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
@@ -58,6 +59,6 @@ test('the mentor team page fits the screen in light and dark', async ({ page }) 
   await page.goto('/team')
   await expect(page.getByRole('heading', { name: 'Team 4' })).toBeVisible()
   expect(await overflow(page)).toBe(false)
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   expect(await overflow(page)).toBe(false)
 })

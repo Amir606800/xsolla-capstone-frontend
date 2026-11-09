@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -56,7 +57,7 @@ test('no horizontal overflow with dashboard content', async ({ page }) => {
 })
 
 test('works in dark theme', async ({ page }) => {
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect(page.getByRole('link', { name: /^Module 1:/ })).toBeVisible()
 })

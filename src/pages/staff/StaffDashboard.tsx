@@ -20,6 +20,7 @@ import '../../styles/ui.css'
 import '../../components/dashboard/dashboard.css'
 import '../../components/staff/staff.css'
 import '../lecturer/lecturer.css'
+import { StaffDashboardSkeleton } from '../../components/loading/Skeleton'
 
 const MAX_ROWS = 5
 
@@ -115,11 +116,7 @@ export default function StaffDashboard() {
         <span className="staff__badge">{roleLabel(user)}</span>
       </div>
 
-      {status === 'loading' && (
-        <p className="dash__state" role="status">
-          Loading the course…
-        </p>
-      )}
+      {status === 'loading' && <StaffDashboardSkeleton />}
       {status === 'error' && (
         <div className="dash__state" role="alert">
           <p>We couldn&apos;t load the course.</p>

@@ -12,7 +12,7 @@ beforeEach(() => {
 })
 
 /** Sections that have their real page already. */
-const BUILT = ['/admin/modules', '/admin/calendar', '/admin/students', '/admin/mentors', '/admin/lecturers', '/admin/teams', '/admin/notifications']
+const BUILT = ['/admin/modules', '/admin/calendar', '/admin/students', '/admin/mentors', '/admin/lecturers', '/admin/teams', '/admin/announce', '/admin/notifications']
 
 const tiles = () => screen.findByRole('list', { name: 'School at a glance' })
 const tileFor = async (label: string) => within(await tiles()).getByRole('link', { name: new RegExp(`^${label}`) })
@@ -21,7 +21,7 @@ describe('Admin dashboard frame', () => {
   it('lists every section in the sidebar, grouped', async () => {
     renderWithProviders(<App />, { route: '/admin' })
     const nav = await screen.findByRole('navigation', { name: 'Admin sections' })
-    expect(within(nav).getAllByRole('link').map((a) => a.textContent?.trim())).toEqual([
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent?.trim().replace(/\d+$/, ''))).toEqual([
       'Overview',
       'Modules',
       'Calendar',
@@ -29,6 +29,7 @@ describe('Admin dashboard frame', () => {
       'Mentors',
       'Lecturers',
       'Teams',
+      'Announce',
       'Notifications',
       'Office tour',
       'Slack',
@@ -77,5 +78,37 @@ describe('Admin overview', () => {
     expect(await tileFor('Mentors')).toHaveTextContent('Could not load')
     expect(await tileFor('Teams')).toHaveTextContent('6')
     expect(await tileFor('Modules')).not.toHaveTextContent('Could not load')
+  })
+})
+
+describe('Admin overview: the current week', () => {
+  it('shows this week’s module: lecturer, lectures with their times, tasks with deadlines', async () => {
+    renderWithProviders(<App />, { route: '/admin' })
+    const card = within(await screen.findByRole('region', { name: 'Current week' }))
+    expect(card.getByText('This week')).toBeInTheDocument()
+    expect(card.getByRole('heading', { name: 'Week 6 · Go Basics' })).toBeInTheDocument()
+    expect(card.getByText(/day \d of 7/)).toBeInTheDocument()
+    // week 6 is Elvin's
+    expect(card.getByText('Elvin Huseynov')).toBeInTheDocument()
+    expect(card.getByText(/2 tasks · \d+ resources? · \d+ quiz/)).toBeInTheDocument()
+
+    const events = within(card.getByRole('list', { name: 'Events this week' }))
+    expect(events.getByText('Lecture')).toBeInTheDocument()
+    expect(events.getByText('10:00–12:00', { exact: false })).toBeInTheDocument()
+    expect(events.getByText('Main hall')).toBeInTheDocument()
+
+    const tasks = within(card.getByRole('list', { name: 'Tasks of the week' }))
+    expect(tasks.getByText('CLI tool')).toBeInTheDocument()
+    expect(tasks.getByText('HTTP server')).toBeInTheDocument()
+    expect(card.getByRole('link', { name: 'Open module' })).toHaveAttribute('href', '/admin/modules/m6')
+  })
+
+  it('says so, with a way to fix it, when the week has no lecturer', async () => {
+    const { putModule } = await import('../../mocks/contentEdits')
+    putModule('m6', { createdBy: null })
+    renderWithProviders(<App />, { route: '/admin' })
+    const card = within(await screen.findByRole('region', { name: 'Current week' }))
+    expect(card.getByText('No lecturer yet')).toBeInTheDocument()
+    expect(card.getByRole('link', { name: 'Assign one' })).toHaveAttribute('href', '/admin/lecturers')
   })
 })

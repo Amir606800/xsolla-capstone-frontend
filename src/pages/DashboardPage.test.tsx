@@ -31,6 +31,18 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Loading')
   })
 
+  it('while loading it shows grey placeholder cards, not a blank page, and they are gone when the data is in', async () => {
+    const { container } = renderDashboard()
+    const busy = screen.getByRole('status')
+    expect(busy).toHaveAttribute('aria-busy', 'true')
+    expect(busy).toHaveClass('skeleton-dash')
+    expect(container.querySelectorAll('.skeleton-card').length).toBeGreaterThanOrEqual(5)
+    // a screen reader hears one sentence, not the empty boxes
+    expect(container.querySelectorAll('.skeleton-card[aria-hidden="true"]')).toHaveLength(container.querySelectorAll('.skeleton-card').length)
+    expect(await screen.findByRole('heading', { name: 'Progress' })).toBeInTheDocument()
+    expect(container.querySelector('.skeleton-dash')).toBeNull()
+  })
+
   it('renders progress, the module path, deadlines and grades once loaded', async () => {
     renderDashboard()
     expect(await screen.findByRole('heading', { name: 'Progress' })).toBeInTheDocument()

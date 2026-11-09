@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() =>
@@ -23,7 +24,7 @@ test('the office tour page fits the screen in light and dark', async ({ page }) 
   await page.goto('/office-tour')
   await expect(page.getByRole('heading', { name: 'Welcome to your office' })).toBeVisible()
   expect(await overflow(page)).toBe(false)
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   expect(await overflow(page)).toBe(false)
 })
 

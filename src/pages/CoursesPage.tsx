@@ -10,6 +10,7 @@ import { formatShortDate } from '../utils/date'
 import { moduleProgress, nextDeadline } from '../utils/progress'
 import '../styles/ui.css'
 import '../components/module/module.css'
+import { Loading } from '../components/loading/Loading'
 
 type ViewMode = 'grid' | 'list'
 const VIEW_MODES = ['grid', 'list'] as const
@@ -101,9 +102,7 @@ export default function CoursesPage() {
       </div>
 
       {status === 'loading' && (
-        <p className="module__state" role="status">
-          Loading your courses…
-        </p>
+        <Loading className="module__state">Loading your courses…</Loading>
       )}
       {status === 'error' && (
         <div className="module__state" role="alert">

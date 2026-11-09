@@ -8,6 +8,7 @@ import type { TaskFilter } from '../utils/tasks'
 import '../styles/ui.css'
 import '../components/module/module.css'
 import './TasksPage.css'
+import { Loading } from '../components/loading/Loading'
 
 const EMPTY_TEXT: Record<TaskFilter, string> = {
   all: 'There are no tasks yet.',
@@ -61,9 +62,7 @@ export default function TasksPage() {
       </div>
 
       {status === 'loading' && (
-        <p className="module__state" role="status">
-          Loading your tasks…
-        </p>
+        <Loading className="module__state">Loading your tasks…</Loading>
       )}
 
       {status === 'error' && (

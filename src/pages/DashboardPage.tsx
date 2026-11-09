@@ -12,6 +12,7 @@ import { hiddenWidgets } from '../utils/dashboardLayout'
 import { overallStats, recentActivity, recentGrades, upcomingDeadlines } from '../utils/progress'
 import '../styles/ui.css'
 import '../components/dashboard/dashboard.css'
+import { DashboardSkeleton } from '../components/loading/Skeleton'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -82,11 +83,7 @@ export default function DashboardPage() {
         </p>
       )}
 
-      {status === 'loading' && (
-        <p className="dash__state" role="status">
-          Loading your course…
-        </p>
-      )}
+      {status === 'loading' && <DashboardSkeleton />}
 
       {status === 'error' && (
         <div className="dash__state" role="alert">

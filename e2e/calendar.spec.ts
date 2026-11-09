@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -119,7 +120,7 @@ test('no horizontal overflow, in light and dark', async ({ page }) => {
   const overflow = () =>
     page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
   expect(await overflow()).toBe(false)
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   expect(await overflow()).toBe(false)
 })

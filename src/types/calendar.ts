@@ -17,6 +17,8 @@ export interface CalendarEvent {
   /** Optional details shown in the day pop-up. */
   location?: string
   description?: string
+  /** Lectures: the online meeting link (e.g. Google Meet). Students see a Join button shortly before the start. */
+  meetingUrl?: string
   /** Deadlines link back to their module. */
   moduleId?: string
   /** Deadlines: the work was already submitted. */

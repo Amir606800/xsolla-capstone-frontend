@@ -202,6 +202,21 @@ describe('calendar event', () => {
     expect(allDay.allDay).toBe(true)
     expect(new Date(allDay.endsAt).getHours()).toBe(23)
   })
+  it('a meeting link is optional, must be an https link, and is dropped for an off-campus day', () => {
+    const d = { ...eventToDraft(undefined, '2026-11-06'), title: 'Lecture' }
+    expect(validateEvent(d).meetingUrl).toBe('')
+    expect(validateEvent({ ...d, meetingUrl: 'https://meet.google.com/abc-defg-hij' }).meetingUrl).toBe('')
+    expect(validateEvent({ ...d, meetingUrl: 'meet.google.com/abc' }).meetingUrl).toBe('Enter a full link, like https://meet.google.com/abc-defg-hij.')
+    expect(validateEvent({ ...d, meetingUrl: 'javascript:alert(1)' }).meetingUrl).toBe('The link must start with https://.')
+    expect(hasErrors(validateEvent({ ...d, meetingUrl: 'nonsense' }))).toBe(true)
+    // an off-campus day has no meeting: a leftover link neither fails the form nor is saved
+    const off = { ...d, kind: 'off-campus' as const, meetingUrl: 'nonsense' }
+    expect(hasErrors(validateEvent(off))).toBe(false)
+    expect(draftToEvent(off, 'x').meetingUrl).toBeUndefined()
+    const lecture = draftToEvent({ ...d, meetingUrl: '  https://meet.google.com/abc-defg-hij ' }, 'y')
+    expect(lecture.meetingUrl).toBe('https://meet.google.com/abc-defg-hij')
+    expect(eventToDraft(lecture, 'z').meetingUrl).toBe('https://meet.google.com/abc-defg-hij')
+  })
   it('only real events can be edited, not deadlines or 1:1 times', () => {
     const base = { title: 'x', startsAt: '', endsAt: '' }
     expect(isEditableEvent({ ...base, id: 'lec-1', kind: 'lecture' })).toBe(true)

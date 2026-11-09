@@ -12,6 +12,7 @@ import { modulePhase, PHASE_LABEL } from '../../../utils/content'
 import { formatShortDate } from '../../../utils/date'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
+import { Loading } from '../../../components/loading/Loading'
 
 type Action = { kind: 'edit' | 'delete'; module: CourseModule } | { kind: 'new' }
 const PHASE_ORDER = { running: 0, upcoming: 1, done: 2 } as const
@@ -73,9 +74,7 @@ export default function AdminModulesPage() {
       </p>
 
       {status === 'loading' && (
-        <p className="admin-muted" role="status">
-          Loading the modules…
-        </p>
+        <Loading className="admin-muted">Loading the modules…</Loading>
       )}
       {status === 'error' && (
         <div className="admin-empty" role="alert">

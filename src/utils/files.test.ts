@@ -22,7 +22,7 @@ describe('validateFile', () => {
   })
 
   it('rejects files over the size limit but accepts exactly the limit', () => {
-    expect(validateFile({ name: 'big.zip', size: MAX_FILE_BYTES + 1 })).toMatch(/larger than 50 MB/)
+    expect(validateFile({ name: 'big.zip', size: MAX_FILE_BYTES + 1 })).toMatch(new RegExp(`larger than ${MAX_FILE_BYTES / 1024 / 1024} MB`))
     expect(validateFile({ name: 'ok.zip', size: MAX_FILE_BYTES })).toBeNull()
   })
 })

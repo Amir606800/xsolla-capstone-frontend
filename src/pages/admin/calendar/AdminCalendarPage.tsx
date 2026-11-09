@@ -27,6 +27,7 @@ import { addMonths, dateKey, formatEventTime, fullDateLabel, groupByDay, monthLa
 import { ConfirmDialog } from '../ConfirmDialog'
 import { PostponeForm } from './PostponeForm'
 import '../../../components/calendar/calendar.css'
+import { Loading } from '../../../components/loading/Loading'
 
 type Filter = 'all' | SchoolKind
 type Action = { kind: 'new' } | { kind: 'edit' | 'postpone' | 'delete'; event: CalendarEvent }
@@ -131,9 +132,7 @@ export default function AdminCalendarPage() {
       </p>
 
       {calendar.status === 'loading' && (
-        <p className="admin-muted" role="status">
-          Loading the calendar…
-        </p>
+        <Loading className="admin-muted">Loading the calendar…</Loading>
       )}
       {calendar.status === 'error' && (
         <div className="admin-empty" role="alert">

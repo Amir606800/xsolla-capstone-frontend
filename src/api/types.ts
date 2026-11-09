@@ -79,6 +79,8 @@ export interface ApiEvent {
   all_day: boolean
   location?: string | null
   description?: string | null
+  /** Proposed: the online meeting link of a lecture or meeting. */
+  meeting_url?: string | null
   module_id?: ApiId | null
   created_at?: string
 }

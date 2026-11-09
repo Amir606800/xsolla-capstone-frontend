@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { addBroadcast, announcementsFor, isAnnouncementId, listBroadcasts, markAnnouncementsRead } from './broadcasts'
+import type { CalendarEvent } from '../types/calendar'
+import { addBroadcast, announcementsFor, isAnnouncementId, listBroadcasts, markAnnouncementsRead, noticeForSavedEvent } from './broadcasts'
 
 const NOW = new Date('2026-11-07T12:00:00Z')
 const student = { id: 1, roles: ['student' as const] }
@@ -43,5 +44,44 @@ describe('announcements store', () => {
   it('survives broken storage', () => {
     localStorage.setItem('broadcasts', '{nope')
     expect(listBroadcasts()).toEqual([])
+  })
+})
+
+describe('lecture link notices', () => {
+  const lecture: CalendarEvent = { id: 'lec', title: 'Lecture', kind: 'lecture', startsAt: new Date(2026, 10, 9, 10).toISOString(), endsAt: new Date(2026, 10, 9, 12).toISOString() }
+  const LINK = 'https://meet.google.com/abc-defg-hij'
+  const SOON = new Date(2026, 10, 8, 9)
+
+  it('adding a link tells the students: it opens the calendar and is not in the admin history', () => {
+    noticeForSavedEvent(lecture, { ...lecture, meetingUrl: LINK }, SOON)
+    const [n] = announcementsFor(student, SOON)
+    expect(n).toMatchObject({ type: 'event', link: '/calendar', message: 'Lecture, Mon, Nov 9, 10:00: the meeting link is ready.', readAt: null })
+    expect(listBroadcasts()).toEqual([]) // the admin did not send it
+    expect(announcementsFor(mentor, SOON)).toEqual([]) // lecture links are for students
+  })
+
+  it('changing the link tells them again, in other words; saving the same link tells nobody', () => {
+    const first = { ...lecture, meetingUrl: LINK }
+    noticeForSavedEvent(undefined, first, SOON)
+    noticeForSavedEvent(first, { ...first, title: 'Lecture' }, SOON) // same link
+    expect(announcementsFor(student, SOON)).toHaveLength(1)
+    noticeForSavedEvent(first, { ...first, meetingUrl: 'https://meet.google.com/xyz-xyzz-xyz' }, new Date(2026, 10, 8, 10))
+    const all = announcementsFor(student, SOON)
+    expect(all).toHaveLength(2)
+    expect(all[0].message).toBe('Lecture, Mon, Nov 9, 10:00: the meeting link was changed.')
+  })
+
+  it('no notice for a lecture that is over, for other kinds, or when the link is taken away', () => {
+    noticeForSavedEvent(undefined, { ...lecture, meetingUrl: LINK }, new Date(2026, 10, 9, 13)) // already over
+    noticeForSavedEvent(undefined, { ...lecture, kind: 'meeting', meetingUrl: LINK }, SOON)
+    noticeForSavedEvent({ ...lecture, meetingUrl: LINK }, lecture, SOON) // link removed
+    expect(announcementsFor(student, SOON)).toEqual([])
+  })
+
+  it('reading it is remembered like any announcement', () => {
+    noticeForSavedEvent(undefined, { ...lecture, meetingUrl: LINK }, SOON)
+    const [n] = announcementsFor(student, SOON)
+    markAnnouncementsRead(1, [n.id])
+    expect(announcementsFor(student, SOON)[0].readAt).not.toBeNull()
   })
 })

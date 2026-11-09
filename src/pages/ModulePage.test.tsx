@@ -5,6 +5,7 @@ import { submitWork } from '../api/courses'
 import { downloadFile } from '../api/files'
 import App from '../App'
 import { renderWithProviders } from '../test/renderWithProviders'
+import { MAX_FILE_BYTES } from '../utils/files'
 
 // the real download needs object URLs, which jsdom lacks; api/files has its own tests
 vi.mock('../api/files', () => ({ downloadFile: vi.fn(async () => undefined) }))
@@ -145,11 +146,11 @@ describe('ModulePage - submitting work', () => {
     await openAssignment(user, /HTTP server/)
 
     const input = screen.getByLabelText(/^Files/)
-    await user.upload(input, [pdf('virus.exe'), pdf('huge.zip', 60 * 1024 * 1024)])
+    await user.upload(input, [pdf('virus.exe'), pdf('huge.zip', MAX_FILE_BYTES + 1)])
 
     const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent('virus.exe: only pdf, pptx, md, zip files are allowed')
-    expect(alert).toHaveTextContent('huge.zip: file is larger than 50 MB')
+    expect(alert).toHaveTextContent(`huge.zip: file is larger than ${MAX_FILE_BYTES / 1024 / 1024} MB`)
     expect(screen.queryByRole('list', { name: 'Files to upload' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
   })

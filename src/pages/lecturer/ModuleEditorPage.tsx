@@ -18,6 +18,7 @@ import { formatDateTime, formatShortDate } from '../../utils/date'
 import '../../styles/ui.css'
 import '../../components/module/module.css'
 import './lecturer.css'
+import { Loading } from '../../components/loading/Loading'
 
 type Kind = 'module' | 'material' | 'task' | 'quiz'
 interface Editing {
@@ -78,9 +79,7 @@ export default function ModuleEditorPage() {
 
   if (status === 'loading') {
     return (
-      <p className="module__state" role="status">
-        Loading module…
-      </p>
+      <Loading className="module__state">Loading module…</Loading>
     )
   }
   if (status === 'error') {

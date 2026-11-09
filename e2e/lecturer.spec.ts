@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { BrowserContext, Page } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 const LECTURER = { id: 900, name: 'Rashad Aliyev', email: 'lecturer@xsolla.school', role: 'teacher' }
 const STUDENT = { id: 1, name: 'Sam Student', email: 'student@xsolla.school', role: 'student' }
@@ -116,7 +117,7 @@ for (const path of ['/dashboard', '/courses', '/courses/m6']) {
     const page = await tabAs(context, LECTURER, path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     expect(await overflow(page)).toBe(false)
-    await page.getByRole('button', { name: 'Toggle theme' }).click()
+    await toggleTheme(page)
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
     expect(await overflow(page)).toBe(false)
   })

@@ -9,6 +9,7 @@ import { formatShortDate } from '../../utils/date'
 import '../../styles/ui.css'
 import '../../components/module/module.css'
 import './lecturer.css'
+import { Loading } from '../../components/loading/Loading'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
@@ -64,9 +65,7 @@ export default function ContentPage() {
       </div>
 
       {status === 'loading' && (
-        <p className="module__state" role="status">
-          Loading the course…
-        </p>
+        <Loading className="module__state">Loading the course…</Loading>
       )}
       {status === 'error' && (
         <div className="module__state" role="alert">

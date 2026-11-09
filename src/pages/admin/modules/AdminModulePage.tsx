@@ -19,6 +19,7 @@ import { formatDateTime } from '../../../utils/date'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
 import { ItemDetails } from './ItemDetails'
+import { Loading } from '../../../components/loading/Loading'
 
 type Filter = 'all' | ContentItem['type']
 const FILTERS: { value: Filter; label: string }[] = [
@@ -70,9 +71,7 @@ export default function AdminModulePage() {
 
   if (status === 'loading') {
     return (
-      <p className="admin-muted" role="status">
-        Loading the module…
-      </p>
+      <Loading className="admin-muted">Loading the module…</Loading>
     )
   }
   if (status === 'error') {

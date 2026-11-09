@@ -14,6 +14,7 @@ import { ResetPasswordForm } from './ResetPasswordForm'
 import { RolePills } from './RolePills'
 import { RolesForm } from './RolesForm'
 import { StudentForm } from './StudentForm'
+import { Loading } from '../../../components/loading/Loading'
 
 type Show = 'all' | 'lecturers' | 'no-team'
 type Action = { kind: 'add' } | { kind: 'edit' | 'roles' | 'password' | 'delete'; person: SchoolUser }
@@ -92,9 +93,7 @@ export default function AdminMentorsPage() {
       </p>
 
       {status === 'loading' && (
-        <p className="admin-muted" role="status">
-          Loading the mentors…
-        </p>
+        <Loading className="admin-muted">Loading the mentors…</Loading>
       )}
       {status === 'error' && (
         <div className="admin-empty" role="alert">

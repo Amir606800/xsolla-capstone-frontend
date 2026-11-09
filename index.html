@@ -5,9 +5,58 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Xsolla LMS</title>
+    <script>
+      // the saved theme (or the system one) before the first paint, so there is no white or black flash
+      try {
+        var saved = localStorage.getItem('theme')
+        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      } catch (e) {
+        /* storage blocked: the app picks the theme itself once it starts */
+      }
+    </script>
+    <style>
+      /* shown only until the app's own code and styles have arrived */
+      html {
+        background: #f6f6f5;
+      }
+      html[data-theme='dark'] {
+        background: #172023;
+      }
+      .boot {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      .boot__ring {
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(128, 128, 128, 0.3);
+        border-top-color: #2aa9c2;
+        border-radius: 50%;
+        animation: boot-turn 0.8s linear infinite;
+      }
+      html[data-theme='dark'] .boot__ring {
+        border-top-color: #00c8f0;
+      }
+      @keyframes boot-turn {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot__ring {
+          animation-duration: 3s;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot" role="progressbar" aria-label="Loading" aria-busy="true"><span class="boot__ring"></span></div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -141,6 +141,16 @@ Response gets:
   and `ends_at` together, keeping its length). Already so; keep `ends_at > starts_at` validation (`400`).
 - Admins create/edit/delete **any** event; a lecturer only their own.
 - When an event is created, changed (time) or deleted, create notifications (4.5).
+- **`meeting_url`** (string or `null`) on `lecture` and `meeting` events: the online meeting link, normally Google
+  Meet. Accept it in `POST /events` and `PATCH /events/:id` (`null` clears it) and return it in `GET /events`.
+  Validate: `https://` only (`400` otherwise), at most 300 characters, no spaces; ignore it for `off-campus`.
+  The front-end shows students a Join button from **30 minutes before `starts_at` until `ends_at`**, but the
+  server should also keep the address out of `GET /events` for **students** earlier than that (a student who
+  opens the network tab would otherwise see it hours ahead). Admins, lecturers and mentors always get it.
+- **Notification when the link is added.** When `meeting_url` goes from empty to set (or changes to a different
+  address) on a lecture that has not ended, every active **student** gets a notification of type `event`:
+  `"Lecture, Mon, Nov 9, 10:00: the meeting link is ready."` (`"... was changed."` when it replaced another),
+  with `link: "/calendar"`. Saving the same link again, or removing it, notifies nobody.
 
 ### 3.6 Files
 Nothing to change. Keep: the admin may download any file; students only files of visible items in their modules
@@ -302,7 +312,7 @@ Types the front-end knows: `task`, `deadline`, `graded`, `material`, `meeting`, 
 - `GET /notifications` - the caller's, newest first (limit 100). Row:
   `{ "id", "type", "message", "link": "/courses/4", "created_at", "read_at": null }`. `link` is an in-app route.
 - `POST /notifications/:id/read`, `POST /notifications/read-all` -> `204`. Only your own.
-- **Admin announcements** (the Notifications section, being built): `POST /notifications/broadcast`
+- **Admin announcements** (the Announce section of the admin pages; the admin Notifications section is worked out by the front-end from the lists it already loads, so it needs nothing extra): `POST /notifications/broadcast`
   ```json
   { "message": "No classes on Friday.", "link": "/calendar", "audience": "all" }
   ```

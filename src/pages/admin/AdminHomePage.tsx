@@ -7,6 +7,9 @@ import { Icon } from '../../components/Icon'
 import { adminSection } from '../../config/adminNav'
 import { useAuth } from '../../hooks/useAuth'
 import { type Loaded, type OverviewData, overviewTiles } from '../../utils/adminOverview'
+import { weekSummary } from '../../utils/adminWeek'
+import { CurrentWeekCard } from './CurrentWeekCard'
+import { Loading } from '../../components/loading/Loading'
 
 const settle = <T,>(p: PromiseSettledResult<T>): Loaded<T> => (p.status === 'fulfilled' ? { ok: true, value: p.value } : { ok: false })
 
@@ -26,7 +29,10 @@ export default function AdminHomePage() {
     }
   }, [])
 
-  const tiles = data ? overviewTiles(data, new Date(), { demoTeams: teamsAreDemoData() }) : null
+  const [now] = useState(() => new Date())
+  const tiles = data ? overviewTiles(data, now, { demoTeams: teamsAreDemoData() }) : null
+  const week = data?.modules.ok ? weekSummary(data.modules.value, data.events.ok ? data.events.value : [], now) : null
+  const names = new Map((data?.users.ok ? data.users.value : []).map((u) => [u.id, u.name]))
 
   return (
     <section className="admin-page">
@@ -35,10 +41,10 @@ export default function AdminHomePage() {
         <p className="page-subtitle">Signed in as {user?.name}. Pick a section to manage it.</p>
       </header>
 
+      {week && <CurrentWeekCard summary={week} nameOf={(id) => names.get(id) ?? `User #${id}`} now={now} />}
+
       {!tiles ? (
-        <p className="admin-muted" role="status">
-          Loading…
-        </p>
+        <Loading className="admin-muted">Loading…</Loading>
       ) : (
         <ul className="admin-tiles" aria-label="School at a glance">
           {tiles.map((t) => {

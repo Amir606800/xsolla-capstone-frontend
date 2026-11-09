@@ -118,15 +118,6 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
 
         <button
           type="button"
-          className="header__icon-btn"
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-        >
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
-        </button>
-
-        <button
-          type="button"
           className="header__icon-btn bell"
           aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
           aria-haspopup="dialog"
@@ -160,6 +151,18 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
                 <strong>{user?.name}</strong>
                 <span>{user?.email}</span>
               </div>
+              {/* the theme switch lives here, so the bar stays short on a phone */}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  toggleTheme()
+                  setMenuOpen(false)
+                }}
+              >
+                <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </button>
               <button type="button" role="menuitem" onClick={handleSignOut}>
                 <Icon name="logout" size={18} />
                 Log out

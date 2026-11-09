@@ -224,3 +224,18 @@ select.form__input {
     justify-content: flex-start;
   }
 }
+
+/* ---------- the online meeting of a lecture ---------- */
+.event-card__join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 8px 0 0;
+}
+.event-card__join-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}

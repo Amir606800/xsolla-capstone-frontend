@@ -12,6 +12,7 @@ import '../../components/module/module.css'
 import '../TeamPage.css'
 import '../../components/staff/staff.css'
 import './mentor.css'
+import { Loading } from '../../components/loading/Loading'
 
 /**
  * MENTOR: "My team" - the 4-5 students this mentor looks after, how to reach them, and the 1:1s
@@ -34,9 +35,7 @@ export default function MentorTeamPage() {
       </div>
 
       {status === 'loading' && (
-        <p className="module__state" role="status">
-          Loading your team…
-        </p>
+        <Loading className="module__state">Loading your team…</Loading>
       )}
 
       {status === 'error' && (

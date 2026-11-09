@@ -3,7 +3,7 @@ import type { ChangeEvent, DragEvent, FormEvent } from 'react'
 import type { SubmitPayload } from '../../api/courses'
 import type { AssignmentItem, SubmissionFile } from '../../types/course'
 import { formatDateTime } from '../../utils/date'
-import { ALLOWED_EXTENSIONS, formatBytes, validateFile } from '../../utils/files'
+import { ALLOWED_EXTENSIONS, formatBytes, MAX_FILE_BYTES, validateFile } from '../../utils/files'
 import { DEADLINE_PASSED, isPastDue } from '../../utils/progress'
 import { GradedPill } from '../GradedPill'
 import { Icon } from '../Icon'
@@ -202,7 +202,7 @@ export function SubmissionPanel({ assignment, onSubmit, now }: SubmissionPanelPr
           <label className="field__label" htmlFor={`${uid}-files`}>
             Files{' '}
             <span className="submission__muted">
-              ({ALLOWED_EXTENSIONS.join(', ')}, up to 50 MB each, {MAX_FILES} files at most)
+              ({ALLOWED_EXTENSIONS.join(', ')}, up to {formatBytes(MAX_FILE_BYTES).replace('.0 ', ' ')} each, {MAX_FILES} files at most)
             </span>
           </label>
 

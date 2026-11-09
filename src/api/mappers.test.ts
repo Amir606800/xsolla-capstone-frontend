@@ -139,7 +139,13 @@ describe('what is sent', () => {
   it('an event, with the module id as a number', () => {
     expect(
       eventToApi({ id: 'ev-1', title: 'Lecture', kind: 'lecture', startsAt: 'a', endsAt: 'b', moduleId: '4', location: 'Hall' }),
-    ).toEqual({ title: 'Lecture', kind: 'lecture', starts_at: 'a', ends_at: 'b', all_day: false, location: 'Hall', module_id: 4 })
+    ).toEqual({ title: 'Lecture', kind: 'lecture', starts_at: 'a', ends_at: 'b', all_day: false, location: 'Hall', meeting_url: null, module_id: 4 })
+  })
+
+  it('an event sends its meeting link, or null so editing can take it away', () => {
+    const base = { id: 'ev-1', title: 'Lecture', kind: 'lecture' as const, startsAt: 'a', endsAt: 'b' }
+    expect(eventToApi({ ...base, meetingUrl: 'https://meet.google.com/abc-defg-hij' }).meeting_url).toBe('https://meet.google.com/abc-defg-hij')
+    expect(eventToApi(base).meeting_url).toBeNull()
   })
 
   it('tells server ids from the ones the app makes up', () => {
@@ -153,6 +159,13 @@ describe('mapEvent', () => {
     expect(
       mapEvent({ id: 5, title: 'Guest talk', kind: 'lecture', starts_at: 's', ends_at: 'e', all_day: false, location: null, module_id: 3 }),
     ).toEqual({ id: '5', title: 'Guest talk', kind: 'lecture', startsAt: 's', endsAt: 'e', moduleId: '3' })
+  })
+
+  it('maps the meeting link of a lecture', () => {
+    expect(mapEvent({ id: 5, title: 'Lecture', kind: 'lecture', starts_at: 's', ends_at: 'e', all_day: false, meeting_url: 'https://meet.google.com/abc-defg-hij' }).meetingUrl).toBe(
+      'https://meet.google.com/abc-defg-hij',
+    )
+    expect(mapEvent({ id: 5, title: 'Lecture', kind: 'lecture', starts_at: 's', ends_at: 'e', all_day: false, meeting_url: null })).not.toHaveProperty('meetingUrl')
   })
 
   it('shows an unknown kind as a meeting', () => {

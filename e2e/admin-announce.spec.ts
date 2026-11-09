@@ -1,17 +1,17 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-async function openNotifications(page: Page) {
+async function openAnnounce(page: Page) {
   await page.goto('/admin/login')
   await page.getByRole('button', { name: 'use the demo admin account' }).click()
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
-  await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Notifications' }).click()
+  await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Announce' }).click()
   await expect(page.getByRole('form', { name: 'New announcement' })).toBeVisible()
 }
 
 test('an announcement the admin sends shows in the bell of the people it is for', async ({ page }) => {
-  await openNotifications(page)
+  await openAnnounce(page)
   await page.getByRole('textbox', { name: 'Message' }).fill('No classes on Friday.')
   await page.getByRole('radio', { name: /^Students/ }).check()
   await page.getByRole('button', { name: 'Send announcement' }).click()
@@ -32,7 +32,7 @@ test('an announcement the admin sends shows in the bell of the people it is for'
 })
 
 test('a message for everyone also reaches a lecturer, who has no other notifications', async ({ page }) => {
-  await openNotifications(page)
+  await openAnnounce(page)
   await page.getByRole('textbox', { name: 'Message' }).fill('Welcome to the new week')
   await page.getByRole('button', { name: 'Send announcement' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Send' }).click()
@@ -47,9 +47,9 @@ test('a message for everyone also reaches a lecturer, who has no other notificat
   await expect(page.getByRole('button', { name: 'Notifications, 1 unread' })).toBeVisible()
 })
 
-test('the notifications page fits a phone screen', async ({ page }) => {
+test('the announce page fits a phone screen', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
-  await openNotifications(page)
+  await openAnnounce(page)
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(overflow).toBeLessThanOrEqual(0)
 })

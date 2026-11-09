@@ -8,6 +8,7 @@ import { usePersistedState } from '../../hooks/usePersistedState'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import './AppLayout.css'
+import { PageLoader } from '../loading/PageLoader'
 
 type SidebarMode = 'expanded' | 'collapsed'
 const SIDEBAR_MODES = ['expanded', 'collapsed'] as const
@@ -38,7 +39,7 @@ export default function AppLayout() {
             onToggleCollapsed={toggleCollapsed}
           />
           <main className="shell__main">
-            <Suspense fallback={null}>
+            <Suspense fallback={<PageLoader />}>
               <Outlet />
             </Suspense>
           </main>

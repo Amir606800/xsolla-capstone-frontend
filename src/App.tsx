@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { Allow, ByRole, StudentOnly } from './components/RoleRoutes'
 import { ADMIN_SECTIONS } from './config/adminNav'
 import { canAuthor, canMentor } from './utils/roles'
+import { PageLoader } from './components/loading/PageLoader'
 
 // Route-level code splitting: each screen is downloaded only when visited.
 const AuthPage = lazy(() => import('./pages/AuthPage'))
@@ -38,14 +39,15 @@ const AdminCalendarPage = lazy(() => import('./pages/admin/calendar/AdminCalenda
 const AdminStudentsPage = lazy(() => import('./pages/admin/people/AdminStudentsPage'))
 const AdminMentorsPage = lazy(() => import('./pages/admin/people/AdminMentorsPage'))
 const AdminTeamsPage = lazy(() => import('./pages/admin/teams/AdminTeamsPage'))
+const AdminAnnouncePage = lazy(() => import('./pages/admin/announce/AdminAnnouncePage'))
 const AdminNotificationsPage = lazy(() => import('./pages/admin/notifications/AdminNotificationsPage'))
 const AdminLecturersPage = lazy(() => import('./pages/admin/people/AdminLecturersPage'))
 /** Admin sections with their own pages; the rest show a placeholder until they are built. */
-const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'notifications']
+const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'announce', 'notifications']
 
 export default function App() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader fullscreen />}>
       <Routes>
         <Route path="/login" element={<AuthPage />} />
 
@@ -63,6 +65,7 @@ export default function App() {
             <Route path="/admin/students" element={<AdminStudentsPage />} />
             <Route path="/admin/mentors" element={<AdminMentorsPage />} />
             <Route path="/admin/teams" element={<AdminTeamsPage />} />
+            <Route path="/admin/announce" element={<AdminAnnouncePage />} />
             <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
             <Route path="/admin/office-tour" element={<OfficeTourPage />} />
             {/* the lecturers page counts each lecturer's modules, so it loads the course */}

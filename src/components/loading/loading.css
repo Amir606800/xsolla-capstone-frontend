@@ -1,0 +1,128 @@
+/* ---------- spinner ---------- */
+.spinner {
+  display: inline-block;
+  flex: none;
+  border: 2px solid var(--divider);
+  border-top-color: var(--xs-cyan);
+  border-radius: 50%;
+  animation: spinner-turn 0.8s linear infinite;
+}
+@keyframes spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* the page while its code arrives */
+.page-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  min-height: 50vh;
+  color: var(--text);
+}
+.page-loader--full {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--main-bg);
+}
+.page-loader__logo {
+  width: 110px;
+  height: auto;
+  opacity: 0.85;
+}
+
+/* ---------- skeletons ---------- */
+.skeleton {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--divider) 0%, color-mix(in srgb, var(--divider) 45%, var(--card)) 50%, var(--divider) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  background: var(--card);
+}
+.skeleton-card--tall {
+  min-height: 220px;
+}
+
+.skeleton-dash {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+.skeleton-dash__sm {
+  grid-column: span 4;
+}
+.skeleton-dash__md {
+  grid-column: span 6;
+}
+.skeleton-dash__full {
+  grid-column: 1 / -1;
+}
+.skeleton-staff {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.skeleton-staff__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 12px;
+}
+.skeleton-staff__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+}
+@media (max-width: 800px) {
+  .skeleton-dash__sm,
+  .skeleton-dash__md {
+    grid-column: 1 / -1;
+  }
+  .skeleton-staff__cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* less motion: the spinner and the shimmer only fade */
+@keyframes spinner-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: spinner-pulse 1.6s ease-in-out infinite;
+  }
+  .skeleton {
+    animation: spinner-pulse 1.6s ease-in-out infinite;
+    background: var(--divider);
+  }
+}

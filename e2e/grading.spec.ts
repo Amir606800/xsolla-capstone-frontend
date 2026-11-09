@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 const RASHAD = { id: 900, name: 'Rashad Aliyev', email: 'lecturer@xsolla.school', roles: ['mentor', 'lecturer'] }
 const SAM = { id: 1, name: 'Sam Student', email: 'student@xsolla.school', roles: ['student'] }
@@ -68,6 +69,6 @@ test('the grading page fits the screen in light and dark', async ({ page }) => {
   await page.goto('/grading?week=m5&grade=101&open=m5-a1~101')
   await expect(page.getByRole('group', { name: 'Week 5 grade for Leyla Hasanova' })).toBeVisible()
   expect(await overflow(page)).toBe(false)
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   expect(await overflow(page)).toBe(false)
 })

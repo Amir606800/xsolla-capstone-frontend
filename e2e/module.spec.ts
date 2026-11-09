@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { toggleTheme } from './support/theme'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -89,7 +90,7 @@ test('unknown module shows not-found with a way back', async ({ page }) => {
 
 test('visual snapshot helper: module page renders in dark theme', async ({ page }) => {
   await page.goto('/courses/m6')
-  await page.getByRole('button', { name: 'Toggle theme' }).click()
+  await toggleTheme(page)
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect(page.getByRole('heading', { name: 'Go Basics', level: 1 })).toBeVisible()
 })

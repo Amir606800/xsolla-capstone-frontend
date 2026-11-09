@@ -10,6 +10,7 @@ import { canMentor, isStudent } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { AddTeamForm } from './AddTeamForm'
 import { CreateTeamsPanel } from './CreateTeamsPanel'
+import { Loading } from '../../../components/loading/Loading'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
@@ -101,9 +102,7 @@ export default function AdminTeamsPage() {
       )}
 
       {status === 'loading' && (
-        <p className="admin-muted" role="status">
-          Loading the teams…
-        </p>
+        <Loading className="admin-muted">Loading the teams…</Loading>
       )}
       {status === 'error' && (
         <div className="admin-empty" role="alert">

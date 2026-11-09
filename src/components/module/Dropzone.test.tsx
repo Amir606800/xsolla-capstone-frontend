@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { AssignmentItem } from '../../types/course'
 import { SubmissionPanel } from './SubmissionPanel'
+import { MAX_FILE_BYTES } from '../../utils/files'
 
 const assignment: AssignmentItem = {
   id: 'a1',
@@ -91,12 +92,12 @@ describe('file drag & drop', () => {
 
   it('applies the same checks as the picker: bad types and oversize files are rejected', () => {
     const { zone } = setup()
-    fireEvent.drop(zone, transfer([file('ok.md'), file('virus.exe'), file('huge.zip', 60 * 1024 * 1024)]))
+    fireEvent.drop(zone, transfer([file('ok.md'), file('virus.exe'), file('huge.zip', MAX_FILE_BYTES + 1)]))
 
     expect(within(queued()!).getAllByRole('listitem')).toHaveLength(1)
     const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent('virus.exe: only pdf, pptx, md, zip files are allowed')
-    expect(alert).toHaveTextContent('huge.zip: file is larger than 50 MB')
+    expect(alert).toHaveTextContent(`huge.zip: file is larger than ${MAX_FILE_BYTES / 1024 / 1024} MB`)
   })
 
   it('accumulates drops and ignores duplicates', () => {

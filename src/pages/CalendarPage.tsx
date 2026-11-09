@@ -18,6 +18,7 @@ import { newId } from '../mocks/contentEdits'
 import type { CalendarEvent, EventKind } from '../types/calendar'
 import '../styles/ui.css'
 import '../components/calendar/calendar.css'
+import { Loading } from '../components/loading/Loading'
 
 const LEGEND: [EventKind, string][] = [
   ['lecture', 'Lecture'],
@@ -193,9 +194,7 @@ export default function CalendarPage() {
       </div>
 
       {loading && (
-        <p className="module__state" role="status">
-          Loading calendar…
-        </p>
+        <Loading className="module__state">Loading calendar…</Loading>
       )}
 
       {!loading && failed && (
