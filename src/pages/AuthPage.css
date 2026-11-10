@@ -171,29 +171,6 @@
   text-decoration: underline;
 }
 
-.auth__or {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 14px 0 8px;
-  color: var(--text-muted);
-}
-.auth__or::before,
-.auth__or::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--divider);
-}
-
-.auth__google {
-  display: flex;
-  margin: 0 auto;
-  padding: 8px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
 .auth__support {
   margin: 14px 0 0;
   text-align: center;
