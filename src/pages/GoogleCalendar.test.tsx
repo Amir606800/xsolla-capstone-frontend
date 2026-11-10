@@ -12,7 +12,7 @@ const CONNECTED = { connection: 'connected', account: { email: 'rashad@gmail.com
 
 const signIn = (user: object) => localStorage.setItem('auth_user', JSON.stringify(user))
 const connect = (state: object = CONNECTED) => localStorage.setItem('google_mock', JSON.stringify(state))
-const dialog = () => screen.getByRole('dialog')
+const dialog = () => screen.getByRole('region', { name: 'Day details' })
 
 // whole pages with several steps: slow when the full suite runs in parallel
 vi.setConfig({ testTimeout: 20_000 })

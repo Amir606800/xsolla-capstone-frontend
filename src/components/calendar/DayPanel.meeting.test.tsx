@@ -5,16 +5,16 @@ import { renderWithProviders } from '../../test/renderWithProviders'
 import type { CalendarEvent } from '../../types/calendar'
 import type { CourseModule } from '../../types/course'
 import { EventForm } from '../authoring/EventForm'
-import { DayModal } from './DayModal'
+import { DayPanel } from './DayPanel'
 
 const at = (h: number, m = 0) => new Date(2026, 10, 9, h, m)
 const MEET = 'https://meet.google.com/abc-defg-hij'
 const lecture: CalendarEvent = { id: 'l', title: 'Lecture', kind: 'lecture', startsAt: at(10).toISOString(), endsAt: at(12).toISOString(), meetingUrl: MEET }
 
 const signIn = (roles: string[]) => localStorage.setItem('auth_user', JSON.stringify({ id: 5, name: 'Pat', email: 'p@x.co', roles }))
-const open = (now: Date) => renderWithProviders(<DayModal date={at(0)} events={[lecture]} now={now} onClose={() => {}} />)
+const open = (now: Date) => renderWithProviders(<DayPanel date={at(0)} events={[lecture]} now={now} />)
 
-describe('the meeting link in the day pop-up', () => {
+describe('the meeting link in the day panel', () => {
   it('a student sees the Join button while the lecture is near, and no link before that', async () => {
     signIn(['student'])
     open(at(9, 40))

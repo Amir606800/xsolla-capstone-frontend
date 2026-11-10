@@ -64,56 +64,45 @@ test('previous / next / today navigation', async ({ page }) => {
   await expect(page.locator('.cell.is-today')).toHaveCount(1)
 })
 
-test('clicking a date opens a pop-up with the details of that day', async ({ page }) => {
+const panel = (page: import('@playwright/test').Page) => page.getByRole('region', { name: 'Day details' })
+
+test('the day panel is there from the start, on today, with no pop-up', async ({ page }) => {
+  const now = new Date()
+  await expect(panel(page)).toBeVisible()
+  await expect(panel(page).getByRole('heading', { level: 2 })).toContainText(String(now.getDate()))
+  await expect(panel(page).getByText('Today', { exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('clicking a date shows the details of that day in the panel', async ({ page }) => {
   const day = page.locator('.cell:has(.ev)').first()
   await day.click()
   await expect(day).toHaveAttribute('aria-pressed', 'true')
 
-  const dialog = page.getByRole('dialog')
-  await expect(dialog).toBeVisible()
-  await expect(dialog.getByRole('list', { name: 'Events' }).getByRole('listitem').first()).toContainText(/\d\d:\d\d|All day/)
-  // the page behind must not scroll while it is open
-  expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+  await expect(panel(page).getByRole('list', { name: 'Events' }).getByRole('listitem').first()).toContainText(/\d\d:\d\d|All day/)
+  // nothing is locked or dimmed: the calendar stays usable beside the panel
+  expect(await page.evaluate(() => document.body.style.overflow)).not.toBe('hidden')
 })
 
-test('the pop-up closes with Escape, the close button and a click outside; focus returns to the date', async ({ page }) => {
-  const day = page.locator('.cell:has(.ev)').first()
-
-  await day.click()
-  await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(day).toBeFocused()
-
-  await day.click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-
-  await day.click()
-  await page.mouse.click(5, 5) // on the dimmed backdrop
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-})
-
-test('an empty day opens a pop-up saying there is nothing', async ({ page }) => {
+test('an empty day says there is nothing', async ({ page }) => {
   const empty = page.locator('.cell:not(:has(.ev))').filter({ hasNot: page.locator('.is-outside') }).first()
   await empty.click()
-  await expect(page.getByRole('dialog')).toContainText('No events on this day.')
+  await expect(panel(page)).toContainText('No events on this day.')
 })
 
-test('the pop-up fits the screen, even on a phone', async ({ page }) => {
+test('the panel fits the screen, even on a phone', async ({ page }) => {
   await page.locator('.cell:has(.ev)').first().click()
-  const box = (await page.locator('.modal').boundingBox())!
+  const box = (await panel(page).boundingBox())!
   const vp = page.viewportSize()!
   expect(box.x).toBeGreaterThanOrEqual(0)
   expect(box.x + box.width).toBeLessThanOrEqual(vp.width)
-  expect(box.y + box.height).toBeLessThanOrEqual(vp.height)
 })
 
-test('opens the module from a deadline in the pop-up', async ({ page }) => {
+test('opens the module from a deadline in the panel', async ({ page }) => {
   // find a month cell holding a deadline (module deadlines are around today)
   await page.locator('.cell:has(.ev--deadline)').first().click()
-  await page.getByRole('dialog').getByRole('link', { name: 'Open module' }).first().click()
+  await panel(page).getByRole('link', { name: 'Open module' }).first().click()
   await expect(page).toHaveURL(/\/courses\/m\d+$/)
-  await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
 test('no horizontal overflow, in light and dark', async ({ page }) => {

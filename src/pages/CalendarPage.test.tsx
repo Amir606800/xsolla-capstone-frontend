@@ -156,7 +156,7 @@ describe('CalendarPage - month view', () => {
       await user.click(within(legend).getByRole('button', { name }))
     }
     await user.click(day(/^Monday, November 2(,|$)/))
-    const cards = within(screen.getByRole('dialog')).getByRole('list', { name: 'Events' })
+    const cards = within(screen.getByRole('region', { name: 'Day details' })).getByRole('list', { name: 'Events' })
     expect(within(cards).getAllByRole('listitem').length).toBeGreaterThan(0)
   })
 })
@@ -211,18 +211,20 @@ describe('CalendarPage - navigation', () => {
   })
 })
 
-describe('CalendarPage - day pop-up', () => {
-  const dialog = () => screen.getByRole('dialog')
+describe('CalendarPage - day panel', () => {
+  const dialog = () => screen.getByRole('region', { name: 'Day details' })
 
-  it('opens a modal with the date as its title when a date is clicked', async () => {
+  it('is open from the start on today, and shows the clicked date as its title', async () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(within(dialog()).getByRole('heading', { name: 'Wednesday, November 4', level: 2 })).toBeInTheDocument()
+    expect(within(dialog()).getByText('Today')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument() // no pop-up: the panel sits beside / under the month
 
     await user.click(day(/^Friday, November 6/))
-    expect(screen.getByRole('dialog', { name: 'Friday, November 6' })).toBeInTheDocument()
-    expect(dialog()).toHaveAttribute('aria-modal', 'true')
+    expect(within(dialog()).getByRole('heading', { name: 'Friday, November 6', level: 2 })).toBeInTheDocument()
+    expect(within(dialog()).queryByText('Today')).not.toBeInTheDocument()
   })
 
   it('shows each event in detail: time, duration, place, kind, description', async () => {
@@ -276,63 +278,47 @@ describe('CalendarPage - day pop-up', () => {
     await ready()
     await user.click(day(/^Sunday, November 8/)) // HTTP server, not submitted
     expect(within(dialog()).getByText(/^Due in 4 days/)).toBeInTheDocument()
-    await user.keyboard('{Escape}')
 
     await user.click(screen.getByRole('button', { name: 'Previous month' }))
     await user.click(day(/^Sunday, October 25/)) // module 4, never submitted
     expect(within(dialog()).getByText('Overdue')).toHaveClass('event-card__danger')
   })
 
-  it('opens for an empty day too and says there is nothing', async () => {
+  it('shows an empty day too and says there is nothing', async () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
     await user.click(day('Saturday, November 7'))
-    expect(screen.getByRole('dialog', { name: 'Saturday, November 7' })).toBeInTheDocument()
+    expect(within(dialog()).getByRole('heading', { name: 'Saturday, November 7', level: 2 })).toBeInTheDocument()
     expect(within(dialog()).getByText('No events on this day.')).toBeInTheDocument()
   })
 
-  it('closes with the close button, Escape and a click on the backdrop', async () => {
-    const user = userEvent.setup()
+  it('has two parts, what is on the day and what can be added; a student only gets the first', async () => {
     renderCalendar()
     await ready()
-
-    await user.click(day(/^Friday, November 6/))
-    await user.click(within(dialog()).getByRole('button', { name: 'Close' }))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-
-    await user.click(day(/^Friday, November 6/))
-    await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-
-    await user.click(day(/^Friday, November 6/))
-    await user.click(dialog().parentElement!) // the backdrop
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-
-    await user.click(day(/^Friday, November 6/))
-    await user.click(within(dialog()).getByRole('heading', { name: 'Friday, November 6' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument() // clicking inside keeps it open
+    expect(within(dialog()).getByRole('heading', { name: 'On this day' })).toBeInTheDocument()
+    expect(within(dialog()).queryByRole('heading', { name: 'Add to this day' })).not.toBeInTheDocument()
+    expect(within(dialog()).queryByRole('button', { name: /^Add / })).not.toBeInTheDocument()
   })
 
-  it('keeps the clicked date selected and returns focus to it after closing', async () => {
+  it('follows the clicked date and keeps it selected on the grid', async () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
     await user.click(day('Saturday, November 7'))
-    await user.keyboard('{Escape}')
     expect(day('Saturday, November 7')).toHaveAttribute('aria-pressed', 'true')
-    expect(day('Saturday, November 7')).toHaveFocus()
+    expect(day(/^Wednesday, November 4/)).toHaveAttribute('aria-pressed', 'false')
+    await user.click(screen.getByRole('button', { name: 'Next month' }))
+    expect(within(dialog()).getByRole('heading', { name: 'Tuesday, December 1', level: 2 })).toBeInTheDocument()
   })
 
-  it('"Open module" in the pop-up goes to the module page', async () => {
+  it('"Open module" in the panel goes to the module page', async () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
     await user.click(day(/^Friday, November 6/))
     await user.click(within(dialog()).getByRole('link', { name: 'Open module' }))
     expect(await screen.findByRole('heading', { name: 'Go Basics', level: 1 })).toBeInTheDocument()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(document.body.style.overflow).not.toBe('hidden') // scroll lock released on navigation
   })
 })
 

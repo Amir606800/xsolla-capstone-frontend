@@ -21,7 +21,7 @@ describe('Past events on the LMS calendar', () => {
     const cell = screen.getByRole('button', { name: new RegExp(`^${fullDateLabel(date)}, `) })
     expect(cell.querySelector('.ev--lecture')).toHaveClass('is-past')
     await user.click(cell)
-    const card = within(await screen.findByRole('dialog')).getByRole('heading', { name: 'Lecture' }).closest('li')!
+    const card = within(await screen.findByRole('region', { name: 'Day details' })).getByRole('heading', { name: 'Lecture' }).closest('li')!
     expect(card).toHaveClass('is-past')
     expect(within(card).getByText('Past')).toBeInTheDocument()
   })

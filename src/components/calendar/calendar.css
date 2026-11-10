@@ -1,4 +1,4 @@
-/* Event colours are global: the day pop-up is rendered in a portal, outside .calendar */
+/* Event colours are global: they are also used outside .calendar */
 :root {
   --ev-lecture: var(--xs-cyan);
   --ev-meeting: #7556e0;
@@ -20,6 +20,36 @@
 }
 .calendar .page-title {
   margin-bottom: 0;
+}
+
+/* ---------- Layout: the calendar, and the day panel under it (beside it on wide screens) ---------- */
+.calendar__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.calendar__main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.calendar__side {
+  min-width: 0;
+  scroll-margin-top: 12px;
+}
+/* wide screens: the panel sits beside the month and stays in view while you scroll */
+@media (min-width: 1400px) {
+  .calendar__layout {
+    grid-template-columns: minmax(0, 1fr) 400px;
+  }
+  .calendar__side {
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
 }
 
 /* ---------- Toolbar ---------- */
@@ -326,7 +356,126 @@
   }
 }
 
-/* ---------- Day pop-up: detailed event cards ---------- */
+/* ---------- Day panel: two parts, what is on the day and what you can add ---------- */
+.day-panel {
+  border: 1px solid var(--field-border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.day-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 16px 20px;
+}
+.day-panel__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+}
+.day-panel__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.day-panel__part {
+  min-width: 0;
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--divider);
+}
+/* medium screens (the panel is under the month): the two parts stand side by side */
+@media (min-width: 760px) and (max-width: 1399px) {
+  .day-panel__body {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+  .day-panel__part + .day-panel__part {
+    border-left: 1px solid var(--divider);
+  }
+}
+.day-panel__heading {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.day-panel__notice {
+  margin: 0;
+  padding: 10px 20px;
+  border-top: 1px solid var(--divider);
+  font-size: var(--fs-label);
+}
+.day-panel__notice--ok {
+  color: var(--ok);
+}
+.day-panel__notice--warn {
+  color: var(--warn);
+}
+.day-panel__notice--error {
+  color: var(--danger);
+}
+.day-panel .event-card {
+  padding-left: 0;
+  padding-right: 0;
+}
+.day-panel .event-cards .event-card:first-child {
+  padding-top: 0;
+}
+.day-panel .event-cards .event-card:last-child {
+  padding-bottom: 0;
+}
+.day-panel .card__empty {
+  margin: 0;
+}
+
+/* what the role can add: one choice per kind of thing */
+.day-tools__choices {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.day-tools__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.day-tools__choice:hover {
+  background: var(--active-bg);
+}
+.day-tools__choice:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.day-tools__choice > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--xs-cyan);
+}
+.day-tools__choice-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.day-tools__choice-text span {
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+
+/* ---------- Day panel: detailed event cards ---------- */
 .event-cards {
   margin: 0;
   padding: 0;
@@ -397,16 +546,19 @@
   margin-top: 12px;
 }
 
-/* ---------- Day pop-up: 1:1 times (book / set availability) ---------- */
+/* ---------- Day panel: 1:1 times (book / set availability) ---------- */
 .slots {
-  padding: 16px 20px 20px;
-  border-top: 1px solid var(--divider);
+  margin-top: 16px;
 }
 .slots:first-child {
-  border-top: 0;
+  margin-top: 0;
+}
+.event-cards + .slots {
+  padding-top: 16px;
+  border-top: 1px solid var(--divider);
 }
 .slots__title {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-size: var(--fs-h4);
   line-height: var(--lh-h4);
 }
@@ -482,7 +634,7 @@
   padding: 6px 14px;
 }
 
-/* ---------- Day pop-up: lecturer tools ---------- */
+/* ---------- Day panel: change or delete an event ---------- */
 .event-card__tools {
   display: flex;
   flex-wrap: wrap;
@@ -493,26 +645,6 @@
 }
 .event-card__link + .event-card__tools {
   margin-top: 8px;
-}
-.day-tools {
-  padding: 14px 20px 18px;
-  border-top: 1px solid var(--divider);
-}
-.day-tools:first-child {
-  border-top: 0;
-}
-.day-tools__title {
-  margin: 0 0 4px;
-  font-size: var(--fs-h4);
-  line-height: var(--lh-h4);
-}
-.day-tools__ok {
-  margin: 0 0 10px;
-  color: var(--ok);
-  font-size: var(--fs-label);
-}
-.day-tools__warn {
-  color: var(--warn);
 }
 
 /* "On Google Calendar": a small mark on an event the creator also put on their Google Calendar */

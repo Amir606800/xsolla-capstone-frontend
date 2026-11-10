@@ -319,6 +319,8 @@ describe('Module editor: module details', () => {
 })
 
 describe('Calendar: lectures and events', () => {
+  // the day panel beside the month (the other tests in this file use pop-up dialogs)
+  const dialog = () => screen.getByRole('region', { name: 'Day details' })
   const grid = () => screen.getByRole('group', { name: 'Month view' })
   const day = (label: RegExp) => within(grid()).getByRole('button', { name: label })
 

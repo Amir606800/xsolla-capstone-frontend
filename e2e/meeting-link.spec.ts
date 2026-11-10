@@ -25,7 +25,7 @@ async function tabAs(context: BrowserContext, user: object, path: string, at?: D
 async function addLecture(context: BrowserContext, link: string) {
   const lecturer = await tabAs(context, LECTURER, '/calendar')
   await lecturer.locator('.cell.is-today + .cell').click()
-  const dialog = lecturer.getByRole('dialog')
+  const dialog = lecturer.getByRole('region', { name: 'Day details' })
   await dialog.getByRole('button', { name: 'Add a lecture or event' }).click()
   const form = dialog.getByRole('form', { name: 'New event' })
   await form.getByLabel('Title').fill('Guest talk')
@@ -40,7 +40,7 @@ async function addLecture(context: BrowserContext, link: string) {
 test('the lecturer sees the link at once; a link that is not https is refused', async ({ context }) => {
   const lecturer = await tabAs(context, LECTURER, '/calendar')
   await lecturer.locator('.cell.is-today + .cell').click()
-  const dialog = lecturer.getByRole('dialog')
+  const dialog = lecturer.getByRole('region', { name: 'Day details' })
   await dialog.getByRole('button', { name: 'Add a lecture or event' }).click()
   const form = dialog.getByRole('form', { name: 'New event' })
   await form.getByLabel('Title').fill('Guest talk')
@@ -71,7 +71,7 @@ test('a lecture without a link tells nobody', async ({ context }) => {
 
 test('a student sees the Join button only from 30 minutes before the start until the end', async ({ context }) => {
   await addLecture(context, MEET)
-  const card = (page: Page) => page.getByRole('dialog').getByRole('list', { name: 'Events' }).getByRole('listitem').filter({ hasText: 'Guest talk' })
+  const card = (page: Page) => page.getByRole('region', { name: 'Day details' }).getByRole('list', { name: 'Events' }).getByRole('listitem').filter({ hasText: 'Guest talk' })
   const look = async (at: Date) => {
     const page = await tabAs(context, STUDENT, '/calendar', at)
     await page.locator('.cell.is-today').click()

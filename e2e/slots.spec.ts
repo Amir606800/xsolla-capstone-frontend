@@ -14,7 +14,7 @@ async function pageAs(context: BrowserContext, user: typeof STUDENT | typeof MEN
   return page
 }
 
-const slotList = (page: Page) => page.getByRole('dialog').getByRole('list', { name: '1:1 times' }).getByRole('listitem')
+const slotList = (page: Page) => page.getByRole('region', { name: 'Day details' }).getByRole('list', { name: '1:1 times' }).getByRole('listitem')
 const overflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
 
@@ -25,7 +25,7 @@ test.describe('Student: 1:1 times', () => {
     await expect(day).toBeVisible()
     await day.click()
 
-    const dialog = page.getByRole('dialog')
+    const dialog = page.getByRole('region', { name: 'Day details' })
     await expect(dialog.getByRole('heading', { name: /^1:1 with Rashad Aliyev/ })).toBeVisible()
     const rows = slotList(page)
     expect(await rows.count()).toBeGreaterThanOrEqual(4)
@@ -44,9 +44,9 @@ test.describe('Student: 1:1 times', () => {
     await expect(booked).toHaveCount(1)
 
     await booked.click()
-    await page.getByRole('dialog').getByRole('button', { name: /^Cancel \d/ }).click()
-    await expect(page.getByRole('dialog').locator('.slots__item.is-mine')).toHaveCount(0)
-    await expect(page.getByRole('dialog').getByRole('button', { name: /^Book / }).first()).toBeEnabled()
+    await page.getByRole('region', { name: 'Day details' }).getByRole('button', { name: /^Cancel \d/ }).click()
+    await expect(page.getByRole('region', { name: 'Day details' }).locator('.slots__item.is-mine')).toHaveCount(0)
+    await expect(page.getByRole('region', { name: 'Day details' }).getByRole('button', { name: /^Book / }).first()).toBeEnabled()
   })
 
   test('the team page shows the booked time', async ({ context }) => {
@@ -57,8 +57,8 @@ test.describe('Student: 1:1 times', () => {
     await expect(page).toHaveURL(/\/calendar$/)
 
     await page.locator('.cell:has(.ev--availability)').first().click()
-    await page.getByRole('dialog').getByRole('button', { name: /^Book / }).first().click()
-    await expect(page.getByRole('dialog').getByRole('status')).toContainText('Booked')
+    await page.getByRole('region', { name: 'Day details' }).getByRole('button', { name: /^Book / }).first().click()
+    await expect(page.getByRole('region', { name: 'Day details' }).getByRole('status')).toContainText('Booked')
 
     await page.goto('/team')
     await expect(page.getByText(/Next 1:1:/)).toBeVisible()
@@ -67,26 +67,24 @@ test.describe('Student: 1:1 times', () => {
   test('there is no form to add times, and a day without times has no panel', async ({ context }) => {
     const page = await pageAs(context, STUDENT)
     await page.locator('.cell:has(.ev--availability)').first().click()
-    await expect(page.getByRole('dialog').getByLabel('From')).toHaveCount(0)
-    await page.keyboard.press('Escape')
+    await expect(page.getByRole('region', { name: 'Day details' }).getByLabel('From')).toHaveCount(0)
 
     await page.locator('.cell:not(:has(.ev))').filter({ hasNot: page.locator('.is-outside') }).first().click()
-    await expect(page.getByRole('dialog')).toContainText('No events on this day.')
-    await expect(page.getByRole('dialog').getByRole('heading', { name: /1:1/ })).toHaveCount(0)
+    await expect(page.getByRole('region', { name: 'Day details' })).toContainText('No events on this day.')
+    await expect(page.getByRole('region', { name: 'Day details' }).getByRole('heading', { name: /1:1/ })).toHaveCount(0)
   })
 
   test('fits the screen in light and dark, with no overflow', async ({ context }) => {
     const page = await pageAs(context, STUDENT)
     await page.locator('.cell:has(.ev--availability)').first().click()
-    const box = (await page.locator('.modal').boundingBox())!
+    const box = (await page.getByRole('region', { name: 'Day details' }).boundingBox())!
     const vp = page.viewportSize()!
     expect(box.x).toBeGreaterThanOrEqual(0)
     expect(box.x + box.width).toBeLessThanOrEqual(vp.width)
     expect(await overflow(page)).toBe(false)
-    await page.keyboard.press('Escape')
     await toggleTheme(page)
     await page.locator('.cell:has(.ev--availability)').first().click()
-    await expect(page.getByRole('dialog').getByRole('list', { name: '1:1 times' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Day details' }).getByRole('list', { name: '1:1 times' })).toBeVisible()
     expect(await overflow(page)).toBe(false)
   })
 })
@@ -97,7 +95,8 @@ test.describe('Mentor: availability', () => {
     // tomorrow, early in the morning, so it can never clash with the demo times in the afternoon
     await mentor.locator('.cell.is-today + .cell').click()
 
-    const dialog = mentor.getByRole('dialog')
+    const dialog = mentor.getByRole('region', { name: 'Day details' })
+    await dialog.getByRole('button', { name: 'Add 1:1 times' }).click()
     await dialog.getByLabel('From').fill('08:00')
     await dialog.getByLabel('To').fill('09:30')
     await expect(dialog).toContainText('3 times: 08:00 - 08:30, 08:30 - 09:00, 09:00 - 09:30')
@@ -115,8 +114,8 @@ test.describe('Mentor: availability', () => {
     await student.locator('.cell.is-today + .cell').click()
     const theirs = slotList(student)
     await expect(theirs).toHaveCount(3)
-    await student.getByRole('dialog').getByRole('button', { name: 'Book 08:30 - 09:00' }).click()
-    await expect(student.getByRole('dialog').getByRole('status')).toContainText('Booked 08:30 - 09:00')
+    await student.getByRole('region', { name: 'Day details' }).getByRole('button', { name: 'Book 08:30 - 09:00' }).click()
+    await expect(student.getByRole('region', { name: 'Day details' }).getByRole('status')).toContainText('Booked 08:30 - 09:00')
 
     // the mentor sees who booked it
     await mentor.reload()
@@ -128,7 +127,8 @@ test.describe('Mentor: availability', () => {
   test('a window that does not work is explained and cannot be added', async ({ context }) => {
     const page = await pageAs(context, MENTOR)
     await page.locator('.cell.is-today + .cell').click()
-    const dialog = page.getByRole('dialog')
+    const dialog = page.getByRole('region', { name: 'Day details' })
+    await dialog.getByRole('button', { name: 'Add 1:1 times' }).click()
     await dialog.getByLabel('To').fill('14:00')
     await expect(dialog).toContainText('The end time must be after the start time.')
     await expect(dialog.getByRole('button', { name: 'Add availability' })).toBeDisabled()
@@ -137,7 +137,8 @@ test.describe('Mentor: availability', () => {
   test('can remove a free time and cancel a booking', async ({ context }) => {
     const page = await pageAs(context, MENTOR)
     await page.locator('.cell.is-today + .cell').click()
-    const dialog = page.getByRole('dialog')
+    const dialog = page.getByRole('region', { name: 'Day details' })
+    await dialog.getByRole('button', { name: 'Add 1:1 times' }).click()
     await dialog.getByLabel('From').fill('07:00')
     await dialog.getByLabel('To').fill('08:00')
     await dialog.getByRole('button', { name: 'Add availability' }).click()
@@ -150,14 +151,14 @@ test.describe('Mentor: availability', () => {
   test('the form fits a phone and desktop screen, in light and dark', async ({ context }) => {
     const page = await pageAs(context, MENTOR)
     await page.locator('.cell.is-today + .cell').click()
-    const box = (await page.locator('.modal').boundingBox())!
+    const panel = page.getByRole('region', { name: 'Day details' })
+    await panel.getByRole('button', { name: 'Add 1:1 times' }).click()
+    const box = (await panel.boundingBox())!
     const vp = page.viewportSize()!
     expect(box.x + box.width).toBeLessThanOrEqual(vp.width)
     expect(await overflow(page)).toBe(false)
-    await page.keyboard.press('Escape')
     await toggleTheme(page)
-    await page.locator('.cell.is-today + .cell').click()
-    await expect(page.getByRole('dialog').getByRole('button', { name: 'Add availability' })).toBeVisible()
+    await expect(panel.getByRole('button', { name: 'Add availability' })).toBeVisible()
     expect(await overflow(page)).toBe(false)
   })
 })

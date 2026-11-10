@@ -1,14 +1,13 @@
 import { Children, memo, type ReactNode, useState } from 'react'
 import { Link } from 'react-router'
 import type { CalendarEvent, EventKind } from '../../types/calendar'
-import { formatDuration, formatEventTime, fullDateLabel } from '../../utils/calendar'
+import { dateKey, formatDuration, formatEventTime, fullDateLabel } from '../../utils/calendar'
 import { formatTimeLeft } from '../../utils/date'
 import { useAuth } from '../../hooks/useAuth'
 import { isStudent } from '../../utils/roles'
 import { Icon } from '../Icon'
 import { GoogleBadge } from './GoogleBadge'
 import { JoinMeeting } from './JoinMeeting'
-import { Modal } from '../Modal'
 import '../authoring/authoring.css'
 import { eventClass, isPastEvent } from './eventClass'
 
@@ -20,14 +19,22 @@ const KIND_LABEL: Record<EventKind, string> = {
   availability: '1:1 times',
 }
 
-interface DayModalProps {
-  /** The day to show, or null when the pop-up is closed. */
-  date: Date | null
+/** A short message about what just happened on this day (event saved, times added, ...). */
+export interface Notice {
+  tone: 'ok' | 'warn' | 'error'
+  text: string
+}
+
+interface DayPanelProps {
+  /** The day to show. */
+  date: Date
   events: CalendarEvent[]
   now: Date
-  onClose: () => void
-  /** Extra content under the events, e.g. the 1:1 slots. */
-  children?: ReactNode
+  /** Part 1 extras, under the events: the 1:1 times. */
+  schedule?: ReactNode
+  /** Part 2: what this role can add or change on the day (nothing for students). */
+  tools?: ReactNode
+  notice?: Notice | null
   /** Lecturers: which events can be changed, and how. */
   editing?: EventEditing
 }
@@ -101,7 +108,7 @@ function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date
       <span className={`event-card__bar ${eventClass(event, now)}`} aria-hidden="true" />
       <div className="event-card__main">
         <div className="event-card__top">
-          <h3 className="event-card__title">{event.title}</h3>
+          <h4 className="event-card__title">{event.title}</h4>
           <span className="pill">{KIND_LABEL[event.kind]}</span>
           {past && <span className="pill event-card__past">Past</span>}
           {!isStudent(user) && <GoogleBadge event={event} />}
@@ -150,25 +157,45 @@ function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date
   )
 }
 
-function DayModalBase({ date, events, now, onClose, children, editing }: DayModalProps) {
-  // open 1:1 times are handled by the slots panel (children), not by a card of their own
+function DayPanelBase({ date, events, now, schedule, tools, notice, editing }: DayPanelProps) {
+  // open 1:1 times are listed by the 1:1 list (schedule), not by a card of their own
   const cards = events.filter((e) => e.kind !== 'availability')
-  // `false` / null children (a panel that is not shown) do not count as content
-  const hasExtra = Children.toArray(children).length > 0
+  // `false` / null children (a list that is not shown) do not count as content
+  const hasExtra = Children.toArray(schedule).length > 0
+  const isToday = dateKey(date) === dateKey(now)
   return (
-    <Modal open={date !== null} onClose={onClose} title={date ? fullDateLabel(date) : ''}>
-      {cards.length > 0 ? (
-        <ul className="event-cards" aria-label="Events">
-          {cards.map((e) => (
-            <EventDetails key={e.id} event={e} now={now} editing={editing} />
-          ))}
-        </ul>
-      ) : (
-        !hasExtra && <p className="card__empty">No events on this day.</p>
+    <section className="day-panel" aria-label="Day details">
+      <header className="day-panel__head">
+        <h2 className="day-panel__title">{fullDateLabel(date)}</h2>
+        {isToday && <span className="pill">Today</span>}
+      </header>
+
+      {notice && (
+        <p className={`day-panel__notice day-panel__notice--${notice.tone}`} role={notice.tone === 'ok' ? 'status' : 'alert'}>
+          {notice.text}
+        </p>
       )}
-      {children}
-    </Modal>
+
+      <div className="day-panel__body">
+        <section className="day-panel__part" aria-labelledby="day-panel-events">
+          <h3 id="day-panel-events" className="day-panel__heading">
+            On this day
+          </h3>
+          {cards.length > 0 && (
+            <ul className="event-cards" aria-label="Events">
+              {cards.map((e) => (
+                <EventDetails key={e.id} event={e} now={now} editing={editing} />
+              ))}
+            </ul>
+          )}
+          {schedule}
+          {cards.length === 0 && !hasExtra && <p className="card__empty">No events on this day.</p>}
+        </section>
+
+        {tools}
+      </div>
+    </section>
   )
 }
 
-export const DayModal = memo(DayModalBase)
+export const DayPanel = memo(DayPanelBase)

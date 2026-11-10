@@ -41,7 +41,7 @@ test('a 1:1 the student books shows up on the mentor team page', async ({ page }
   await signIn(page, 'Student')
   await page.goto('/calendar')
   await page.locator('.cell', { hasText: 'free 1:1' }).first().click()
-  const dialog = page.getByRole('dialog')
+  const dialog = page.getByRole('region', { name: 'Day details' })
   await dialog.getByRole('button', { name: /^Book / }).first().click()
   await expect(dialog.locator('.slots__item.is-mine')).toHaveCount(1)
 

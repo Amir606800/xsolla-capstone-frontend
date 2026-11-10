@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import type { CalendarEvent } from '../../types/calendar'
-import { DayModal } from './DayModal'
+import { DayPanel } from './DayPanel'
 
 const at = (h: number) => new Date(2026, 10, 9, h)
 const event = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
@@ -14,9 +14,9 @@ const event = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
   ...extra,
 })
 const signIn = (roles: string[]) => localStorage.setItem('auth_user', JSON.stringify({ id: 5, name: 'Pat', email: 'p@x.co', roles }))
-const open = (e: CalendarEvent) => renderWithProviders(<DayModal date={at(0)} events={[e]} now={at(8)} onClose={() => {}} />)
+const open = (e: CalendarEvent) => renderWithProviders(<DayPanel date={at(0)} events={[e]} now={at(8)} />)
 
-describe('the "On Google Calendar" mark in the day pop-up', () => {
+describe('the "On Google Calendar" mark in the day panel', () => {
   it('shows on an event that is on Google, for staff', async () => {
     signIn(['lecturer'])
     open(event({ googleEventId: 'g1' }))

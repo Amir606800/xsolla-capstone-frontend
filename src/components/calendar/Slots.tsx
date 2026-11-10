@@ -4,6 +4,7 @@ import { SLOT_MINUTES } from '../../types/slots'
 import { formatDateTime } from '../../utils/date'
 import { previewText, slotLabel, upcomingSlotTimes, windowError } from '../../utils/slots'
 import { Icon } from '../Icon'
+import type { Notice } from './DayPanel'
 
 export interface SlotActions {
   /** Resolves with how many new times were added. */
@@ -13,9 +14,7 @@ export interface SlotActions {
   cancel: (id: string) => Promise<void>
 }
 
-interface SlotsPanelProps {
-  /** The day, as YYYY-MM-DD. */
-  dayKey: string
+interface SlotListProps {
   /** The slots that start on this day, in time order. */
   slots: MeetingSlot[]
   isMentor: boolean
@@ -24,16 +23,27 @@ interface SlotsPanelProps {
   booking?: MeetingSlot
   now: Date
   actions: SlotActions
+  onMessage: (m: Notice | null) => void
 }
 
-type Message = { kind: 'ok' | 'error'; text: string }
-
-function AvailabilityForm({
+/** Mentor: say when you are free on a day. Shown in the "add" part of the day panel. */
+export function AvailabilityForm({
   dayKey,
   now,
   actions,
   onMessage,
-}: Pick<SlotsPanelProps, 'dayKey' | 'now' | 'actions'> & { onMessage: (m: Message | null) => void }) {
+  onDone,
+  onCancel,
+}: {
+  /** The day, as YYYY-MM-DD. */
+  dayKey: string
+  now: Date
+  actions: SlotActions
+  onMessage: (m: Notice | null) => void
+  /** The times were added: the form can close. */
+  onDone: () => void
+  onCancel: () => void
+}) {
   const [start, setStart] = useState('15:00')
   const [end, setEnd] = useState('18:00')
   const [busy, setBusy] = useState(false)
@@ -52,14 +62,15 @@ function AvailabilityForm({
       const added = await actions.addWindow(window)
       const skipped = times.length - added
       onMessage({
-        kind: 'ok',
+        tone: 'ok',
         text:
           added === 0
             ? 'Those times were already in your list.'
             : `Added ${added} ${added === 1 ? 'time' : 'times'}${skipped > 0 ? ` (${skipped} already existed)` : ''}.`,
       })
+      onDone()
     } catch (err) {
-      onMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Could not add the times' })
+      onMessage({ tone: 'error', text: err instanceof Error ? err.message : 'Could not add the times' })
     } finally {
       setBusy(false)
     }
@@ -100,6 +111,9 @@ function AvailabilityForm({
         <button type="submit" className="btn" disabled={error !== null || busy}>
           Add availability
         </button>
+        <button type="button" className="btn btn--ghost" onClick={onCancel}>
+          Cancel
+        </button>
       </div>
       {error ? (
         <p className="field__error">{error}</p>
@@ -112,18 +126,18 @@ function AvailabilityForm({
   )
 }
 
-export function SlotsPanel({ dayKey, slots, isMentor, userId, booking, now, actions }: SlotsPanelProps) {
-  const [message, setMessage] = useState<Message | null>(null)
+/** The 1:1 times of the day: the mentor sees and removes them, a student books one. */
+export function SlotList({ slots, isMentor, userId, booking, now, actions, onMessage }: SlotListProps) {
   const [busyId, setBusyId] = useState<string | null>(null)
 
   async function act(id: string, run: () => Promise<void>, ok: string) {
     setBusyId(id)
-    setMessage(null)
+    onMessage(null)
     try {
       await run()
-      setMessage({ kind: 'ok', text: ok })
+      onMessage({ tone: 'ok', text: ok })
     } catch (err) {
-      setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Something went wrong' })
+      onMessage({ tone: 'error', text: err instanceof Error ? err.message : 'Something went wrong' })
     } finally {
       setBusyId(null)
     }
@@ -133,29 +147,20 @@ export function SlotsPanel({ dayKey, slots, isMentor, userId, booking, now, acti
 
   return (
     <section className="slots" aria-labelledby="slots-title">
-      <h3 id="slots-title" className="slots__title">
-        {isMentor ? '1:1 availability' : `1:1 with ${mentorName ?? 'your mentor'}`}
-      </h3>
+      <h4 id="slots-title" className="slots__title">
+        {isMentor ? 'Your 1:1 times' : `1:1 with ${mentorName ?? 'your mentor'}`}
+      </h4>
 
-      {isMentor ? (
-        <AvailabilityForm dayKey={dayKey} now={now} actions={actions} onMessage={setMessage} />
-      ) : booking ? (
-        <p className="slots__hint">
-          You have a 1:1 on <strong>{formatDateTime(booking.startsAt)}</strong>. To pick another time, cancel it first.
-        </p>
-      ) : (
-        <p className="slots__hint">Pick a time to lock it for you.</p>
-      )}
+      {!isMentor &&
+        (booking ? (
+          <p className="slots__hint">
+            You have a 1:1 on <strong>{formatDateTime(booking.startsAt)}</strong>. To pick another time, cancel it first.
+          </p>
+        ) : (
+          <p className="slots__hint">Pick a time to lock it for you.</p>
+        ))}
 
-      {message && (
-        <p className={message.kind === 'error' ? 'field__error' : 'slots__ok'} role={message.kind === 'error' ? 'alert' : 'status'}>
-          {message.text}
-        </p>
-      )}
-
-      {slots.length === 0 ? (
-        isMentor && <p className="card__empty">No 1:1 times on this day yet.</p>
-      ) : (
+      {slots.length > 0 && (
         <ul className="slots__list" aria-label="1:1 times">
           {slots.map((s) => {
             const started = new Date(s.startsAt) <= now

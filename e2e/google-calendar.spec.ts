@@ -41,7 +41,7 @@ test('a ticked event is put on Google and marked; an unticked one is not', async
   await page.addInitScript(() => localStorage.setItem('google_mock', JSON.stringify({ connection: 'connected', account: { email: 'rashad@gmail.com', name: 'Rashad' } })))
   await page.goto('/calendar')
   await page.locator('.cell.is-today + .cell').click()
-  const dialog = page.getByRole('dialog')
+  const dialog = page.getByRole('region', { name: 'Day details' })
 
   async function add(title: string, tick: boolean) {
     await dialog.getByRole('button', { name: 'Add a lecture or event' }).click()
@@ -71,7 +71,7 @@ test('with no Google connection the tick is off and Settings is one click away',
   await signInAs(page, LECTURER)
   await page.goto('/calendar')
   await page.locator('.cell.is-today + .cell').click()
-  const dialog = page.getByRole('dialog')
+  const dialog = page.getByRole('region', { name: 'Day details' })
   await dialog.getByRole('button', { name: 'Add a lecture or event' }).click()
   const form = dialog.getByRole('form', { name: 'New event' })
   await expect(form.getByRole('checkbox', { name: 'Also add to my Google Calendar' })).toBeDisabled()

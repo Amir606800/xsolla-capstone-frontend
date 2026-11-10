@@ -23,8 +23,12 @@ async function open(who: typeof STUDENT | typeof MENTOR, dayLabel: RegExp) {
   renderWithProviders(<App />, { route: '/calendar' })
   const grid = await screen.findByRole('group', { name: 'Month view' })
   await user.click(within(grid).getByRole('button', { name: dayLabel }))
-  return { user, dialog: screen.getByRole('dialog') }
+  return { user, dialog: screen.getByRole('region', { name: 'Day details' }) }
 }
+
+/** The mentor's "add" part of the panel: pick 1:1 times, which opens the form. */
+const openForm = (user: ReturnType<typeof userEvent.setup>, dialog: HTMLElement) =>
+  user.click(within(dialog).getByRole('button', { name: 'Add 1:1 times' }))
 
 const times = (dialog: HTMLElement) => within(within(dialog).getByRole('list', { name: '1:1 times' })).getAllByRole('listitem')
 
@@ -115,19 +119,23 @@ describe('Student: booking a 1:1', () => {
 
 describe('Mentor: setting availability', () => {
   it('shows the form with a preview of the 30-minute slots', async () => {
-    const { dialog } = await open(MENTOR, /^Friday, November 6/)
-    expect(within(dialog).getByRole('heading', { name: '1:1 availability' })).toBeInTheDocument()
+    const { user, dialog } = await open(MENTOR, /^Friday, November 6/)
+    expect(within(dialog).queryByLabelText('From')).not.toBeInTheDocument() // closed until asked for
+    await openForm(user, dialog)
+    expect(within(dialog).getByRole('heading', { name: 'Add 1:1 times' })).toBeInTheDocument()
     expect(within(dialog).getByLabelText('From')).toHaveValue('15:00')
     expect(within(dialog).getByLabelText('To')).toHaveValue('18:00')
     expect(within(dialog).getByText('6 times: 15:00 - 15:30 ... 17:30 - 18:00')).toBeInTheDocument()
-    expect(within(dialog).getByText('No 1:1 times on this day yet.')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('list', { name: '1:1 times' })).not.toBeInTheDocument() // none yet
   })
 
   it('cuts 15:00-18:00 into six free times and keeps them', async () => {
     const { user, dialog } = await open(MENTOR, /^Friday, November 6/)
+    await openForm(user, dialog)
     await user.click(within(dialog).getByRole('button', { name: 'Add availability' }))
 
     expect(await within(dialog).findByText('Added 6 times.')).toBeInTheDocument()
+    expect(within(dialog).queryByLabelText('From')).not.toBeInTheDocument() // the form closes
     const rows = times(dialog)
     expect(rows).toHaveLength(6)
     expect(rows[0]).toHaveTextContent('15:00 - 15:30')
@@ -141,6 +149,7 @@ describe('Mentor: setting availability', () => {
 
   it('follows the times that were typed', async () => {
     const { user, dialog } = await open(MENTOR, /^Friday, November 6/)
+    await openForm(user, dialog)
     fireEvent.change(within(dialog).getByLabelText('From'), { target: { value: '10:00' } })
     fireEvent.change(within(dialog).getByLabelText('To'), { target: { value: '11:00' } })
     expect(within(dialog).getByText('2 times: 10:00 - 10:30, 10:30 - 11:00')).toBeInTheDocument()
@@ -149,7 +158,8 @@ describe('Mentor: setting availability', () => {
   })
 
   it('explains a window that cannot work and disables the button', async () => {
-    const { dialog } = await open(MENTOR, /^Friday, November 6/)
+    const { user, dialog } = await open(MENTOR, /^Friday, November 6/)
+    await openForm(user, dialog)
     const add = within(dialog).getByRole('button', { name: 'Add availability' })
 
     fireEvent.change(within(dialog).getByLabelText('To'), { target: { value: '14:00' } })
@@ -164,15 +174,18 @@ describe('Mentor: setting availability', () => {
   })
 
   it('does not accept a day that has already passed', async () => {
-    const { dialog } = await open(MENTOR, /^Tuesday, November 3/)
+    const { user, dialog } = await open(MENTOR, /^Tuesday, November 3/)
+    await openForm(user, dialog)
     expect(within(dialog).getByText(/already passed/)).toBeInTheDocument()
     expect(within(dialog).getByRole('button', { name: 'Add availability' })).toBeDisabled()
   })
 
   it('adding the same window twice does not duplicate the times', async () => {
     const { user, dialog } = await open(MENTOR, /^Friday, November 6/)
+    await openForm(user, dialog)
     await user.click(within(dialog).getByRole('button', { name: 'Add availability' }))
     await within(dialog).findByText('Added 6 times.')
+    await openForm(user, dialog)
     await user.click(within(dialog).getByRole('button', { name: 'Add availability' }))
     expect(await within(dialog).findByText('Those times were already in your list.')).toBeInTheDocument()
     expect(times(dialog)).toHaveLength(6)

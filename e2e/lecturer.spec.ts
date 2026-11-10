@@ -83,7 +83,7 @@ test('a link material and a quiz show up in the module for the student, without 
 test('a lecture scheduled on the calendar shows up for the student', async ({ context }) => {
   const lecturer = await tabAs(context, LECTURER, '/calendar')
   await lecturer.locator('.cell.is-today + .cell').click()
-  const dialog = lecturer.getByRole('dialog')
+  const dialog = lecturer.getByRole('region', { name: 'Day details' })
   await dialog.getByRole('button', { name: 'Add a lecture or event' }).click()
   const form = dialog.getByRole('form', { name: 'New event' })
   await form.getByLabel('Title').fill('Guest talk: Go at scale')
@@ -95,7 +95,7 @@ test('a lecture scheduled on the calendar shows up for the student', async ({ co
 
   const student = await tabAs(context, STUDENT, '/calendar')
   await student.locator('.cell.is-today + .cell').click()
-  const card = student.getByRole('dialog').getByRole('list', { name: 'Events' }).getByRole('listitem').filter({ hasText: 'Guest talk' })
+  const card = student.getByRole('region', { name: 'Day details' }).getByRole('list', { name: 'Events' }).getByRole('listitem').filter({ hasText: 'Guest talk' })
   await expect(card).toContainText('07:00 - 08:00')
   await expect(card.getByRole('link', { name: 'Open module' })).toHaveAttribute('href', '/courses/m6')
   await expect(card.getByRole('button', { name: /Edit|Delete/ })).toHaveCount(0)
@@ -142,4 +142,26 @@ test('the lecturer can download a material from the module editor', async ({ con
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Download Go Basics - lecture slides' }).click()
   expect((await download).suggestedFilename()).toMatch(/-demo\.txt$/)
+})
+
+test('the calendar day panel: events in one part, what the role can add in another, beside the month on a wide screen', async ({ context, isMobile }) => {
+  const page = await tabAs(context, LECTURER, '/calendar')
+  const panel = page.getByRole('region', { name: 'Day details' })
+  await expect(panel.getByRole('heading', { name: 'On this day' })).toBeVisible()
+  await expect(panel.getByRole('heading', { name: 'Add to this day' })).toBeVisible()
+  await panel.getByRole('button', { name: 'Add a lecture or event' }).click()
+  await expect(panel.getByRole('form', { name: 'New event' })).toBeVisible()
+  expect(await overflow(page)).toBe(false)
+
+  if (!isMobile) {
+    await page.setViewportSize({ width: 1600, height: 900 })
+    const month = (await page.locator('.month').boundingBox())!
+    const side = (await panel.boundingBox())!
+    expect(side.x).toBeGreaterThanOrEqual(month.x + month.width) // beside it, not under it
+    await page.setViewportSize({ width: 1100, height: 900 })
+    const under = (await panel.boundingBox())!
+    const grid = (await page.locator('.month').boundingBox())!
+    expect(under.y).toBeGreaterThanOrEqual(grid.y + grid.height - 1)
+    expect(await overflow(page)).toBe(false)
+  }
 })
