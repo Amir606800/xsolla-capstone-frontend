@@ -432,6 +432,9 @@
   color: var(--ok);
   font-size: 14px;
 }
+.admin-status--warn {
+  color: var(--warn);
+}
 .admin-status:empty {
   display: none;
 }
@@ -627,6 +630,30 @@ button.admin-table__title:hover {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.admin-chip[aria-pressed='true'] {
+  background: var(--tab-active-bg);
+  border-color: var(--tab-active-bg);
+  color: var(--tab-active-text);
+}
+.admin-chip:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
 }
 .admin-segmented {
   display: inline-flex;

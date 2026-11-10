@@ -1,4 +1,5 @@
 import type { CalendarEvent } from '../types/calendar'
+import type { SaveOptions, SaveResult } from '../types/google'
 import { authedRequest } from './authed'
 import { eventToApi, isServerId, mapEvent } from './mappers'
 import type { ApiEvent } from './types'
@@ -26,12 +27,24 @@ export async function fetchEvents(now: Date = new Date()): Promise<CalendarEvent
   return (rows ?? []).map(mapEvent)
 }
 
-/** Creates (app-made id) or edits (numeric server id) an event, then reloads the list. */
-export async function saveEvent(event: CalendarEvent): Promise<CalendarEvent[]> {
+/**
+ * Creates (app-made id) or edits (numeric server id) an event, then reloads the list.
+ * `syncToGoogle` only applies to a new event (PATCH has no such field). The server never fails the event
+ * when Google refuses; the only sign is a created row without `google_event_id`, which is reported as 'failed'.
+ */
+export async function saveEvent(event: CalendarEvent, { syncToGoogle = false }: SaveOptions = {}): Promise<SaveResult> {
   const body = eventToApi(event)
-  if (isServerId(event.id)) await authedRequest(`/events/${event.id}`, { method: 'PATCH', body })
-  else await authedRequest('/events', { method: 'POST', body })
-  return fetchEvents()
+  let google: SaveResult['google'] = 'not-asked'
+  if (isServerId(event.id)) {
+    await authedRequest(`/events/${event.id}`, { method: 'PATCH', body })
+  } else {
+    const created = await authedRequest<ApiEvent | null>('/events', {
+      method: 'POST',
+      body: syncToGoogle ? { ...body, sync_to_google: true } : body,
+    })
+    if (syncToGoogle) google = created?.google_event_id ? 'synced' : 'failed'
+  }
+  return { events: await fetchEvents(), google }
 }
 
 export async function deleteEvent(id: string): Promise<CalendarEvent[]> {

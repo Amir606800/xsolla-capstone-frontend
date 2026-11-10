@@ -6,6 +6,7 @@ import { formatTimeLeft } from '../../utils/date'
 import { useAuth } from '../../hooks/useAuth'
 import { isStudent } from '../../utils/roles'
 import { Icon } from '../Icon'
+import { GoogleBadge } from './GoogleBadge'
 import { JoinMeeting } from './JoinMeeting'
 import { Modal } from '../Modal'
 import '../authoring/authoring.css'
@@ -103,6 +104,7 @@ function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date
           <h3 className="event-card__title">{event.title}</h3>
           <span className="pill">{KIND_LABEL[event.kind]}</span>
           {past && <span className="pill event-card__past">Past</span>}
+          {!isStudent(user) && <GoogleBadge event={event} />}
         </div>
 
         <dl className="event-card__facts">

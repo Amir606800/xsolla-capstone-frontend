@@ -161,6 +161,14 @@ describe('mapEvent', () => {
     ).toEqual({ id: '5', title: 'Guest talk', kind: 'lecture', startsAt: 's', endsAt: 'e', moduleId: '3' })
   })
 
+  it('maps the Google Calendar id of an event that was put there, and never sends it back', () => {
+    const row = { id: 5, title: 'Lecture', kind: 'lecture', starts_at: 's', ends_at: 'e', all_day: false }
+    expect(mapEvent({ ...row, google_event_id: 'abc123' }).googleEventId).toBe('abc123')
+    expect(mapEvent({ ...row, google_event_id: null })).not.toHaveProperty('googleEventId')
+    expect(mapEvent(row)).not.toHaveProperty('googleEventId')
+    expect(eventToApi(mapEvent({ ...row, google_event_id: 'abc123' }))).not.toHaveProperty('google_event_id')
+  })
+
   it('maps the meeting link of a lecture', () => {
     expect(mapEvent({ id: 5, title: 'Lecture', kind: 'lecture', starts_at: 's', ends_at: 'e', all_day: false, meeting_url: 'https://meet.google.com/abc-defg-hij' }).meetingUrl).toBe(
       'https://meet.google.com/abc-defg-hij',

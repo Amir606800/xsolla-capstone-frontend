@@ -168,6 +168,7 @@ export function mapEvent(e: ApiEvent): CalendarEvent {
     ...(e.description ? { description: e.description } : {}),
     ...(e.meeting_url ? { meetingUrl: e.meeting_url } : {}),
     ...(e.module_id != null ? { moduleId: String(e.module_id) } : {}),
+    ...(e.google_event_id ? { googleEventId: e.google_event_id } : {}),
   }
 }
 

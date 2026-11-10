@@ -5,6 +5,7 @@ import { EVENT_KINDS, eventToDraft, hasErrors, validateEvent } from '../../utils
 import { canHaveMeeting, JOIN_OPENS_MINUTES } from '../../utils/meeting'
 import type { EditableKind, EventDraft } from '../../utils/authoring'
 import { Field, FormActions } from './Field'
+import { GoogleSyncField } from './GoogleSyncField'
 import { useSave } from './useSave'
 
 /** Lecturer: add or change a lecture, meeting or off-campus day. */
@@ -114,6 +115,7 @@ export function EventForm({
           <textarea {...p} className="field__input form__textarea" rows={2} value={d.description} onChange={(e) => set({ description: e.target.value })} />
         )}
       </Field>
+      <GoogleSyncField event={event} checked={d.syncToGoogle} onChange={(on) => set({ syncToGoogle: on })} />
       <FormActions submitLabel={event ? 'Save event' : 'Add event'} busy={busy} error={error} onCancel={onCancel} />
     </form>
   )

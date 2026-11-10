@@ -313,11 +313,13 @@ export interface EventDraft {
   meetingUrl: string
   /** Optional: the module this lecture belongs to (students get a link to its materials). */
   moduleId: string
+  /** A new event only: also put it on the creator's Google Calendar. */
+  syncToGoogle: boolean
 }
 
 export function eventToDraft(e: CalendarEvent | undefined, dayKey: string): EventDraft {
   if (!e) {
-    return { title: '', kind: 'lecture', date: dayKey, allDay: false, start: '10:00', end: '12:00', location: '', description: '', meetingUrl: '', moduleId: '' }
+    return { title: '', kind: 'lecture', date: dayKey, allDay: false, start: '10:00', end: '12:00', location: '', description: '', meetingUrl: '', moduleId: '', syncToGoogle: false }
   }
   return {
     title: e.title,
@@ -330,6 +332,7 @@ export function eventToDraft(e: CalendarEvent | undefined, dayKey: string): Even
     description: e.description ?? '',
     meetingUrl: e.meetingUrl ?? '',
     moduleId: e.moduleId ?? '',
+    syncToGoogle: false,
   }
 }
 

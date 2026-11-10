@@ -19,6 +19,8 @@ export interface CalendarEvent {
   description?: string
   /** Lectures: the online meeting link (e.g. Google Meet). Students see a Join button shortly before the start. */
   meetingUrl?: string
+  /** Set when the event was also put on its creator's Google Calendar (the id Google gave it). */
+  googleEventId?: string
   /** Deadlines link back to their module. */
   moduleId?: string
   /** Deadlines: the work was already submitted. */

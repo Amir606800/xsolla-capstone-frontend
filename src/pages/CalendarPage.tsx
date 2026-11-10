@@ -14,6 +14,7 @@ import { useModuleAccess } from '../hooks/useModuleAccess'
 import { addMonths, dateKey, deadlineEvents, groupByDay, monthLabel, startOfMonth } from '../utils/calendar'
 import { myNextBooking, slotEvents, slotsOnDay } from '../utils/slots'
 import { draftToEvent, isEditableEvent } from '../utils/authoring'
+import { savedNotice } from '../utils/googleSync'
 import { newId } from '../mocks/contentEdits'
 import type { CalendarEvent, EventKind } from '../types/calendar'
 import '../styles/ui.css'
@@ -58,6 +59,8 @@ export default function CalendarPage() {
   // lecturers: the event form inside the day pop-up (null = closed, {} = a new event)
   const [eventForm, setEventForm] = useState<{ event?: CalendarEvent } | null>(null)
   const [eventMsg, setEventMsg] = useState('')
+  // the event was saved, but its Google copy did not arrive
+  const [eventWarn, setEventWarn] = useState(false)
 
   // event types switched off in the legend (remembered in this browser)
   const [hidden, setHidden] = useState<EventKind[]>(readHidden)
@@ -147,6 +150,7 @@ export default function CalendarPage() {
               await removeEvent(event.id)
               setEventForm(null)
               setEventMsg('Event deleted.')
+              setEventWarn(false)
             },
           }
         : undefined,
@@ -245,7 +249,7 @@ export default function CalendarPage() {
                   {eventForm?.event ? 'Edit event' : 'Lectures and events'}
                 </h3>
                 {eventMsg && (
-                  <p className="day-tools__ok" role="status">
+                  <p className={eventWarn ? 'day-tools__ok day-tools__warn' : 'day-tools__ok'} role={eventWarn ? 'alert' : 'status'}>
                     {eventMsg}
                   </p>
                 )}
@@ -257,9 +261,11 @@ export default function CalendarPage() {
                     modules={courses.modules}
                     onCancel={() => setEventForm(null)}
                     onSave={async (d) => {
-                      await saveEvent(draftToEvent(d, eventForm.event?.id ?? newId('ev')))
+                      const google = await saveEvent(draftToEvent(d, eventForm.event?.id ?? newId('ev')), { syncToGoogle: d.syncToGoogle })
+                      const notice = savedNotice(eventForm.event ? 'Event saved.' : 'Event added. Students can see it now.', google)
                       setEventForm(null)
-                      setEventMsg(eventForm.event ? 'Event saved.' : 'Event added. Students can see it now.')
+                      setEventMsg(notice.text)
+                      setEventWarn(notice.warn)
                     }}
                   />
                 ) : (

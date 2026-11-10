@@ -6,15 +6,18 @@ import './index.css'
 import './styles/typography.css'
 import App from './App.tsx'
 import { AuthProvider } from './context/AuthProvider.tsx'
+import { GoogleProvider } from './context/GoogleProvider.tsx'
 import { ThemeProvider } from './context/ThemeProvider.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <GoogleProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </GoogleProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>,

@@ -58,11 +58,15 @@ vi.mock('../api/events', async () => {
   const store = await import('../mocks/contentEdits')
   return {
     fetchEvents: vi.fn(async () => store.listEvents(new Date())),
-    saveEvent: vi.fn(async (e: import('../types/calendar').CalendarEvent) => {
+    saveEvent: vi.fn(async (e: import('../types/calendar').CalendarEvent, options: import('../types/google').SaveOptions = {}) => {
       const before = store.listEvents().find((x) => x.id === e.id)
-      const saved = store.putEvent(e)
+      // the same rules as the offline API: only a new event can go to Google, and only when connected
+      const asked = !!options.syncToGoogle && !before
+      const synced = asked && (await import('../mocks/google')).mockGoogleIsReady()
+      const googleEventId = synced ? `mock-${e.id}` : before?.googleEventId
+      const events = store.putEvent(googleEventId ? { ...e, googleEventId } : e)
       ;(await import('../mocks/broadcasts')).noticeForSavedEvent(before, e)
-      return saved
+      return { events, google: asked ? (synced ? 'synced' : 'failed') : 'not-asked' }
     }),
     deleteEvent: vi.fn(async (id: string) => store.removeEvent(id)),
   }

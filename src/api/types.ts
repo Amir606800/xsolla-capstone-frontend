@@ -82,6 +82,8 @@ export interface ApiEvent {
   /** Proposed: the online meeting link of a lecture or meeting. */
   meeting_url?: string | null
   module_id?: ApiId | null
+  /** Set when the event was also created in the creator's Google Calendar. */
+  google_event_id?: string | null
   created_at?: string
 }
 

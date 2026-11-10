@@ -24,6 +24,7 @@ mentor/student features, **P3** are nice to have.
 | Files | S3, upload/download | Real calls | Nothing |
 | Submissions | Multiple attempts, grade endpoint | Real calls (one attempt assumed) | Mentor comment without a grade, team scoping (3.4) |
 | Calendar events | CRUD | Real calls | Admin must see every event (3.5) |
+| **Google Calendar** (connect + sync) | `GET /auth/google/{login,callback,me}`, `sync_to_google` on `POST /events`, `google_event_id` (checked at `47fc00b`) | Built: Settings page, tick on the event form, marks, filter | Fixes and small additions in 3.5.1 - P2 |
 | **Users list / create / edit / delete** | Only `GET /users/me` | Admin screens built | **Whole group (4.1) - P1** |
 | **Teams** | Admin routes done (`GET/PUT/POST /teams`, students, mentor), checked at `4de5fd0` | Admin screens call them; student and mentor pages still on demo data | **`DELETE /teams/:id`** (one team); `GET /teams/me` and `/mentors/me/team` are not used by the LMS pages yet (4.2) |
 | **Weekly grades** (green/yellow/red) | Nothing | Built on demo data | **Group 4.3 - P2** |
@@ -151,6 +152,39 @@ Response gets:
   address) on a lecture that has not ended, every active **student** gets a notification of type `event`:
   `"Lecture, Mon, Nov 9, 10:00: the meeting link is ready."` (`"... was changed."` when it replaced another),
   with `link: "/calendar"`. Saving the same link again, or removing it, notifies nobody.
+
+### 3.5.1 Google Calendar (what the front-end uses, and what it would like fixed)
+
+Used today (all of it works with the backend as it is):
+- **Connect:** the Settings page sends the browser to `GET /auth/google/login?access_token=<jwt>` (a page
+  navigation cannot carry a header; the token is renewed just before). Google returns to
+  `GOOGLE_OAUTH_FRONTEND_REDIRECT_URI`, which **must be `<frontend>/settings`** (the page reads `?google=connected`
+  or `?google=error`, shows it once, and removes it; an admin is forwarded to `/admin/settings`).
+- **Status:** `GET /auth/google/me` once per sign-in: `200` connected (shows name, address, picture), `404
+  google_not_connected` not connected, `401 google_token_expired` "Reconnect", `502/500` "could not check",
+  any other `404/405/501` "this server has no Google routes".
+- **Sync:** the event form shows "Also add to my Google Calendar" for **new** events and sends
+  `sync_to_google: true`. The front-end decides that it worked from the created row: **no `google_event_id` =
+  the Google copy failed** (the server logs it and still returns `201`). Events with a `google_event_id` get an
+  "On Google Calendar" mark for staff, and the admin list has a filter for them.
+
+Would like (none of it blocks the front-end):
+1. **Tell us when the sync failed.** Return e.g. `"google_sync": "failed"` (and the reason: `not_connected`,
+   `token_expired`, `google_error`) on the `201`, instead of leaving it to be guessed from a missing id.
+2. **Use the creator's token when an admin edits or deletes someone else's synced event.** Today `PATCH`/`DELETE`
+   call Google with the *editor's* token against an event id that lives in the *creator's* calendar, so it fails
+   silently and the Google copy goes stale. Store `google_user_id` with `google_event_id` and use that user's token.
+3. **`sync_to_google` on `PATCH /events/:id`** (create the Google copy of an existing event). Today the tick is only
+   offered on new events.
+4. **`DELETE /auth/google`** (disconnect: delete the stored token and revoke it at Google). The Settings card has no
+   Disconnect button until it exists; it links to https://myaccount.google.com/permissions instead.
+5. **Send more than title and time:** `location`, `description` (and `meeting_url` once it exists) and `all_day`
+   (as `date`, not `dateTime`; an all-day event is created as 00:00-23:59 UTC today).
+6. `GET /auth/google/me` makes two calls to Google every time; fine once per sign-in, but a cheap "is a token
+   stored?" answer (`{"connected": true}`) would let the front-end check without them.
+7. Keep the OAuth `state` in a signed cookie or the database, not in memory (lost on restart, breaks with two
+   instances). The JWT in `?access_token=` ends up in server and proxy logs: strip it there, or accept a short-lived
+   one-purpose token from a `POST /auth/google/start` instead.
 
 ### 3.6 Files
 Nothing to change. Keep: the admin may download any file; students only files of visible items in their modules
@@ -504,4 +538,5 @@ store; the same flows are the acceptance tests):
 - [ ] A student books and cancels a 1:1 with their own mentor; another student never sees who booked.
 - [ ] Admin broadcasts an announcement; every active user gets it; deadline reminders arrive once.
 - [ ] Admin sees every calendar event; postponing keeps its length.
+- [ ] A lecturer connects Google, creates an event with `sync_to_google`, sees `google_event_id`; editing and deleting it changes the Google copy; a revoked connection shows as `401` on `/auth/google/me`.
 - [ ] Every item in section 6 returns `403` for the wrong role (one automated test per row).

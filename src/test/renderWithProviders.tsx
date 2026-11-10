@@ -2,6 +2,7 @@ import { render } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { MemoryRouter } from 'react-router'
 import { AuthProvider } from '../context/AuthProvider'
+import { GoogleProvider } from '../context/GoogleProvider'
 import { ThemeProvider } from '../context/ThemeProvider'
 
 interface Options {
@@ -13,7 +14,9 @@ export function renderWithProviders(ui: ReactElement, { route = '/' }: Options =
   return render(
     <ThemeProvider>
       <AuthProvider>
-        <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+        <GoogleProvider>
+          <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+        </GoogleProvider>
       </AuthProvider>
     </ThemeProvider>,
   )

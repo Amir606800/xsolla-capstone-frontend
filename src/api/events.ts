@@ -1,6 +1,8 @@
 import { noticeForSavedEvent } from '../mocks/broadcasts'
 import { listEvents, putEvent, removeEvent } from '../mocks/contentEdits'
 import type { CalendarEvent } from '../types/calendar'
+import type { SaveOptions, SaveResult } from '../types/google'
+import { mockGoogleIsReady } from '../mocks/google'
 import * as http from './events.http'
 import { hasBackend } from './http'
 
@@ -18,15 +20,20 @@ export async function fetchEvents(): Promise<CalendarEvent[]> {
   return listEvents()
 }
 
-export async function saveEvent(event: CalendarEvent): Promise<CalendarEvent[]> {
-  if (hasBackend()) return http.saveEvent(event)
+export async function saveEvent(event: CalendarEvent, options: SaveOptions = {}): Promise<SaveResult> {
+  if (hasBackend()) return http.saveEvent(event, options)
   await wait()
   const before = listEvents().find((e) => e.id === event.id)
-  const saved = putEvent(event)
+  // like the server: only a new event can be put on Google, an edit keeps the id it already has,
+  // and a Google that is not connected leaves the event saved but without an id
+  const asked = !!options.syncToGoogle && !before
+  const synced = asked && mockGoogleIsReady()
+  const googleEventId = synced ? `mock-${event.id}` : before?.googleEventId
+  const events = putEvent(googleEventId ? { ...event, googleEventId } : event)
   // a lecture got a meeting link (or a different one): the students are told.
   // (With a backend the server does this; see BACKEND_REQUIREMENTS 4.5.)
   noticeForSavedEvent(before, event)
-  return saved
+  return { events, google: asked ? (synced ? 'synced' : 'failed') : 'not-asked' }
 }
 
 export async function deleteEvent(id: string): Promise<CalendarEvent[]> {

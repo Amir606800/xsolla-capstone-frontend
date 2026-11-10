@@ -4,7 +4,7 @@ import AdminRoute from './components/AdminRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Allow, ByRole, StudentOnly } from './components/RoleRoutes'
 import { ADMIN_SECTIONS } from './config/adminNav'
-import { canAuthor, canMentor } from './utils/roles'
+import { canAuthor, canMentor, isStaff } from './utils/roles'
 import { PageLoader } from './components/loading/PageLoader'
 
 // Route-level code splitting: each screen is downloaded only when visited.
@@ -27,6 +27,8 @@ const MentorTeamPage = lazy(() => import('./pages/mentor/MentorTeamPage'))
 const GradingPage = lazy(() => import('./pages/mentor/GradingPage'))
 // everyone
 const OfficeTourPage = lazy(() => import('./pages/OfficeTourPage'))
+// staff: connections of their own account (Google Calendar)
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 // admin section: separate sign-in and pages
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
@@ -42,8 +44,9 @@ const AdminTeamsPage = lazy(() => import('./pages/admin/teams/AdminTeamsPage'))
 const AdminAnnouncePage = lazy(() => import('./pages/admin/announce/AdminAnnouncePage'))
 const AdminNotificationsPage = lazy(() => import('./pages/admin/notifications/AdminNotificationsPage'))
 const AdminLecturersPage = lazy(() => import('./pages/admin/people/AdminLecturersPage'))
+const AdminSettingsPage = lazy(() => import('./pages/admin/settings/AdminSettingsPage'))
 /** Admin sections with their own pages; the rest show a placeholder until they are built. */
-const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'announce', 'notifications']
+const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'announce', 'notifications', 'settings']
 
 export default function App() {
   return (
@@ -68,6 +71,7 @@ export default function App() {
             <Route path="/admin/announce" element={<AdminAnnouncePage />} />
             <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
             <Route path="/admin/office-tour" element={<OfficeTourPage />} />
+            <Route path="/admin/settings" element={<AdminSettingsPage />} />
             {/* the lecturers page counts each lecturer's modules, so it loads the course */}
             <Route path="/admin/lecturers" element={<AdminCoursesLayout />}>
               <Route index element={<AdminLecturersPage />} />
@@ -93,6 +97,7 @@ export default function App() {
             />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/office-tour" element={<OfficeTourPage />} />
+            <Route path="/settings" element={<Allow when={isStaff}><SettingsPage /></Allow>} />
             <Route
               path="/team"
               element={<ByRole student={<TeamPage />} staff={<Allow when={canMentor}><MentorTeamPage /></Allow>} />}

@@ -1,0 +1,143 @@
+/* The Google Calendar card on the Settings pages (LMS and admin). Flat, like the rest. */
+.google-card {
+  max-width: 640px;
+  padding: 20px 22px;
+  background: var(--card);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  color: var(--text);
+}
+.google-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.google-card__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--active-bg);
+  color: var(--text);
+}
+.google-card__titles {
+  flex: 1;
+  min-width: 0;
+}
+.google-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--fw-medium, 500);
+}
+.google-card__lead {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.google-card__pill {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--active-bg);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.google-card__pill--ok {
+  background: color-mix(in srgb, var(--ok) 20%, transparent);
+  color: var(--ok);
+}
+.google-card__pill--warn {
+  background: color-mix(in srgb, var(--warn) 22%, transparent);
+  color: var(--warn);
+}
+
+.google-card__loading {
+  margin: 16px 0 0;
+  color: var(--text-muted);
+}
+.google-card__note {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--active-bg);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.google-card__note--ok {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  color: var(--ok);
+}
+.google-card__note--warn {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+.google-card__note--bad {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+.google-card__account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.google-card__avatar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.google-card__avatar--initial {
+  display: grid;
+  place-items: center;
+  background: var(--tab-active-bg);
+  color: var(--tab-active-text);
+  font-size: 18px;
+}
+.google-card__name,
+.google-card__email {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.google-card__email {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.google-card__facts {
+  margin: 16px 0 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.google-card__facts li + li {
+  margin-top: 4px;
+}
+.google-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  margin-top: 18px;
+}
+.google-card__link {
+  color: var(--link);
+  font-size: 14px;
+}
+
+@media (max-width: 520px) {
+  .google-card {
+    padding: 16px;
+  }
+  .google-card__head {
+    flex-wrap: wrap;
+  }
+  .google-card__pill {
+    order: 3;
+  }
+}

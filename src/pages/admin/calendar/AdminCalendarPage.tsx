@@ -23,6 +23,8 @@ import {
 } from '../../../utils/adminCalendar'
 import type { DayRange, SchoolKind } from '../../../utils/adminCalendar'
 import { draftToEvent } from '../../../utils/authoring'
+import { savedNotice } from '../../../utils/googleSync'
+import { GoogleBadge } from '../../../components/calendar/GoogleBadge'
 import { addMonths, dateKey, formatEventTime, fullDateLabel, groupByDay, monthLabel, startOfMonth } from '../../../utils/calendar'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { PostponeForm } from './PostponeForm'
@@ -55,11 +57,20 @@ export default function AdminCalendarPage() {
   const [filter, setFilter] = useState<Filter>('all')
   const [action, setAction] = useState<Action | null>(null)
   const [message, setMessage] = useState('')
+  // the event was saved, but its Google copy did not arrive
+  const [warn, setWarn] = useState(false)
+  // only the events that are also on a Google Calendar
+  const [onlyGoogle, setOnlyGoogle] = useState(false)
 
   const school = useMemo(() => calendar.events.filter(isSchoolEvent), [calendar.events])
-  const gridByDay = useMemo(() => groupByDay(school.filter((e) => filter === 'all' || e.kind === filter)), [school, filter])
+  const shown = (e: CalendarEvent) => (filter === 'all' || e.kind === filter) && (!onlyGoogle || !!e.googleEventId)
+  const gridByDay = useMemo(
+    () => groupByDay(school.filter((e) => (filter === 'all' || e.kind === filter) && (!onlyGoogle || !!e.googleEventId))),
+    [school, filter, onlyGoogle],
+  )
   const inView = eventsBetween(school, range)
-  const listed = inView.filter((e) => filter === 'all' || e.kind === filter)
+  const listed = inView.filter(shown)
+  const googleCount = inView.filter((e) => !!e.googleEventId).length
   const listByDay = groupByDay(listed)
   const count = (f: Filter) => (f === 'all' ? inView.length : inView.filter((e) => e.kind === f).length)
 
@@ -101,12 +112,14 @@ export default function AdminCalendarPage() {
 
   const open = (a: Action) => {
     setMessage('')
+    setWarn(false)
     setAction(a)
   }
   const close = () => setAction(null)
-  const done = (text: string) => {
+  const done = (text: string, isWarning = false) => {
     close()
     setMessage(text)
+    setWarn(isWarning)
   }
 
   const current = action && 'event' in action ? calendar.events.find((e) => e.id === action.event.id) ?? action.event : undefined
@@ -127,7 +140,7 @@ export default function AdminCalendarPage() {
         </button>
       </header>
 
-      <p className="admin-status" role="status">
+      <p className={`admin-status${warn ? ' admin-status--warn' : ''}`} role={warn ? 'alert' : 'status'}>
         {message}
       </p>
 
@@ -217,6 +230,12 @@ export default function AdminCalendarPage() {
               ))}
             </div>
 
+            {(googleCount > 0 || onlyGoogle) && (
+              <button type="button" className="admin-chip" aria-pressed={onlyGoogle} onClick={() => setOnlyGoogle((v) => !v)}>
+                <Icon name="calendar" size={14} /> On Google Calendar <span className="admin-segmented__count">{googleCount}</span>
+              </button>
+            )}
+
             {listed.length === 0 ? (
               <div className="admin-empty">
                 <p>{empty}</p>
@@ -242,6 +261,7 @@ export default function AdminCalendarPage() {
                                 {e.location ? ` · ${e.location}` : ''}
                                 {past ? ' · Past' : ''}
                               </p>
+                              <GoogleBadge event={e} />
                             </div>
                             <div className="admin-actions">
                               <button type="button" className="admin-icon-btn" onClick={() => open({ kind: 'edit', event: e })} aria-label={`Edit ${e.title} on ${when(e)}`} title="Edit">
@@ -283,10 +303,11 @@ export default function AdminCalendarPage() {
               onCancel={close}
               onSave={async (d) => {
                 const saved = draftToEvent(d, current?.id ?? newId('event'))
-                await calendar.save(saved)
+                const google = await calendar.save(saved, { syncToGoogle: d.syncToGoogle })
                 // show the month it is in
                 goToMonth(startOfMonth(new Date(saved.startsAt)))
-                done(current ? 'Event saved.' : 'Event added.')
+                const notice = savedNotice(current ? 'Event saved.' : 'Event added.', google)
+                done(notice.text, notice.warn)
               }}
             />
           </div>

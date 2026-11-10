@@ -511,3 +511,18 @@
   color: var(--ok);
   font-size: var(--fs-label);
 }
+.day-tools__warn {
+  color: var(--warn);
+}
+
+/* "On Google Calendar": a small mark on an event the creator also put on their Google Calendar */
+.google-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.google-sync__note {
+  margin: 0;
+}
