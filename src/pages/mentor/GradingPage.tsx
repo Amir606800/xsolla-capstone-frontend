@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { gradeNotesKept, mentorSeesTeamWork } from '../../api/capabilities'
+import { hasBackend } from '../../api/http'
 import { Icon } from '../../components/Icon'
 import { WeekGradeItem } from '../../components/staff/mentor/WeekGradeItem'
 import { WorkItem } from '../../components/staff/mentor/WorkItem'
@@ -66,6 +68,7 @@ export default function GradingPage() {
   const loading = parts.some((p) => p.status === 'loading')
   const failed = parts.some((p) => p.status === 'error')
   const phase = week ? weekPhase(week, now) : 'upcoming'
+  const seesWork = mentorSeesTeamWork()
   const theirWeeks = (studentId: number) =>
     grades.standings.filter((s) => s.studentId === studentId).sort((a, b) => a.week - b.week)
 
@@ -90,7 +93,18 @@ export default function GradingPage() {
         </div>
       )}
 
-      {!loading && !failed && week && (
+      {!loading && !failed && !myTeam.team && (
+        <p className="card card__empty">You do not look after a team yet, so there is no one to grade. An admin gives each team its mentor.</p>
+      )}
+
+      {!loading && !failed && myTeam.team && !week && (
+        <p className="card card__empty">
+          There are no weeks to grade yet.
+          {hasBackend() && ' The server shows you only the weeks you are enrolled in: ask an admin to add you to the course weeks.'}
+        </p>
+      )}
+
+      {!loading && !failed && myTeam.team && week && (
         <>
           <nav className="grading__weeks" aria-label="Weeks">
             {modules.map((m) => {
@@ -165,7 +179,8 @@ export default function GradingPage() {
                       week={week.position}
                       grade={weekGradeOf(gradeIndex, s.id, week.position)}
                       theirWeeks={theirWeeks(s.id)}
-                      work={handedIn(week, s, workIndex)}
+                      work={seesWork ? handedIn(week, s, workIndex) : undefined}
+                      details={gradeNotesKept()}
                       open={openGrade === String(s.id)}
                       onToggle={() => setParam({ grade: openGrade === String(s.id) ? null : String(s.id) })}
                       onSave={async (level, note) => {
@@ -179,10 +194,16 @@ export default function GradingPage() {
               </section>
 
               <h3 className="grading__section">Tasks this week</h3>
-              <p className="grading__hint grading__hint--plain">
-                Tasks are not graded. Read what each student handed in and leave a comment if it helps them.
-              </p>
-              {tasksOf(week).length === 0 ? (
+              {seesWork && (
+                <p className="grading__hint grading__hint--plain">
+                  Tasks are not graded. Read what each student handed in and leave a comment if it helps them.
+                </p>
+              )}
+              {!seesWork ? (
+                <p className="card card__empty">
+                  The server does not show your students&apos; hand-ins to mentors yet, so they cannot be read or commented on here.
+                </p>
+              ) : tasksOf(week).length === 0 ? (
                 <p className="card card__empty">This week has no tasks.</p>
               ) : (
                 tasksOf(week).map((task) => (

@@ -1,12 +1,11 @@
 import { gradeWeek, type Mentor, type StoredStanding, standingsOf, teamStandings } from '../mocks/standings'
 import type { StandingLevel, WeeklyStanding } from '../types/standing'
+import { hasBackend } from './http'
+import * as http from './standings.http'
 
 /**
- * MOCK implementation - the backend has no weekly grades yet. Expected real shapes:
- *   GET /standings/me                          student: own grades [{ week, level, assessed_at, note }]
- *   GET /mentors/me/standings                  mentor: every grade of their team (+ student_id)
- *   PUT /students/:id/standings/:week { level: 'green'|'yellow'|'red', note }   mentor of that student only
- * Rows go through `mapWeeklyStandings`.
+ * Weekly green / yellow / red grades: the real backend's enrollment grades (./standings.http) when VITE_API_URL is
+ * set, the demo store otherwise. The server keeps no note (see capabilities.gradeNotesKept).
  */
 const MOCK_LATENCY_MS = 300
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
@@ -15,11 +14,13 @@ export type { Mentor, StoredStanding }
 
 /** The signed-in student's weekly grades. */
 export async function fetchStandings(studentId = 1): Promise<WeeklyStanding[]> {
+  if (hasBackend()) return http.fetchStandings(studentId)
   await wait()
   return standingsOf(studentId)
 }
 
 export async function fetchTeamStandings(mentor: Mentor): Promise<StoredStanding[]> {
+  if (hasBackend()) return http.fetchTeamStandings()
   await wait()
   return teamStandings(mentor)
 }
@@ -32,6 +33,7 @@ export async function saveWeekGrade(
   level: StandingLevel,
   note: string,
 ): Promise<StoredStanding[]> {
+  if (hasBackend()) return http.saveWeekGrade(studentId, week, level)
   await wait()
   return gradeWeek(mentor, studentId, week, level, note)
 }

@@ -15,6 +15,27 @@ It creates accounts, a team, a module and events on that server, so use a test d
 
 Result on `5ffcd5f`: **3 bugs** (section 1), **8 missing pieces** (section 2), everything else works (section 3).
 
+### Update: `1809a7c` (11 Nov, afternoon), checked on the dev tunnel with the demo accounts
+
+- **Fixed:** 1.1 (task deadlines) and 1.2 (link addresses); week dates (`opens_at` / `closes_at`, 2.1); password
+  reset (`PUT /users/:id/password`, 2.5). The front-end already sends and reads all of these.
+- **Still open:** 1.3 (`.md` / `.zip` uploads, `mime.TypeByExtension` is unchanged).
+- **Weekly grades are now wired to the enrollment grades.** The mentor reads every week's
+  `GET /modules/:m/enrollments` and saves with `PATCH /modules/:m/enrollments/:u/grade`; the student reads their own
+  row. What the backend still has to do for the mentor's Grading page to work:
+  1. **Let mentors see the course.** `GET /modules` returns `[]` for a mentor, and every module route answers 403
+     "not enrolled", so the Grading page has no weeks. Enrol mentors like students, or give the `mentor` role read
+     access to all modules.
+  2. **Only the student's own mentor may grade them.** Today any mentor can grade any student.
+  3. **Do not show every grade to every student.** `GET /modules/:m/enrollments` gives any enrolled user every
+     enrollment with its `grade`, so students can read each other's grades. Filter it to the caller's own row for
+     students (mentors: their team; lecturers and admins: all).
+  4. **Answer an invalid grade with 422, not 500.**
+  5. *(Optional)* A note and a "graded at" on the enrollment. Until then the front-end hides the note field and
+     shows the week's closing date.
+- **Mentors still cannot read hand-ins** (the roster is lecturer/admin only), so the Grading page says so instead of
+  showing work.
+
 ---
 
 ## 1. Bugs: please fix first

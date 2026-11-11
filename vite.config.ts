@@ -21,6 +21,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // always the offline demo store, whatever .env / .env.local point at; tests that need a server stub the URL
+    env: { VITE_API_URL: '' },
     include: ['src/**/*.test.{ts,tsx}'],
     // against a live server only: npm run test:backend (vitest.backend.config.ts)
     exclude: [...configDefaults.exclude, 'src/integration/**'],

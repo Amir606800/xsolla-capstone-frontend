@@ -1,5 +1,6 @@
 import { comment, type Grader, teamSubmissions } from '../mocks/submissions'
 import type { TeamSubmission } from '../types/review'
+import { ApiError, hasBackend } from './http'
 
 /**
  * MOCK implementation - the mentor's side of the task submissions. Tasks get no grade (only the
@@ -16,6 +17,8 @@ const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS)
 export type { Grader }
 
 export async function fetchTeamSubmissions(mentor: Grader): Promise<TeamSubmission[]> {
+  // the server does not let a mentor read the hand-ins yet (capabilities.mentorSeesTeamWork): never show demo work instead
+  if (hasBackend()) return []
   await wait()
   return teamSubmissions(mentor)
 }
@@ -27,6 +30,7 @@ export async function commentOnSubmission(
   assignmentId: string,
   text: string,
 ): Promise<TeamSubmission[]> {
+  if (hasBackend()) throw new ApiError(501, 'not_supported', 'The server cannot take mentor comments yet.')
   await wait()
   return comment(mentor, studentId, assignmentId, text)
 }

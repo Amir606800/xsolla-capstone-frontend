@@ -28,16 +28,20 @@ export function WeekGradeItem({
   open,
   onToggle,
   onSave,
+  details = true,
 }: {
   student: Person
   week: number
   grade: WeeklyStanding | undefined
   /** The student's other weekly grades, for the rule warnings. */
   theirWeeks: WeeklyStanding[]
-  work: { done: number; total: number }
+  /** How much of the week's work they handed in; left out when the mentor cannot see it. */
+  work?: { done: number; total: number }
   open: boolean
   onToggle: () => void
   onSave: (level: StandingLevel, note: string) => Promise<void>
+  /** The note and the "last saved" date; off where the server keeps only the colour. */
+  details?: boolean
 }) {
   const id = useId()
   const [level, setLevel] = useState<StandingLevel | null>(grade?.level ?? null)
@@ -69,9 +73,11 @@ export function WeekGradeItem({
         <Avatar name={student.name} small />
         <span className="person-row__main">
           <span className="person-row__name">{student.name}</span>
-          <span className="list__meta">
-            {work.total === 0 ? 'No tasks this week' : `${work.done} of ${work.total} tasks handed in`}
-          </span>
+          {work && (
+            <span className="list__meta">
+              {work.total === 0 ? 'No tasks this week' : `${work.done} of ${work.total} tasks handed in`}
+            </span>
+          )}
         </span>
         {grade ? <StandingPill level={grade.level} /> : <span className="chip">Not graded</span>}
         <button
@@ -111,17 +117,23 @@ export function WeekGradeItem({
             </p>
           )}
 
-          <label className="field__label" htmlFor={`${id}-note`}>
-            Note for {student.name} (optional)
-          </label>
-          <textarea
-            id={`${id}-note`}
-            className="field__input form__textarea"
-            rows={2}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          {grade && <p className="list__meta">Last saved {formatDateTime(grade.assessedAt)}. Saving again replaces it.</p>}
+          {details && (
+            <>
+              <label className="field__label" htmlFor={`${id}-note`}>
+                Note for {student.name} (optional)
+              </label>
+              <textarea
+                id={`${id}-note`}
+                className="field__input form__textarea"
+                rows={2}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </>
+          )}
+          {grade && (
+            <p className="list__meta">{details ? `Last saved ${formatDateTime(grade.assessedAt)}. ` : ''}Saving again replaces it.</p>
+          )}
           {error && (
             <p className="field__error" role="alert">
               {error}
