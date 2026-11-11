@@ -22,7 +22,7 @@ import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { Role, User } from '../types/user'
 import { type UserDto, mapUser } from './auth.http'
 import { authedRequest } from './authed'
-import { ApiError, apiRequest, hasBackend } from './http'
+import { ApiError, hasBackend } from './http'
 import * as teamsApi from './teams.http'
 
 /**
@@ -97,12 +97,6 @@ export interface NewStudent {
   teamId: string | null
 }
 
-interface SignupResponse {
-  access_token: string
-  refresh_token: string
-  user: UserDto
-}
-
 const TAKEN = 'There is already an account with this email.'
 
 /** The name, e-mail and password of a new account must pass the rules in utils/credentials. */
@@ -116,20 +110,16 @@ export async function createStudent(input: NewStudent): Promise<User> {
   checkNewAccount(input)
   let user: User
   if (hasBackend()) {
-    let res: SignupResponse
     try {
-      // not apiRequest's session helpers: the admin's own tokens must stay as they are
-      res = await apiRequest<SignupResponse>('/auth/signup', {
+      const dto = await authedRequest<UserDto>('/users', {
         method: 'POST',
-        body: { email: input.email.trim(), name: input.name.trim(), password: input.password },
+        body: { email: input.email.trim(), name: input.name.trim(), password: input.password, roles: ['student'] },
       })
+      user = mapUser(dto)
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) throw new ApiError(409, 'conflict', TAKEN)
       throw e
     }
-    // close the session signup opened for the new student (best effort)
-    apiRequest<void>('/auth/logout', { method: 'POST', body: { refresh_token: res.refresh_token }, token: res.access_token }).catch(() => undefined)
-    user = mapUser(res.user)
   } else {
     await wait()
     user = addUser({ name: input.name, email: input.email, roles: ['student'] })
