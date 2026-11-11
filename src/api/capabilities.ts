@@ -9,4 +9,4 @@ import { hasBackend } from './http'
 export const gradeNotesKept = () => !hasBackend()
 
 /** A mentor cannot read their students' hand-ins on the server yet (the roster is lecturer/admin only). */
-export const mentorSeesTeamWork = () => !hasBackend()
+export const mentorSeesTeamWork = () => hasBackend()
