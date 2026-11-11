@@ -146,13 +146,14 @@ describe('Grading page: what is not there', () => {
     expect(await screen.findByText(/You do not look after a team yet/)).toBeInTheDocument()
   })
 
-  it('on the real server: no note field, no demo hand-ins, and the empty course is explained', async () => {
+  it('on the real server: no note field (it keeps only the colour), and the team hand-ins are shown', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     const user = userEvent.setup()
     renderAs(['mentor'], '/grading?week=m5')
     await user.click(await screen.findByRole('button', { name: "Grade Leyla Hasanova's week 5" }))
     expect(screen.queryByLabelText(/^Note for/)).not.toBeInTheDocument()
-    expect(screen.getByText(/does not show your students.* hand-ins to mentors yet/)).toBeInTheDocument()
-    expect(screen.queryByText(/tasks handed in/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/does not show your students/)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/tasks handed in/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/Tasks are not graded/)).toBeInTheDocument()
   })
 })

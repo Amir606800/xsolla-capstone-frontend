@@ -5,8 +5,11 @@ import { hasBackend } from './http'
  * works. Kept apart from the API modules so tests that replace those still get the real answers.
  */
 
-/** The server keeps only the colour of a week grade, not the mentor's note. */
+/** The note on a week grade: the demo store keeps it, the server keeps only the colour (no field for a note yet). */
 export const gradeNotesKept = () => !hasBackend()
 
-/** A mentor cannot read their students' hand-ins on the server yet (the roster is lecturer/admin only). */
-export const mentorSeesTeamWork = () => hasBackend()
+/**
+ * Whether the Grading page shows the team's hand-ins. Both the demo store and the server (since backend 8f04f85, mentors
+ * read their own team's work) have them; kept as a switch for a server without that permission.
+ */
+export const mentorSeesTeamWork = () => true

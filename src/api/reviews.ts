@@ -1,15 +1,11 @@
 import { comment, type Grader, teamSubmissions } from '../mocks/submissions'
 import type { TeamSubmission } from '../types/review'
-import { ApiError, hasBackend } from './http'
+import { hasBackend } from './http'
+import * as http from './reviews.http'
 
 /**
- * MOCK implementation - the mentor's side of the task submissions. Tasks get no grade (only the
- * week does, see ./standings): the mentor reads the work and may comment. Closest real calls in
- * API_CONTRACT.md:
- *   GET  /courses/:courseId/content-items/:assignmentId/submissions   roster of one task
- *   POST /submissions/:id/grade { grade, feedback }
- * To settle with the backend: a comment-only call without `grade` (e.g. PUT /submissions/:id/comment
- * { comment }), allowed for the mentor of the student's team, and one call for the team's work.
+ * The mentor's side of the task hand-ins: the real backend (./reviews.http) when VITE_API_URL is set, the demo store
+ * otherwise. Tasks get no grade (only the week does, see ./standings): the mentor reads the work and may comment.
  */
 const MOCK_LATENCY_MS = 300
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
@@ -17,8 +13,7 @@ const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS)
 export type { Grader }
 
 export async function fetchTeamSubmissions(mentor: Grader): Promise<TeamSubmission[]> {
-  // the server does not let a mentor read the hand-ins yet (capabilities.mentorSeesTeamWork): never show demo work instead
-  if (hasBackend()) return []
+  if (hasBackend()) return http.fetchTeamSubmissions()
   await wait()
   return teamSubmissions(mentor)
 }
@@ -30,7 +25,7 @@ export async function commentOnSubmission(
   assignmentId: string,
   text: string,
 ): Promise<TeamSubmission[]> {
-  if (hasBackend()) throw new ApiError(501, 'not_supported', 'The server cannot take mentor comments yet.')
+  if (hasBackend()) return http.commentOnSubmission(studentId, assignmentId, text)
   await wait()
   return comment(mentor, studentId, assignmentId, text)
 }
