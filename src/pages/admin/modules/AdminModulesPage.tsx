@@ -154,8 +154,9 @@ export default function AdminModulesPage() {
             submitLabel="Create module"
             onCancel={close}
             onSave={async (patch) => {
-              const id = await createModule(patch)
-              navigate(`/admin/modules/${id}`, { state: { message: 'Module created. Add its tasks, resources and quizzes below.' } })
+              const { id, warning } = await createModule(patch)
+              const message = 'Module created. Add its tasks, resources and quizzes below.'
+              navigate(`/admin/modules/${id}`, { state: { message: warning ? `${message} ${warning}` : message } })
             }}
           />
         )}
@@ -167,9 +168,9 @@ export default function AdminModulesPage() {
             module={action.module}
             onCancel={close}
             onSave={async (patch) => {
-              await saveModule(action.module.id, patch)
+              const warning = await saveModule(action.module.id, patch)
               close()
-              setMessage('Module saved.')
+              setMessage(warning ? `Module saved. ${warning}` : 'Module saved.')
             }}
           />
         )}

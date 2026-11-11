@@ -109,6 +109,19 @@ describe('Admin: creating content', () => {
     expect(listModules().at(-1)).toMatchObject({ title: 'Kubernetes', position: 13, createdBy: 1000 })
   })
 
+  it('says so when the server did not keep the week dates (it ignores fields it does not know)', async () => {
+    // a server without date columns: the module comes back without its dates
+    vi.mocked(courses.createModule).mockImplementationOnce(async (patch) => {
+      const { addModule } = await import('../../mocks/contentEdits')
+      const made = addModule({ title: patch.title }, 1000)
+      return { ...made, modules: made.modules.map((m) => (m.id === made.id ? { ...m, opensAt: undefined, closesAt: undefined } : m)) }
+    })
+    renderWithProviders(<App />, { route: '/admin/modules' })
+    const user = userEvent.setup()
+    await createModule(user, 'Kubernetes')
+    expect(await screen.findByText(/^Module created\. .*The server does not store week dates yet, so the open and close dates were not saved\.$/)).toBeInTheDocument()
+  })
+
   it('the new module form checks the fields, and Cancel creates nothing', async () => {
     renderWithProviders(<App />, { route: '/admin/modules' })
     const user = userEvent.setup()

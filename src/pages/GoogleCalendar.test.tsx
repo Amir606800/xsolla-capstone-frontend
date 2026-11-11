@@ -44,7 +44,8 @@ describe('the lecturer’s calendar and Google', () => {
     await addTalk({ tick: true })
     expect(await within(dialog()).findByText('Event added. Students can see it now. It is on your Google Calendar too.')).toBeInTheDocument()
     expect(listEvents().find((e) => e.title === 'Guest talk')?.googleEventId).toMatch(/^mock-/)
-    const card = within(within(dialog()).getByRole('list', { name: 'Events' })).getByRole('listitem')
+    // the day may also hold the weekly lecture: pick the new event's card
+    const card = within(within(dialog()).getByRole('list', { name: 'Events' })).getByText('Guest talk').closest('li')!
     expect(within(card).getByText('On Google Calendar')).toBeInTheDocument()
   })
 

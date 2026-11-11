@@ -1,6 +1,9 @@
 import type { Person, Team } from '../types/team'
 import type { User } from '../types/user'
 
+/** Every demo team has a mentor (a real one may not have one yet). */
+export type DemoTeam = Team & { mentor: Person }
+
 // A cohort of 29 students is split into 6 teams: five teams of 5 and one of 4.
 const COHORT_SIZE = 29
 const TEAM_COUNT = 6
@@ -30,13 +33,13 @@ const TEAM_4 = [
 const byName = (a: Person, b: Person) => a.name.localeCompare(b.name)
 
 /** The signed-in student's team: themselves plus four teammates, sorted by name. */
-export function buildMockTeam(user: Pick<User, 'id' | 'name' | 'email'>): Team {
+export function buildMockTeam(user: Pick<User, 'id' | 'name' | 'email'>): DemoTeam {
   const members = [{ id: user.id, name: user.name, email: user.email }, ...TEAMMATES].sort(byName)
   return { id: 't3', name: 'Team 3', mentor: MENTOR, members, cohortSize: COHORT_SIZE, teamCount: TEAM_COUNT }
 }
 
 /** The team a mentor looks after. Rashad (900) has Sam's team, so the two demo accounts meet. */
-export function buildMentorTeam(mentor: Pick<User, 'id' | 'name' | 'email'>): Team {
+export function buildMentorTeam(mentor: Pick<User, 'id' | 'name' | 'email'>): DemoTeam {
   const self = { id: mentor.id, name: mentor.name, email: mentor.email }
   if (mentor.id === MENTOR.id) {
     return { id: 't3', name: 'Team 3', mentor: self, members: [SAM, ...TEAMMATES].sort(byName), cohortSize: COHORT_SIZE, teamCount: TEAM_COUNT }

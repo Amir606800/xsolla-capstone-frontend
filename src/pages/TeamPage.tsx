@@ -53,6 +53,12 @@ export default function TeamPage() {
         </div>
       )}
 
+      {status === 'ready' && !team && (
+        <div className="module__state">
+          <p>You are not in a team yet. The school puts every student in one; ask an admin if it takes long.</p>
+        </div>
+      )}
+
       {status === 'ready' && team && (
         <>
           <div className="team__grid">
@@ -87,15 +93,19 @@ export default function TeamPage() {
                 </span>
                 <h2 id="team-mentor-title">Your mentor</h2>
               </header>
-              <div className="team__mentor">
-                <Avatar name={team.mentor.name} mentor />
-                <div className="team__info">
-                  <p className="list__title">{team.mentor.name}</p>
-                  <p className="list__meta">Mentor of {team.name}</p>
-                  <Contact person={team.mentor} />
+              {team.mentor ? (
+                <div className="team__mentor">
+                  <Avatar name={team.mentor.name} mentor />
+                  <div className="team__info">
+                    <p className="list__title">{team.mentor.name}</p>
+                    <p className="list__meta">Mentor of {team.name}</p>
+                    <Contact person={team.mentor} />
+                  </div>
                 </div>
-              </div>
-              {nextMeeting ? (
+              ) : (
+                <p className="card__empty">Your team has no mentor yet. The school will name one soon.</p>
+              )}
+              {!team.mentor ? null : nextMeeting ? (
                 <p className="team__meeting">
                   <Icon name="calendar" size={16} />
                   <span>

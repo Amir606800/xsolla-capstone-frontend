@@ -47,6 +47,12 @@ export default function MentorTeamPage() {
         </div>
       )}
 
+      {status === 'ready' && !team && (
+        <div className="module__state">
+          <p>You do not look after a team yet. An admin gives each team its mentor.</p>
+        </div>
+      )}
+
       {status === 'ready' && team && (
         <>
           <div className="team__grid">

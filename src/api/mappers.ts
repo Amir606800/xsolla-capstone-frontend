@@ -90,6 +90,19 @@ export function mapContentItems(
         ...(node.file_id != null ? { fileId: String(node.file_id) } : {}),
       }
       out.push(r)
+    } else if (node.type === 'link') {
+      // a link the server lost its address for cannot be opened, so it is not shown
+      if (!node.url) continue
+      out.push({
+        id,
+        moduleId,
+        type: 'resource',
+        title: node.title,
+        kind: 'link',
+        url: node.url,
+        ...hidden,
+        ...(text.description ? { description: text.description } : {}),
+      })
     } else if (node.type === 'assignment') {
       // the backend requires due_at on create; an item without one cannot be shown on a timeline
       if (!node.due_at) continue
@@ -113,7 +126,8 @@ export function mapContentItems(
 /**
  * GET /modules + each module's content items -> CourseModule[].
  * - The backend has no week number: modules are ordered by creation and numbered 1, 2, 3, ...
- * - It has no open/close dates either, so nothing is locked for students (opensAt/closesAt unset).
+ * - Week dates (`opens_at` / `closes_at`) are read when the server sends them; it does not store them yet, so
+ *   until then nothing is locked for students.
  */
 export function mapModules(
   modules: ApiModule[],
@@ -131,6 +145,8 @@ export function mapModules(
         title: m.title,
         ...(m.description ? { description: m.description } : {}),
         ...(m.created_by != null ? { createdBy: Number(m.created_by) } : {}),
+        ...(m.opens_at ? { opensAt: m.opens_at } : {}),
+        ...(m.closes_at ? { closesAt: m.closes_at } : {}),
         createdAt: m.created_at,
         items: mapContentItems(itemsByModule[id] ?? [], id, submissions, opts),
       }
@@ -180,8 +196,9 @@ export function eventToApi(e: CalendarEvent) {
     starts_at: e.startsAt,
     ends_at: e.endsAt,
     all_day: !!e.allDay,
-    ...(e.location ? { location: e.location } : {}),
-    ...(e.description ? { description: e.description } : {}),
+    // always sent, empty when there is none: on an edit that is how a place or description is taken away
+    location: e.location ?? '',
+    description: e.description ?? '',
     // null (not left out) so editing an event can also take the link away
     meeting_url: e.meetingUrl ?? null,
     ...(e.moduleId && /^\d+$/.test(e.moduleId) ? { module_id: Number(e.moduleId) } : {}),

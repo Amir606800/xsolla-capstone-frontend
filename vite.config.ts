@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 // Let the app be opened through an ngrok tunnel (Vite blocks unknown host names by default).
 const tunnelHosts = ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app', '.ngrok.io']
@@ -22,6 +22,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // against a live server only: npm run test:backend (vitest.backend.config.ts)
+    exclude: [...configDefaults.exclude, 'src/integration/**'],
     css: false,
   },
 })

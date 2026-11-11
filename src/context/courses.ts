@@ -12,8 +12,8 @@ export interface CoursesContextValue {
   reload: () => void
   /** Submits (or resubmits) work and updates the shared course state. Rejects on failure. */
   submitAssignment: (assignmentId: string, payload: SubmitPayload) => Promise<void>
-  /** Lecturer authoring (teachers and admins only). Each rejects on failure. */
-  saveModule: (moduleId: string, patch: ModulePatch) => Promise<void>
+  /** Lecturer authoring (teachers and admins only). Each rejects on failure. Resolves with a warning when part was not kept. */
+  saveModule: (moduleId: string, patch: ModulePatch) => Promise<string | undefined>
   /** Creates the item, or replaces the one with the same id. */
   saveItem: (item: ContentItem) => Promise<void>
   deleteItem: (itemId: string) => Promise<void>
@@ -21,8 +21,8 @@ export interface CoursesContextValue {
   assignLecturer: (moduleId: string, lecturerId: number | null) => Promise<void>
   /** The whole module with everything in it (admins). */
   deleteModule: (moduleId: string) => Promise<void>
-  /** A new module after the last one; resolves with its id. */
-  createModule: (patch: ModulePatch & { title: string }) => Promise<string>
+  /** A new module after the last one; resolves with its id, and a warning when part was not kept. */
+  createModule: (patch: ModulePatch & { title: string }) => Promise<{ id: string; warning?: string }>
 }
 
 export const CoursesContext = createContext<CoursesContextValue | null>(null)

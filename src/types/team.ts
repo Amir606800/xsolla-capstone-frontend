@@ -12,7 +12,8 @@ export interface Person {
 export interface Team {
   id: string
   name: string
-  mentor: Person
+  /** Missing while the admin has not given the team a mentor. */
+  mentor?: Person
   /** The students in the team, including the signed-in student. */
   members: Person[]
   /** Everyone in the cohort and how many teams it is split into (for the note at the bottom). */

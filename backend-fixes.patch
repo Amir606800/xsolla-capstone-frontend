@@ -1,0 +1,55 @@
+diff --git a/internal/handlers/content.go b/internal/handlers/content.go
+index 22f3289..3742751 100644
+--- a/internal/handlers/content.go
++++ b/internal/handlers/content.go
+@@ -313,6 +313,7 @@ func buildContentTree(items []store.ContentItem) []dto.ContentTreeNode {
+ 			Position:    ci.Position,
+ 			IsVisible:   ci.IsVisible,
+ 			FileID:      ci.FileID,
++			Url:         ci.Url,
+ 			DueAt:       ci.DueAt,
+ 		}
+ 	}
+diff --git a/internal/handlers/file.go b/internal/handlers/file.go
+index fae3193..5dfef9a 100644
+--- a/internal/handlers/file.go
++++ b/internal/handlers/file.go
+@@ -73,7 +73,17 @@ func (h *FileHandlers) UploadFile(w http.ResponseWriter, r *http.Request) {
+ 
+ 	// Validate file type
+ 	ext := filepath.Ext(header.Filename)
+-	mimeType := mime.TypeByExtension(ext)
++	// the OS mime table differs per machine (Windows: .zip = application/x-zip-compressed, no .md;
++	// .txt comes with "; charset=utf-8"): known extensions first, parameters dropped
++	known := map[string]string{".md": "text/markdown", ".zip": "application/zip", ".txt": "text/plain", ".pdf": "application/pdf",
++		".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation"}
++	mimeType, ok := known[strings.ToLower(ext)]
++	if !ok {
++		mimeType = mime.TypeByExtension(ext)
++	}
++	if i := strings.Index(mimeType, ";"); i >= 0 {
++		mimeType = strings.TrimSpace(mimeType[:i])
++	}
+ 	if mimeType == "" {
+ 		mimeType = "application/octet-stream"
+ 	}
+diff --git a/internal/service/content_service.go b/internal/service/content_service.go
+index 1d8b641..ba147ea 100644
+--- a/internal/service/content_service.go
++++ b/internal/service/content_service.go
+@@ -74,6 +74,15 @@ func (s *ContentService) CreateContentItem(ctx context.Context, userID int64, ro
+ 		return nil, err
+ 	}
+ 
++	// the deadline lives in the assignments table (GET reads it from there)
++	if itemType == "assignment" {
++		a, err := s.store.CreateAssignment(ctx, ci.ID, dueAt)
++		if err != nil {
++			return nil, err
++		}
++		ci.DueAt = a.DueAt
++	}
++
+ 	return ci, nil
+ }
+ 

@@ -7,8 +7,8 @@ import { hasBackend } from './http'
 /**
  * Real backend when VITE_API_URL is set (./courses.http), the offline mock otherwise.
  * Real: loading the modules and their items, handing in work, module title/description, creating and
- * editing tasks and file materials, deleting items. The backend has no place yet for quizzes, link
- * materials or week dates; with a backend those give a clear error instead of a browser-only save.
+ * editing tasks, file materials and links, deleting items. The backend has no place yet for quizzes or
+ * week dates: quizzes give a clear error, dates are sent and checked afterwards (datesNotKept).
  * Each authoring call returns the whole updated course (all modules), like a refetch would.
  */
 const MOCK_LATENCY_MS = 300

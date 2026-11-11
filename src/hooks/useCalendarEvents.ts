@@ -37,13 +37,16 @@ export function useCalendarEvents() {
   }, [])
 
   /** Saves the event and says what happened to its Google copy (when one was asked for). */
-  const save = useCallback(async (event: CalendarEvent, options?: SaveOptions): Promise<GoogleOutcome> => {
-    const result = await saveEvent(event, options)
-    setEvents(result.events)
-    // the event is saved but Google did not take it: find out why (a revoked connection shows as "reconnect")
-    if (result.google === 'failed') void reloadGoogle()
-    return result.google
-  }, [reloadGoogle])
+  const save = useCallback(
+    async (event: CalendarEvent, options?: SaveOptions): Promise<{ google: GoogleOutcome; meetingLinkLost: boolean }> => {
+      const result = await saveEvent(event, options)
+      setEvents(result.events)
+      // the event is saved but Google did not take it: find out why (a revoked connection shows as "reconnect")
+      if (result.google === 'failed') void reloadGoogle()
+      return { google: result.google, meetingLinkLost: !!result.meetingLinkLost }
+    },
+    [reloadGoogle],
+  )
   const remove = useCallback(async (id: string) => setEvents(await deleteEvent(id)), [])
 
   return { status, events, reload, save, remove }

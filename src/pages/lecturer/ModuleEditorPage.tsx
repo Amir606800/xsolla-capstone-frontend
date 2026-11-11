@@ -117,10 +117,11 @@ export default function ModuleEditorPage() {
     if (params.has('add')) setParams({}, { replace: true })
   }
   /** Saves, closes the form and says what happened. */
-  const done = (text: string) => async (run: Promise<void>) => {
-    await run
+  // a save may resolve with a warning about a part the server did not keep (e.g. week dates)
+  const done = (text: string) => async (run: Promise<string | void | undefined>) => {
+    const warning = await run
     close()
-    setMessage(text)
+    setMessage(warning ? `${text} ${warning}` : text)
   }
   const removed = (what: string, id: string) => async () => {
     await deleteItem(id)
@@ -265,7 +266,7 @@ function EditorForm({
   module: CourseModule
   now: Date
   current: CourseModule['items'][number] | undefined
-  done: (text: string) => (run: Promise<void>) => Promise<void>
+  done: (text: string) => (run: Promise<string | void | undefined>) => Promise<void>
   actions: Pick<ReturnType<typeof useCourses>, 'saveModule' | 'saveItem'>
   onCancel: () => void
 }) {

@@ -35,6 +35,7 @@ export async function fetchEvents(now: Date = new Date()): Promise<CalendarEvent
 export async function saveEvent(event: CalendarEvent, { syncToGoogle = false }: SaveOptions = {}): Promise<SaveResult> {
   const body = eventToApi(event)
   let google: SaveResult['google'] = 'not-asked'
+  let id = event.id
   if (isServerId(event.id)) {
     await authedRequest(`/events/${event.id}`, { method: 'PATCH', body })
   } else {
@@ -42,9 +43,13 @@ export async function saveEvent(event: CalendarEvent, { syncToGoogle = false }: 
       method: 'POST',
       body: syncToGoogle ? { ...body, sync_to_google: true } : body,
     })
+    if (created) id = String(created.id)
     if (syncToGoogle) google = created?.google_event_id ? 'synced' : 'failed'
   }
-  return { events: await fetchEvents(), google }
+  const events = await fetchEvents()
+  // the server answers 200 to fields it does not know: check the link really came back
+  const meetingLinkLost = !!event.meetingUrl && !events.find((e) => e.id === id)?.meetingUrl
+  return { events, google, ...(meetingLinkLost ? { meetingLinkLost } : {}) }
 }
 
 export async function deleteEvent(id: string): Promise<CalendarEvent[]> {

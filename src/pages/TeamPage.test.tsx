@@ -6,6 +6,7 @@ import { CoursesProvider } from '../context/CoursesProvider'
 import { listSlots, reserve } from '../mocks/slots'
 import { buildMockTeam } from '../mocks/teams'
 import { renderWithProviders } from '../test/renderWithProviders'
+import type { Team } from '../types/team'
 import { initials } from '../utils/people'
 import TeamPage from './TeamPage'
 
@@ -27,6 +28,22 @@ describe('TeamPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Loading')
     expect(await screen.findByRole('heading', { name: 'Team 3' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('a student in no team is told so, without an error', async () => {
+    vi.mocked(fetchMyTeam).mockResolvedValueOnce(null)
+    renderTeam()
+    expect(await screen.findByText(/You are not in a team yet/)).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('a team without a mentor says one is coming instead of showing a mentor card', async () => {
+    const team: Team = buildMockTeam({ id: 1, name: 'Sam', email: 'sam@example.com' })
+    delete team.mentor
+    vi.mocked(fetchMyTeam).mockResolvedValueOnce(team)
+    renderTeam()
+    expect(await screen.findByText('Your team has no mentor yet. The school will name one soon.')).toBeInTheDocument()
+    expect(screen.queryByText(/Next 1:1/)).not.toBeInTheDocument()
   })
 
   it('shows an error with retry, and recovers', async () => {

@@ -303,10 +303,10 @@ export default function AdminCalendarPage() {
               onCancel={close}
               onSave={async (d) => {
                 const saved = draftToEvent(d, current?.id ?? newId('event'))
-                const google = await calendar.save(saved, { syncToGoogle: d.syncToGoogle })
+                const { google, meetingLinkLost } = await calendar.save(saved, { syncToGoogle: d.syncToGoogle })
                 // show the month it is in
                 goToMonth(startOfMonth(new Date(saved.startsAt)))
-                const notice = savedNotice(current ? 'Event saved.' : 'Event added.', google)
+                const notice = savedNotice(current ? 'Event saved.' : 'Event added.', google, { meetingLinkLost })
                 done(notice.text, notice.warn)
               }}
             />

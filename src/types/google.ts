@@ -32,6 +32,8 @@ export type GoogleOutcome = 'synced' | 'failed' | 'not-asked'
 export interface SaveResult {
   events: import('./calendar').CalendarEvent[]
   google: GoogleOutcome
+  /** A meeting link was sent but the saved event has none: the server did not keep it. */
+  meetingLinkLost?: boolean
 }
 
 export interface SaveOptions {

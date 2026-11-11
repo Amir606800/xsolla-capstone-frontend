@@ -4,6 +4,7 @@ import { assignLecturer as apiAssignLecturer, createModule as apiCreateModule, d
 import type { ModulePatch, SubmitPayload } from '../api/courses'
 import { useAuth } from '../hooks/useAuth'
 import type { ContentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
+import { datesNotKept } from '../utils/moduleDates'
 import { DEADLINE_PASSED, isModuleLocked, isPastDue } from '../utils/progress'
 import { canAuthor, isStudent } from '../utils/roles'
 import { CoursesContext } from './courses'
@@ -116,7 +117,18 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     },
     [mayAuthor, student],
   )
-  const saveModule = useCallback((id: string, patch: ModulePatch) => author(() => apiSaveModule(id, patch)), [author])
+  const saveModule = useCallback(
+    async (id: string, patch: ModulePatch) => {
+      let warning: string | undefined
+      await author(async () => {
+        const next = await apiSaveModule(id, patch)
+        warning = datesNotKept(patch, next.find((m) => m.id === id))
+        return next
+      })
+      return warning
+    },
+    [author],
+  )
   const saveItem = useCallback((item: ContentItem) => author(() => apiSaveItem(item)), [author])
   const deleteItem = useCallback((id: string) => author(() => apiDeleteItem(id)), [author])
   const assignLecturer = useCallback((moduleId: string, lecturerId: number | null) => author(() => apiAssignLecturer(moduleId, lecturerId)), [author])
@@ -124,12 +136,14 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const createModule = useCallback(
     async (patch: ModulePatch & { title: string }) => {
       let id = ''
+      let warning: string | undefined
       await author(async () => {
         const res = await apiCreateModule(patch, { createdBy: user?.id })
         id = res.id
+        warning = datesNotKept(patch, res.modules.find((m) => m.id === res.id))
         return res.modules
       })
-      return id
+      return { id, warning }
     },
     [author, user?.id],
   )

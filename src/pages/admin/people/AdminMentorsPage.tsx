@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { hasBackend } from '../../../api/http'
 import { Icon } from '../../../components/Icon'
 import { Modal } from '../../../components/Modal'
 import { useDirectory } from '../../../hooks/useDirectory'
@@ -98,7 +97,6 @@ export default function AdminMentorsPage() {
       {status === 'error' && (
         <div className="admin-empty" role="alert">
           <p>The mentor list could not be loaded.</p>
-          {hasBackend() && <p className="admin-muted">The server does not list accounts yet (GET /users).</p>}
           <button type="button" className="admin-btn" onClick={reload}>
             Try again
           </button>

@@ -7,7 +7,8 @@ import { MonthGrid } from '../components/calendar/MonthGrid'
 import { SlotList } from '../components/calendar/Slots'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
-import { canAuthor, canMentor, isStudent } from '../utils/roles'
+import { canAuthor, canMentor, isAdmin, isStudent } from '../utils/roles'
+import { hasBackend } from '../api/http'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
 import { useMeetingSlots } from '../hooks/useMeetingSlots'
 import { useCourses } from '../hooks/useCourses'
@@ -130,11 +131,19 @@ export default function CalendarPage() {
     return new Date(y, m - 1, d)
   }, [selected])
   const { save: saveEvent, remove: removeEvent } = calendar
+  // the server lets a lecturer link an event only to a week they lead (an admin to any)
+  const eventModules = useMemo(
+    () => (hasBackend() && user && !isAdmin(user) ? courses.modules.filter((m) => m.createdBy === user.id) : courses.modules),
+    [courses.modules, user],
+  )
+
   const editing = useMemo<EventEditing | undefined>(
     () =>
       author
         ? {
-            canEdit: isEditableEvent,
+            // the server lets a lecturer change only the events of a week they lead (events have no owner of their own)
+            canEdit: (event) =>
+              isEditableEvent(event) && (!hasBackend() || isAdmin(user) || (!!event.moduleId && eventModules.some((m) => m.id === event.moduleId))),
             onEdit: (event) => {
               setNotice(null)
               setTool({ kind: 'event', event })
@@ -146,12 +155,12 @@ export default function CalendarPage() {
             },
           }
         : undefined,
-    [author, removeEvent],
+    [author, removeEvent, user, eventModules],
   )
   const saveFromForm = useCallback(
     async (d: EventDraft, existing?: CalendarEvent) => {
-      const google = await saveEvent(draftToEvent(d, existing?.id ?? newId('ev')), { syncToGoogle: d.syncToGoogle })
-      const result = savedNotice(existing ? 'Event saved.' : 'Event added. Students can see it now.', google)
+      const { google, meetingLinkLost } = await saveEvent(draftToEvent(d, existing?.id ?? newId('ev')), { syncToGoogle: d.syncToGoogle })
+      const result = savedNotice(existing ? 'Event saved.' : 'Event added. Students can see it now.', google, { meetingLinkLost })
       setTool(null)
       setNotice({ tone: result.warn ? 'warn' : 'ok', text: result.text })
     },
@@ -261,7 +270,7 @@ export default function CalendarPage() {
                   canAddSlots={mentor && meetings.status === 'ready'}
                   tool={tool}
                   onTool={setTool}
-                  modules={courses.modules}
+                  modules={eventModules}
                   slotActions={actions}
                   onSaveEvent={saveFromForm}
                   onNotice={setNotice}

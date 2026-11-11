@@ -11,10 +11,11 @@ import type { ApiContentItem, ApiFile, ApiModule, ApiSubmission } from './types'
  *   GET    /modules/:moduleId/content-items/:assignmentId/submissions/me    (404 = nothing handed in)
  *   POST   /files                                                       multipart, field "file"
  *   POST   /modules/:moduleId/content-items/:assignmentId/submissions   { text_body, file_ids: number[] }
- *   POST   /modules                                                     { title, description } (new module)
- *   PATCH  /modules/:id                                                 { title, description }
- *   POST   /modules/:moduleId/content-items                             new task / file material
- *   PATCH  /content-items/:id                                           edit one
+ *   POST   /modules                                                     { title, description, opens_at?, closes_at? } (new module)
+ *   PATCH  /modules/:id                                                 { title?, description?, opens_at?, closes_at? }
+ *          (the week dates are the proposed fields: the server does not store them yet, see datesNotKept)
+ *   POST   /modules/:moduleId/content-items                             new task / file material / link
+ *   PATCH  /content-items/:id                                           edit one (title, description, due_at, file_id, url)
  *   DELETE /content-items/:id
  *   DELETE /modules/:id                                                 (admin or the module's creator)
  */
@@ -86,26 +87,32 @@ export async function submitWork(moduleId: string, assignmentId: string, payload
   return mapped.files ? mapped : { ...mapped, files: [...kept, ...payload.files.map((f) => ({ name: f.name, sizeBytes: f.size }))] }
 }
 
-/** Module title and description. The backend has no week dates yet, so those are not sent. */
-export async function saveModule(id: string, patch: { title?: string; description?: string }): Promise<CourseModule[]> {
-  await authedRequest(`/modules/${id}`, {
-    method: 'PATCH',
-    body: { ...(patch.title !== undefined ? { title: patch.title } : {}), ...(patch.description !== undefined ? { description: patch.description } : {}) },
-  })
-  return fetchModules(false)
-}
-
-/** A new module (the backend records who created it). It has no week dates yet, so those are not sent. */
-export async function createModule(patch: {
-  title: string
+interface ModuleFields {
+  title?: string
   description?: string
   opensAt?: string
   closesAt?: string
-}): Promise<{ id: string; modules: CourseModule[] }> {
-  const created = await authedRequest<ApiModule>('/modules', {
-    method: 'POST',
-    body: { title: patch.title, ...(patch.description ? { description: patch.description } : {}) },
-  })
+}
+
+/** Only the fields the form changed; the week dates go as `opens_at` / `closes_at` (null clears one). */
+function moduleBody(patch: ModuleFields) {
+  return {
+    ...(patch.title !== undefined ? { title: patch.title } : {}),
+    ...(patch.description !== undefined ? { description: patch.description } : {}),
+    ...(patch.opensAt !== undefined ? { opens_at: patch.opensAt || null } : {}),
+    ...(patch.closesAt !== undefined ? { closes_at: patch.closesAt || null } : {}),
+  }
+}
+
+/** Module title, description and week dates. Whether the server kept the dates is checked by the caller (datesNotKept). */
+export async function saveModule(id: string, patch: ModuleFields): Promise<CourseModule[]> {
+  await authedRequest(`/modules/${id}`, { method: 'PATCH', body: moduleBody(patch) })
+  return fetchModules(false)
+}
+
+/** A new module (the backend records who created it). */
+export async function createModule(patch: ModuleFields & { title: string }): Promise<{ id: string; modules: CourseModule[] }> {
+  const created = await authedRequest<ApiModule>('/modules', { method: 'POST', body: moduleBody(patch) })
   return { id: String(created.id), modules: await fetchModules(false) }
 }
 
@@ -121,12 +128,20 @@ async function saveTask(t: AssignmentItem): Promise<void> {
     await authedRequest(`/modules/${t.moduleId}/content-items`, { method: 'POST', body })
     return
   }
-  // PATCH /content-items/:id takes no due_at (dto.UpdateContentItemRequest), so a changed deadline is not saved yet
-  await authedRequest(`/content-items/${t.id}`, { method: 'PATCH', body: { title: body.title, description: body.description } })
+  await authedRequest(`/content-items/${t.id}`, { method: 'PATCH', body: { title: body.title, description: body.description, due_at: body.due_at } })
+}
+
+async function saveLink(r: ResourceItem): Promise<void> {
+  const body = { title: r.title, description: joinDescription(r.description, undefined), url: r.url ?? '' }
+  if (!isServerId(r.id)) {
+    await authedRequest(`/modules/${r.moduleId}/content-items`, { method: 'POST', body: { type: 'link', ...body, is_visible: true } })
+    return
+  }
+  await authedRequest(`/content-items/${r.id}`, { method: 'PATCH', body })
 }
 
 async function saveMaterial(r: ResourceItem): Promise<void> {
-  if (r.kind === 'link') throw new NotSupportedError('Links cannot be saved by the backend yet. Upload a file instead.')
+  if (r.kind === 'link') return saveLink(r)
   const description = joinDescription(r.description, undefined)
   const fileId = r.upload ? await upload(r.upload) : r.fileId ? Number(r.fileId) : undefined
   if (!isServerId(r.id)) {
@@ -145,7 +160,7 @@ async function saveMaterial(r: ResourceItem): Promise<void> {
 
 /**
  * Creates (app-made id) or edits (numeric server id) one item, always under its own module.
- * Quizzes and link materials have no place in the backend yet.
+ * Quizzes have no place in the backend yet.
  */
 export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
   if (!isServerId(item.moduleId)) throw new ApiError(400, 'bad_request', 'This module is not saved on the server.')

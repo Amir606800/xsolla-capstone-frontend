@@ -3,19 +3,22 @@
  * Only this file and ./mappers know them; the rest of the app uses the domain types in src/types.
  *
  * The backend's "module" is one week of the program (it used to be called "course"). Its content
- * items are a FLAT list of files and assignments; sections were removed (migration 012).
+ * items are a FLAT list of files, assignments and links; sections were removed.
  */
 
 /** int64 ids arrive as JSON numbers; strings are accepted too (API_CONTRACT.md writes them as strings). */
 export type ApiId = number | string
 
-/** GET /modules, GET /modules/:id (dto.ModuleResponse). No position or week dates yet. */
+/** GET /modules, GET /modules/:id (dto.ModuleResponse). No position yet. */
 export interface ApiModule {
   id: ApiId
   title: string
   description?: string | null
   created_by?: ApiId
   created_at: string
+  /** Proposed (BACKEND_REQUIREMENTS.md 3.2): the week's dates. The server does not store them yet. */
+  opens_at?: string | null
+  closes_at?: string | null
 }
 
 interface ApiContentItemBase {
@@ -41,8 +44,14 @@ export interface ApiAssignmentItem extends ApiContentItemBase {
   max_points?: number
 }
 
+/** An outside page (dto.CreateContentItemRequest `url`). */
+export interface ApiLinkItem extends ApiContentItemBase {
+  type: 'link'
+  url?: string | null
+}
+
 /** GET /modules/:moduleId/content-items (dto.ContentTreeNode) */
-export type ApiContentItem = ApiFileItem | ApiAssignmentItem
+export type ApiContentItem = ApiFileItem | ApiAssignmentItem | ApiLinkItem
 
 /** POST /files, GET /files/:id (dto.FileResponse) */
 export interface ApiFile {

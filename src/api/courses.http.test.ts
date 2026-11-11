@@ -123,11 +123,11 @@ describe('submitWork', () => {
 describe('lecturer editing', () => {
   const reload = { ...MODULES, ...ITEMS }
 
-  it('a new module is POSTed with its title and description and comes back with the server id', async () => {
+  it('a new module is POSTed with its title, description and week dates and comes back with the server id', async () => {
     await backend({ ...reload, 'POST /modules': () => ({ status: 201, body: { id: 4, title: 'Go Basics', description: 'Go', created_by: 1, created_at: '2026-11-01T00:00:00Z' } }) })
-    const { id, modules } = await createModule({ title: 'Go Basics', description: 'Go', opensAt: '2026-11-02T00:00:00Z' })
-    // no week dates in the backend: only title and description are sent
-    expect(json(find('POST', '/modules'))).toEqual({ title: 'Go Basics', description: 'Go' })
+    const { id, modules } = await createModule({ title: 'Go Basics', description: 'Go', opensAt: '2026-11-02T00:00:00Z', closesAt: '2026-11-08T23:59:00Z' })
+    // the dates go as the proposed fields; whether the server kept them is checked by the caller (datesNotKept)
+    expect(json(find('POST', '/modules'))).toEqual({ title: 'Go Basics', description: 'Go', opens_at: '2026-11-02T00:00:00Z', closes_at: '2026-11-08T23:59:00Z' })
     expect(id).toBe('4')
     expect(modules.map((m) => m.id)).toEqual(['4'])
   })
@@ -178,7 +178,7 @@ describe('lecturer editing', () => {
   it('an existing task is PATCHed by its id', async () => {
     await backend({ ...reload, 'PATCH /content-items/41': () => ({ status: 200, body: { id: 41 } }) })
     await saveItem({ id: '41', moduleId: '4', type: 'assignment', title: 'CLI tool v2', dueAt: '2026-11-09T18:00:00Z' })
-    expect(json(find('PATCH', '/content-items/41'))).toEqual({ title: 'CLI tool v2', description: '' })
+    expect(json(find('PATCH', '/content-items/41'))).toEqual({ title: 'CLI tool v2', description: '', due_at: '2026-11-09T18:00:00Z' })
   })
 
   it('a new file material uploads the file, then creates the item with its numeric file_id', async () => {
@@ -192,11 +192,24 @@ describe('lecturer editing', () => {
     expect(json(find('POST', '/modules/4/content-items'))).toMatchObject({ type: 'file', title: 'Notes', file_id: 77 })
   })
 
-  it('links and quizzes have no place in the backend yet: a clear error, nothing sent', async () => {
+  it('a new link is POSTed as type "link" with its address; an existing one is PATCHed', async () => {
+    await backend({ ...reload, 'POST /modules/4/content-items': () => ({ status: 201, body: { id: 44 } }), 'PATCH /content-items/44': () => ({ status: 200, body: {} }) })
+    await saveItem({ id: 'link-x', moduleId: '4', type: 'resource', title: 'Docs', kind: 'link', url: 'https://go.dev' })
+    expect(json(find('POST', '/modules/4/content-items'))).toEqual({ type: 'link', title: 'Docs', description: '', url: 'https://go.dev', is_visible: true })
+    await saveItem({ id: '44', moduleId: '4', type: 'resource', title: 'Go docs', kind: 'link', url: 'https://go.dev/doc/' })
+    expect(json(find('PATCH', '/content-items/44'))).toEqual({ title: 'Go docs', description: '', url: 'https://go.dev/doc/' })
+  })
+
+  it('quizzes have no place in the backend yet: a clear error, nothing sent', async () => {
     backend(reload)
-    await expect(saveItem({ id: 'm-1', moduleId: '4', type: 'resource', title: 'Docs', kind: 'link', url: 'https://go.dev' })).rejects.toThrow(/Links cannot be saved/)
     await expect(saveItem({ id: 'q-1', moduleId: '4', type: 'quiz', title: 'Quiz' })).rejects.toThrow(/Quizzes cannot be saved/)
     expect(calls).toHaveLength(0)
+  })
+
+  it('module dates are PATCHed as opens_at / closes_at, and an emptied one as null', async () => {
+    await backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: {} }) })
+    await saveModule('4', { opensAt: '2026-11-02T00:00:00Z', closesAt: '' })
+    expect(json(find('PATCH', '/modules/4'))).toEqual({ opens_at: '2026-11-02T00:00:00Z', closes_at: null })
   })
 
   it('module details are PATCHed by module id; deleting an item uses its id', async () => {
@@ -228,9 +241,28 @@ describe('calendar events', () => {
   it('creates a new event with POST and edits an existing one with PATCH', async () => {
     await backend({ ...LIST, 'POST /events': () => ({ status: 201, body: {} }), 'PATCH /events/5': () => ({ status: 200, body: {} }) })
     await saveEvent({ id: 'ev-new', title: 'Talk', kind: 'meeting', startsAt: 's', endsAt: 'e', moduleId: '4' })
-    expect(json(find('POST', '/events'))).toEqual({ title: 'Talk', kind: 'meeting', starts_at: 's', ends_at: 'e', all_day: false, meeting_url: null, module_id: 4 })
+    expect(json(find('POST', '/events'))).toEqual({
+      title: 'Talk',
+      kind: 'meeting',
+      starts_at: 's',
+      ends_at: 'e',
+      all_day: false,
+      location: '',
+      description: '',
+      meeting_url: null,
+      module_id: 4,
+    })
     await saveEvent({ id: '5', title: 'Lecture 2', kind: 'lecture', startsAt: 's', endsAt: 'e' })
-    expect(json(find('PATCH', '/events/5'))).toMatchObject({ title: 'Lecture 2' })
+    // the place is sent empty, so an edit can take it away
+    expect(json(find('PATCH', '/events/5'))).toMatchObject({ title: 'Lecture 2', location: '' })
+  })
+
+  it('says when the server did not keep the meeting link', async () => {
+    await backend({ ...LIST, 'PATCH /events/5': () => ({ status: 200, body: {} }) })
+    const lost = await saveEvent({ id: '5', title: 'Lecture', kind: 'lecture', startsAt: 's', endsAt: 'e', meetingUrl: 'https://meet.google.com/abc-defg-hij' })
+    expect(lost.meetingLinkLost).toBe(true)
+    const none = await saveEvent({ id: '5', title: 'Lecture', kind: 'lecture', startsAt: 's', endsAt: 'e' })
+    expect(none.meetingLinkLost).toBeUndefined()
   })
 
   it('deletes by id', async () => {

@@ -15,6 +15,8 @@ async function pageAs(context: BrowserContext, user: typeof STUDENT | typeof MEN
 }
 
 const slotList = (page: Page) => page.getByRole('region', { name: 'Day details' }).getByRole('list', { name: '1:1 times' }).getByRole('listitem')
+/** The early-morning times these tests add: the day may also hold the demo afternoon times (15:00-18:00). */
+const earlySlots = (page: Page) => slotList(page).filter({ hasText: /^0[789]:/ })
 const overflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
 
@@ -103,7 +105,7 @@ test.describe('Mentor: availability', () => {
     await dialog.getByRole('button', { name: 'Add availability' }).click()
     await expect(dialog.getByRole('status')).toContainText('Added 3 times.')
 
-    const rows = slotList(mentor)
+    const rows = earlySlots(mentor)
     await expect(rows).toHaveCount(3)
     await expect(rows.nth(0).locator('.slots__time-label')).toHaveText('08:00 - 08:30')
     await expect(rows.nth(1).locator('.slots__time-label')).toHaveText('08:30 - 09:00')
@@ -112,7 +114,7 @@ test.describe('Mentor: availability', () => {
     // a student in another tab sees the same times and takes one
     const student = await pageAs(context, STUDENT)
     await student.locator('.cell.is-today + .cell').click()
-    const theirs = slotList(student)
+    const theirs = earlySlots(student)
     await expect(theirs).toHaveCount(3)
     await student.getByRole('region', { name: 'Day details' }).getByRole('button', { name: 'Book 08:30 - 09:00' }).click()
     await expect(student.getByRole('region', { name: 'Day details' }).getByRole('status')).toContainText('Booked 08:30 - 09:00')
@@ -120,8 +122,8 @@ test.describe('Mentor: availability', () => {
     // the mentor sees who booked it
     await mentor.reload()
     await mentor.locator('.cell.is-today + .cell').click()
-    await expect(slotList(mentor).nth(1)).toContainText('Sam')
-    await expect(slotList(mentor).nth(0)).toContainText('Free')
+    await expect(earlySlots(mentor).nth(1)).toContainText('Sam')
+    await expect(earlySlots(mentor).nth(0)).toContainText('Free')
   })
 
   test('a window that does not work is explained and cannot be added', async ({ context }) => {
@@ -142,10 +144,10 @@ test.describe('Mentor: availability', () => {
     await dialog.getByLabel('From').fill('07:00')
     await dialog.getByLabel('To').fill('08:00')
     await dialog.getByRole('button', { name: 'Add availability' }).click()
-    await expect(slotList(page)).toHaveCount(2)
+    await expect(earlySlots(page)).toHaveCount(2)
 
     await dialog.getByRole('button', { name: 'Remove 07:30 - 08:00' }).click()
-    await expect(slotList(page)).toHaveCount(1)
+    await expect(earlySlots(page)).toHaveCount(1)
   })
 
   test('the form fits a phone and desktop screen, in light and dark', async ({ context }) => {

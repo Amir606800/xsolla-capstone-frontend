@@ -309,8 +309,8 @@ export default function AdminModulePage() {
       <Modal open={action?.kind === 'edit-module'} onClose={close} title="Edit module" initialFocus=".form input">
         {action?.kind === 'edit-module' && (
           <ModuleForm module={module} onCancel={close} onSave={async (patch) => {
-            await saveModule(module.id, patch)
-            saved('Module saved.')
+            const warning = await saveModule(module.id, patch)
+            saved(warning ? `Module saved. ${warning}` : 'Module saved.')
           }} />
         )}
       </Modal>

@@ -58,6 +58,16 @@ describe('mapModules', () => {
     expect(m1.items[1]).toMatchObject({ dueAt: '2026-10-05T18:00:00Z', description: 'Branches' })
   })
 
+  it('maps a link with its address; a link without one is left out', () => {
+    const [m] = mapModules([modules[1]], {
+      '1': [
+        { id: 30, type: 'link', title: 'Go docs', description: 'Read', position: 1, is_visible: true, url: 'https://go.dev/doc/' },
+        { id: 31, type: 'link', title: 'Broken', description: '', position: 2, is_visible: true, url: null },
+      ],
+    })
+    expect(m.items).toEqual([{ id: '30', moduleId: '1', type: 'resource', title: 'Go docs', kind: 'link', url: 'https://go.dev/doc/', description: 'Read' }])
+  })
+
   it('leaves out hidden items and tasks without a deadline', () => {
     const ids = mapModules(modules, items).flatMap((m) => m.items.map((i) => i.id))
     expect(ids).not.toContain('13')
@@ -139,7 +149,7 @@ describe('what is sent', () => {
   it('an event, with the module id as a number', () => {
     expect(
       eventToApi({ id: 'ev-1', title: 'Lecture', kind: 'lecture', startsAt: 'a', endsAt: 'b', moduleId: '4', location: 'Hall' }),
-    ).toEqual({ title: 'Lecture', kind: 'lecture', starts_at: 'a', ends_at: 'b', all_day: false, location: 'Hall', meeting_url: null, module_id: 4 })
+    ).toEqual({ title: 'Lecture', kind: 'lecture', starts_at: 'a', ends_at: 'b', all_day: false, location: 'Hall', description: '', meeting_url: null, module_id: 4 })
   })
 
   it('an event sends its meeting link, or null so editing can take it away', () => {
@@ -174,6 +184,12 @@ describe('mapEvent', () => {
       'https://meet.google.com/abc-defg-hij',
     )
     expect(mapEvent({ id: 5, title: 'Lecture', kind: 'lecture', starts_at: 's', ends_at: 'e', all_day: false, meeting_url: null })).not.toHaveProperty('meetingUrl')
+  })
+
+  it('reads the week dates when the server sends them', () => {
+    const [m] = mapModules([{ ...modules[1], opens_at: '2026-11-02T00:00:00Z', closes_at: '2026-11-08T23:59:00Z' }], {})
+    expect(m).toMatchObject({ opensAt: '2026-11-02T00:00:00Z', closesAt: '2026-11-08T23:59:00Z' })
+    expect(mapModules([modules[1]], {})[0]).not.toHaveProperty('opensAt')
   })
 
   it('shows an unknown kind as a meeting', () => {
