@@ -60,13 +60,13 @@ describe('adding a student', () => {
     expect((await fetchTeams()).find((t) => t.id === 't2')!.studentIds).toContain(ann.id)
   })
 
-  it('with a backend: POST /auth/signup with the chosen password; the admin keeps their own session', async () => {
+  it('with a backend: POST /users with the chosen password and student role; the admin keeps their own session', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     saveTokens({ accessToken: 'admin-acc', refreshToken: 'admin-ref' })
     const fetchSpy = vi.fn(async (url: string) =>
-      url.endsWith('/auth/signup')
+      url.endsWith('/users')
         ? new Response(
-            JSON.stringify({ access_token: 'ann-acc', refresh_token: 'ann-ref', user: { id: '41', email: 'ann@x.co', name: 'Ann Lee', role: 'student' } }),
+            JSON.stringify({ id: '41', email: 'ann@x.co', name: 'Ann Lee', roles: ['student'] }),
             { status: 201 },
           )
         : new Response(null, { status: 204 }),
@@ -77,14 +77,10 @@ describe('adding a student', () => {
 
     expect(await createStudent(input)).toEqual({ id: 41, name: 'Ann Lee', email: 'ann@x.co', roles: ['student'] })
     const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
-    expect(url).toBe('https://api.test/auth/signup')
-    expect(JSON.parse(init.body as string)).toEqual({ email: 'ann@x.co', name: 'Ann Lee', password: 'Kp7mWz4qTx' })
+    expect(url).toBe('https://api.test/users')
+    expect(JSON.parse(init.body as string)).toEqual({ email: 'ann@x.co', name: 'Ann Lee', password: 'Kp7mWz4qTx', roles: ['student'] })
     // the admin is still the one signed in
     expect(getTokens()).toEqual({ accessToken: 'admin-acc', refreshToken: 'admin-ref' })
-    // and the session signup opened for Ann is closed
-    await vi.waitFor(() => expect(fetchSpy.mock.calls.some(([u]) => String(u).endsWith('/auth/logout'))).toBe(true))
-    const logout = fetchSpy.mock.calls.find(([u]) => String(u).endsWith('/auth/logout')) as unknown as [string, RequestInit]
-    expect(JSON.parse(logout[1].body as string)).toEqual({ refresh_token: 'ann-ref' })
   })
 
   it('with a backend: edit, left the school and delete use the proposed routes', async () => {
@@ -161,6 +157,7 @@ describe('adding a student', () => {
 
   it('with a backend: an e-mail that is taken (409) says so in plain words', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
     await stubHttp(vi.fn(async () => new Response(JSON.stringify({ error: 'conflict', message: 'email exists', status: 409 }), { status: 409 })))
     const { createStudent } = await import('./directory')
     await expect(createStudent(input)).rejects.toThrow('There is already an account with this email.')
