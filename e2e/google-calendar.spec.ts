@@ -111,13 +111,14 @@ test('the admin has Settings in the sidebar, and sees which events are on Google
   await expect(list).toContainText('Board meeting')
 })
 
-test('students have no Settings and see no Google marks', async ({ page }) => {
+test('students have Settings, with Google in their own words and a password form', async ({ page }) => {
   await signInAs(page, STUDENT)
   await page.goto('/dashboard')
   await page.getByRole('button', { name: 'Account menu' }).click()
-  await expect(page.getByRole('menuitem', { name: 'Settings' })).toHaveCount(0)
-  await page.goto('/settings')
-  await expect(page).toHaveURL(/\/dashboard$/)
+  await page.getByRole('menuitem', { name: 'Settings' }).click()
+  await expect(page).toHaveURL(/\/settings$/)
+  await expect(page.getByText('Connect your Google account to the LMS.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible()
 })
 
 for (const width of [320, 390]) {

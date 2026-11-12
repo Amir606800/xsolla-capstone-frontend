@@ -165,3 +165,33 @@ The admin dashboard will need these later; the exact shapes can be agreed then.
 - [ ] (Optional) lock middleware, reminder notification
 - [ ] (Later) admin read routes for analytics
 - [ ] `API_CONTRACT.md` updated
+
+---
+
+# Also needed: change my own password
+
+Settings now has a "Change password" form for **every role** (student, mentor, lecturer, admin). The server's only
+password route is the admin's `PUT /users/:id/password` (`RequireRole admin`), so for everyone else the form answers
+"The server cannot change your own password yet" (it treats 403, 404, 405 and 501 that way).
+
+### PUT /users/me/password
+
+Auth: any signed-in user. Changes the caller's own password.
+
+```json
+{ "current_password": "Old-password-1", "password": "Zebra-Quartz-7781" }
+```
+
+- **204** on success.
+- **422** `validation_failed` when `current_password` is wrong, or the new password breaks the rules (10 to 72
+  characters, a lowercase letter, an uppercase letter, a number, no spaces, not containing the user's name or e-mail),
+  or it equals the current one. The front-end shows the `message` as it is.
+- Store it hashed like any password and **end the user's other sessions** (delete their other `refresh_tokens`); keep
+  the one the request came with, so the user stays signed in on this device.
+- Never return or log either password.
+- Register it **before** `PUT /users/{id}/password` or give `me` priority, so `/users/me/password` is not read as
+  an id.
+
+(Admin reset is unchanged: `PUT /users/:id/password { "password": "..." }`, admin only. The same rules apply there.)
+
+A "forgot my password" flow for someone who cannot sign in needs e-mail sending; until then an admin resets it.

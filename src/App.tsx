@@ -4,7 +4,7 @@ import AdminRoute from './components/AdminRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Allow, ByRole, StudentOnly } from './components/RoleRoutes'
 import { ADMIN_SECTIONS } from './config/adminNav'
-import { canAuthor, canMentor, isStaff } from './utils/roles'
+import { canAuthor, canMentor } from './utils/roles'
 import { PageLoader } from './components/loading/PageLoader'
 
 // Route-level code splitting: each screen is downloaded only when visited.
@@ -98,7 +98,7 @@ export default function App() {
             />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/office-tour" element={<OfficeTourPage />} />
-            <Route path="/settings" element={<Allow when={isStaff}><SettingsPage /></Allow>} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/team"
               element={<ByRole student={<TeamPage />} staff={<Allow when={canMentor}><MentorTeamPage /></Allow>} />}

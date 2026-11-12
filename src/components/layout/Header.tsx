@@ -151,12 +151,10 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
                 <strong>{user?.name}</strong>
                 <span>{user?.email}</span>
               </div>
-              {isStaff(user) && (
-                <Link to="/settings" role="menuitem" onClick={() => setMenuOpen(false)}>
-                  <Icon name="settings" size={18} />
-                  Settings
-                </Link>
-              )}
+              <Link to="/settings" role="menuitem" onClick={() => setMenuOpen(false)}>
+                <Icon name="settings" size={18} />
+                Settings
+              </Link>
               {/* the theme switch lives here, so the bar stays short on a phone */}
               <button
                 type="button"
