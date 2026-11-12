@@ -269,3 +269,71 @@ lecturer wrote stays in the module.
   "Module 5 'React' is now yours." Link: `/courses/:id`.
 - `GET /users` could add `"module_ids": [3, 5]` per lecturer for the admin's Lecturers page; the front-end counts
   them itself from `GET /modules` today.
+
+---
+
+# Also needed: quizzes, and (optionally) a bulk module import
+
+The admin can export the modules as a template file and import it for a new group. Import uses the routes that exist
+today, so **modules, tasks and links already work**. What the server cannot take yet:
+
+## 1. Quizzes (needed: the import skips every quiz until this exists)
+
+Lecturers write quizzes in the LMS (a title, an optional deadline, multiple-choice questions) and students see that
+they exist. With a real server they cannot be saved at all ("Quizzes cannot be saved by the backend yet"), so an
+imported template loses them and a lecturer's quiz form fails.
+
+- Add `quiz` to the allowed `content_items.type` values, next to `file`, `assignment`, `link`.
+- A quiz is a content item with: `title`, `description`, optional `due_at`, `is_visible`, and a list of questions.
+  Suggested table:
+
+```sql
+CREATE TABLE quiz_questions (
+    id          bigserial PRIMARY KEY,
+    content_item_id bigint NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+    position    int  NOT NULL DEFAULT 0,
+    prompt      text NOT NULL,
+    options     text[] NOT NULL CHECK (array_length(options, 1) BETWEEN 2 AND 8),
+    correct     int  NULL CHECK (correct >= 0)      -- index into options
+);
+```
+
+- `POST /modules/:id/content-items` and `PATCH /content-items/:id` accept the quiz:
+
+```json
+{ "type": "quiz", "title": "Go basics", "description": "", "due_at": "2026-11-20T18:00:00Z",
+  "questions": [ { "prompt": "2 + 2?", "options": ["3", "4", "5"], "correct": 1 } ] }
+```
+
+  `422` when a question has fewer than 2 options or `correct` is not one of them.
+- **Never send `correct` to students** (`GET /modules/:id/content-items`): they only get `prompt` and `options`.
+  Lecturers (of that module) and admins get the answers.
+- Taking a quiz (answers, score) is **not** asked for here; students only see that the quiz exists.
+
+## 2. One-call module import (optional, nicer than what we do now)
+
+Today an import is one `POST /modules` per module plus one `POST /modules/:id/content-items` per item, one after the
+other, with no undo: if the connection drops half-way, a few modules exist and the rest do not. A template of 12
+modules is about 60 requests.
+
+```
+POST /modules/import   (admin)
+{ "modules": [ { "title": "...", "description": "...", "opens_at": "...", "closes_at": "...",
+                 "lecturer_id": null,
+                 "items": [ { "type": "assignment", "title": "...", "description": "...", "due_at": "..." },
+                            { "type": "link", "title": "...", "url": "https://..." },
+                            { "type": "quiz", "title": "...", "questions": [ ... ] } ] } ] }
+```
+
+- Everything in **one transaction**: all modules and items are made, or none. `201` with the made modules
+  (ids included); `422` with the index of the module / item that is wrong.
+- Same rules as the single routes (`opens_at < closes_at`, a task needs `due_at`, a link needs an http(s) `url`).
+- Auto-enrol students in each new module, as `POST /modules` does.
+- The front-end would call it instead of the loop and keep the loop as the fallback for a server without it
+  (`404` / `405`). Tell us when it exists.
+
+## 3. Not needed, for the record
+
+- Uploaded files are not part of a template (they are binary and stay on the server); admins add them again.
+- The lecturer of an imported module is the admin who imports until `lecturer_id` exists (see "assign modules to
+  lecturers" above); with it, a template could carry a lecturer per module.

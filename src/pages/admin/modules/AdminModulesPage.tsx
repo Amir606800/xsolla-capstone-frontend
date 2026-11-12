@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
+import { saveBlob } from '../../../api/files'
 import { ModuleForm } from '../../../components/authoring/ModuleForm'
 import { Icon } from '../../../components/Icon'
 import { Modal } from '../../../components/Modal'
@@ -10,11 +11,13 @@ import type { CourseModule } from '../../../types/course'
 import { contentsLine, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
 import { modulePhase, PHASE_LABEL } from '../../../utils/content'
 import { formatShortDate } from '../../../utils/date'
+import { buildTemplate, templateFileName } from '../../../utils/moduleTemplate'
+import { ImportTemplate } from './ImportTemplate'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
 import { Loading } from '../../../components/loading/Loading'
 
-type Action = { kind: 'edit' | 'delete'; module: CourseModule } | { kind: 'new' }
+type Action = { kind: 'edit' | 'delete'; module: CourseModule } | { kind: 'new' } | { kind: 'import' }
 const PHASE_ORDER = { running: 0, upcoming: 1, done: 2 } as const
 
 /** Admin: every module of the course, who wrote it and what is in it; edit or delete one. */
@@ -49,6 +52,18 @@ export default function AdminModulesPage() {
   const blank: CourseModule = { id: '', position: (byPosition.at(-1)?.position ?? 0) + 1, title: '', items: [] }
   const close = () => setAction(null)
 
+  // every module with its tasks, links and quizzes as a file; dates are kept relative to week 1
+  function exportTemplate() {
+    const template = buildTemplate(modules)
+    saveBlob(new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' }), templateFileName())
+    const out = template.left_out
+    const notes = [
+      out && out.files > 0 ? `${out.files} uploaded ${out.files === 1 ? 'file' : 'files'} not included` : '',
+      out && out.modulesWithoutDates > 0 ? `${out.modulesWithoutDates} ${out.modulesWithoutDates === 1 ? 'module' : 'modules'} without dates left out` : '',
+    ].filter(Boolean)
+    setMessage(`Template saved with ${template.modules.length} ${template.modules.length === 1 ? 'module' : 'modules'}.${notes.length ? ` (${notes.join('; ')}.)` : ''}`)
+  }
+
   return (
     <section className="admin-page">
       <header className="admin-page__head admin-module-head">
@@ -56,17 +71,33 @@ export default function AdminModulesPage() {
           <h1 className="page-title">Modules</h1>
           <p className="page-subtitle">Every module and its tasks, resources and quizzes.</p>
         </div>
-        <button
-          type="button"
-          className="admin-btn admin-btn--primary"
-          onClick={() => {
-            setMessage('')
-            setAction({ kind: 'new' })
-          }}
-          disabled={status !== 'ready'}
-        >
-          <Icon name="plus" size={16} /> New module
-        </button>
+        <div className="admin-module-head__actions">
+          <button type="button" className="admin-btn" onClick={exportTemplate} disabled={status !== 'ready' || modules.length === 0}>
+            <Icon name="download" size={16} /> Export template
+          </button>
+          <button
+            type="button"
+            className="admin-btn"
+            onClick={() => {
+              setMessage('')
+              setAction({ kind: 'import' })
+            }}
+            disabled={status !== 'ready'}
+          >
+            <Icon name="upload" size={16} /> Import template
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary"
+            onClick={() => {
+              setMessage('')
+              setAction({ kind: 'new' })
+            }}
+            disabled={status !== 'ready'}
+          >
+            <Icon name="plus" size={16} /> New module
+          </button>
+        </div>
       </header>
 
       <p className="admin-status" role="status">
@@ -157,6 +188,18 @@ export default function AdminModulesPage() {
               const { id, warning } = await createModule(patch)
               const message = 'Module created. Add its tasks, resources and quizzes below.'
               navigate(`/admin/modules/${id}`, { state: { message: warning ? `${message} ${warning}` : message } })
+            }}
+          />
+        )}
+      </Modal>
+
+      <Modal open={action?.kind === 'import'} onClose={close} title="Import a module template">
+        {action?.kind === 'import' && (
+          <ImportTemplate
+            onClose={close}
+            onDone={(text) => {
+              close()
+              setMessage(text)
             }}
           />
         )}
