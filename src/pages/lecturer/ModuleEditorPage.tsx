@@ -9,11 +9,13 @@ import { DownloadButton } from '../../components/DownloadButton'
 import { Icon } from '../../components/Icon'
 import type { IconName } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
+import { useAuth } from '../../hooks/useAuth'
 import { useCourses } from '../../hooks/useCourses'
 import { newId } from '../../mocks/contentEdits'
 import type { AssignmentItem, CourseModule, QuizItem, ResourceItem } from '../../types/course'
 import { draftToMaterial, draftToQuiz, draftToTask, MATERIAL_KINDS } from '../../utils/authoring'
-import { contentGaps, materialsOf, modulePhase, PHASE_LABEL, quizzesOf, tasksOf } from '../../utils/content'
+import { contentGaps, isAssignedTo, materialsOf, modulePhase, PHASE_LABEL, quizzesOf, tasksOf } from '../../utils/content'
+import { isAdmin } from '../../utils/roles'
 import { formatDateTime, formatShortDate } from '../../utils/date'
 import '../../styles/ui.css'
 import '../../components/module/module.css'
@@ -69,6 +71,7 @@ export default function ModuleEditorPage() {
   const { moduleId } = useParams()
   const [params, setParams] = useSearchParams()
   const { status, modules, now, reload, saveModule, saveItem, deleteItem } = useCourses()
+  const { user } = useAuth()
 
   // ?add=task (from the dashboard shortcuts) opens the form straight away
   const [editing, setEditing] = useState<Editing | null>(() => {
@@ -110,6 +113,7 @@ export default function ModuleEditorPage() {
   const quizzes = quizzesOf(module)
   const gaps = contentGaps([module], now)
   const phase = modulePhase(module, now)
+  const mine = !isAdmin(user) && isAssignedTo(module, user?.id)
   const current = editing?.id ? module.items.find((i) => i.id === editing.id) : undefined
 
   function close() {
@@ -145,6 +149,11 @@ export default function ModuleEditorPage() {
         <div className="editor__title-row">
           <h1 className="page-title">{module.title}</h1>
           <span className={`pill phase phase--${phase}`}>{PHASE_LABEL[phase]}</span>
+          {mine && (
+            <span className="pill pill--mine">
+              <Icon name="check" size={14} /> Assigned to you
+            </span>
+          )}
           <button type="button" className="btn btn--ghost btn--small" onClick={() => open('module')}>
             <Icon name="edit" size={16} /> Edit details
           </button>

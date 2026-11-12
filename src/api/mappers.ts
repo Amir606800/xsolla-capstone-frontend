@@ -145,7 +145,8 @@ export function mapModules(
         position: i + 1,
         title: m.title,
         ...(m.description ? { description: m.description } : {}),
-        ...(m.created_by != null ? { createdBy: Number(m.created_by) } : {}),
+        // the lecturer of the week: the assigned one when the server has that, else whoever made it
+        ...((m.lecturer_id ?? m.created_by) != null ? { createdBy: Number(m.lecturer_id ?? m.created_by) } : {}),
         ...(m.opens_at ? { opensAt: m.opens_at } : {}),
         ...(m.closes_at ? { closesAt: m.closes_at } : {}),
         createdAt: m.created_at,

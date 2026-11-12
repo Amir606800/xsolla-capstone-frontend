@@ -209,3 +209,63 @@ Auth: any signed-in user (the access token is the only proof, as there is no cur
 The access token should be short-lived (it is the only guard), and the front-end signs people out on request. If this
 becomes a concern, the cheapest step is to require the current password again for non-admins; the form already has a
 place for it in git history.
+
+---
+
+# Also needed: assign modules to lecturers
+
+An admin gives each module (week) to a **lecturer**, who prepares it (materials, tasks, quizzes, lectures). Today
+the server only knows `modules.created_by`, so "whose module is it" means "who created it" and an admin cannot hand a
+week to someone else. The front-end already shows each lecturer which modules are theirs (an "Assigned to you" mark,
+a filter "Assigned to me", and "what is missing" counted for their modules); it reads `lecturer_id` and, until the
+server sends it, falls back to `created_by`.
+
+## Data
+
+```sql
+ALTER TABLE modules ADD COLUMN lecturer_id bigint NULL REFERENCES users(id) ON DELETE SET NULL;
+CREATE INDEX idx_modules_lecturer ON modules (lecturer_id);
+-- modules that exist: the creator is the lecturer when they have that role
+UPDATE modules m SET lecturer_id = m.created_by
+ WHERE EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = m.created_by AND r.role = 'lecturer');
+```
+
+`created_by` stays as the audit field (who made the row). One lecturer per module; one lecturer may have many
+modules. `NULL` = nobody yet (the admin Overview already warns about those weeks).
+
+## Endpoints
+
+- **Every module response** (`GET /modules`, `GET /modules/:id`, and the `POST` / `PATCH` answers) gets
+  `"lecturer_id": 902` (or `null`).
+- **`PATCH /modules/:id`** accepts `"lecturer_id": 902` or `null` (take the lecturer off). **Admin only.** `422`
+  when the user does not exist, is inactive, or does not have the `lecturer` role. The front-end sends exactly this
+  from the admin's "Assign weeks" screen and, after the answer, checks that `lecturer_id` really changed (a server
+  that ignores the field answers 200 and changes nothing).
+- **`POST /modules`** accepts an optional `"lecturer_id"` (admin). Without it: the creator if they are a lecturer,
+  otherwise `null`.
+- *(Optional)* `GET /modules?lecturer_id=me` so a lecturer can ask for only theirs; the front-end filters
+  locally for now.
+
+## Permissions: "teacher of the module" becomes "the assigned lecturer"
+
+Everywhere the server asks `IsUserTeacherOfModule` (creator check), use `lecturer_id = caller` instead (admins pass as
+before):
+
+- `PATCH` / `DELETE /modules/:id` (title, description, dates).
+- `POST /modules/:id/content-items`, `PATCH` / `DELETE /content-items/:id`.
+- Linking an **event** to a module (`POST` / `PATCH /events` with `module_id`), and the lecturer's list of events.
+- Reading the submissions roster of a task, and writing feedback.
+- Reading a hand-in file (`CanReadFile`).
+
+A lecturer still **reads** every module (the calendar and course content need the whole course); only editing is
+limited to their own. Moving a week to another lecturer moves these rights with it at once; what the previous
+lecturer wrote stays in the module.
+
+## Notes
+
+- If a lecturer's `lecturer` role ends (`expires_at`), keep `lecturer_id` but treat the module as without a
+  lecturer for permissions, and tell the admin (the Overview warning already lists weeks with no lecturer).
+- *(Optional, with notifications)* tell the lecturer when a module is assigned to or taken from them:
+  "Module 5 'React' is now yours." Link: `/courses/:id`.
+- `GET /users` could add `"module_ids": [3, 5]` per lecturer for the admin's Lecturers page; the front-end counts
+  them itself from `GET /modules` today.

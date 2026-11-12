@@ -111,25 +111,49 @@ describe('Lecturer dashboard', () => {
 })
 
 describe('Course content', () => {
-  it('lists the 12 modules with their phase and contents', async () => {
-    renderAs(LECTURER, '/courses')
+  it('starts on the modules assigned to the lecturer, marked "Assigned to you"; "All modules" shows the whole course', async () => {
+    const user = userEvent.setup()
+    renderAs(LECTURER, '/courses') // Rashad (900) is given the odd weeks in the demo
     expect(await screen.findByRole('heading', { name: 'Course content', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('You are assigned to 6 modules: 1, 3, 5, 7, 9, 11.')
+    const mine = within(screen.getByRole('list', { name: 'Modules' })).getAllByRole('link')
+    expect(mine).toHaveLength(6)
+    for (const row of mine) expect(row).toHaveTextContent('Assigned to you')
+    expect(screen.getByRole('button', { name: 'Assigned to me (6)' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'All modules (12)' }))
     const rows = within(screen.getByRole('list', { name: 'Modules' })).getAllByRole('link')
     expect(rows).toHaveLength(12)
     expect(rows[0]).toHaveTextContent('Finished')
+    expect(rows[0]).toHaveTextContent('Assigned to you')
+    expect(rows[1]).not.toHaveTextContent('Assigned to you') // week 2 is Elvin's
     expect(rows[5]).toHaveTextContent('Module 6 · Go Basics')
     expect(rows[5]).toHaveTextContent('Running now')
     expect(rows[5]).toHaveTextContent('2 materials · 2 tasks · 0 quizzes')
     expect(rows[6]).toHaveTextContent('Upcoming')
-    expect(rows[8]).toHaveAttribute('href', '/courses/m9') // lecturers open every module
+    expect(rows[8]).toHaveAttribute('href', '/courses/m9')
+  })
+
+  it('a lecturer with nothing assigned is told so and sees the whole course', async () => {
+    renderAs({ id: 905, name: 'New Lecturer', email: 'new@xsolla.school', role: 'teacher' }, '/courses')
+    expect(await screen.findByText(/No modules are assigned to you yet/)).toBeInTheDocument()
+    expect(within(screen.getByRole('list', { name: 'Modules' })).getAllByRole('link')).toHaveLength(12)
+    expect(screen.queryByRole('button', { name: /Assigned to me/ })).not.toBeInTheDocument()
   })
 
   it('flags a module with missing content', async () => {
     removeItem('m8-r1')
     removeItem('m8-r2')
+    const user = userEvent.setup()
     renderAs(LECTURER, '/courses')
+    await user.click(await screen.findByRole('button', { name: 'All modules (12)' }))
     const row = (await screen.findAllByRole('link', { name: /Module 8/ }))[0]
     expect(row).toHaveTextContent('1 thing to do')
+  })
+
+  it('the module page says it is assigned to you', async () => {
+    renderAs(LECTURER, '/courses/m5')
+    expect(await screen.findByText('Assigned to you')).toBeInTheDocument()
   })
 })
 
