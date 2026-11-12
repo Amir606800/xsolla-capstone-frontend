@@ -17,6 +17,7 @@ const ModulePage = lazy(() => import('./pages/ModulePage'))
 const TasksPage = lazy(() => import('./pages/TasksPage'))
 const GradesPage = lazy(() => import('./pages/GradesPage'))
 const TeamPage = lazy(() => import('./pages/TeamPage'))
+const MentorReviewPage = lazy(() => import('./pages/MentorReviewPage'))
 // staff: one dashboard for everyone, its sections depend on the roles
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'))
 // lecturer role
@@ -109,6 +110,7 @@ export default function App() {
             <Route element={<StudentOnly />}>
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/grades" element={<GradesPage />} />
+              <Route path="/mentor-review" element={<MentorReviewPage />} />
             </Route>
           </Route>
         </Route>

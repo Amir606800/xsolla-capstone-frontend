@@ -93,6 +93,16 @@ vi.mock('../api/teams', async () => {
   }
 })
 
+// weekly mentor reviews: the demo store without the latency (nothing is due unless a test sets the demo flag)
+vi.mock('../api/mentorReviews', async () => {
+  const m = await import('../mocks/mentorReviews')
+  type R = import('../types/mentorReview').MentorReview
+  return {
+    fetchReviewedWeeks: vi.fn(async (studentId: number) => m.reviewedWeeks(studentId)),
+    submitReview: vi.fn(async (studentId: number, mentorId: number | undefined, review: R) => m.addReview(studentId, mentorId, review)),
+  }
+})
+
 // the slot store lives in localStorage, which is cleared after each test
 type Actor = import('../mocks/slots').Actor
 type Win = import('../types/slots').AvailabilityWindow
