@@ -1,41 +1,73 @@
-import { addWindow, type Actor, deleteSlot, listSlots, release, reserve } from '../mocks/slots'
+import { authedRequest } from './authed'
 import type { AvailabilityWindow, MeetingSlot } from '../types/slots'
 
 /**
- * MOCK implementation - the backend has no 1:1 slots yet. Expected real shape:
- *   GET    /mentor-slots                    student: the slots of their own mentor; mentor: their own slots
- *   POST   /mentor-slots {date,start,end,slot_minutes:30}   mentor: opens a window, the server cuts it into slots
+ * Real 1:1 slot calls to the backend (internal/handlers/mentor_slot.go).
+ *   GET    /mentor-slots                    all callers: their visible slots
+ *   POST   /mentor-slots {date,start,end}   mentor: cuts a window into 30-minute slots
  *   DELETE /mentor-slots/:id                mentor: removes a FREE slot
- *   POST   /mentor-slots/:id/book           student: locks the slot (409 when taken or when they already hold one)
- *   DELETE /mentor-slots/:id/book           student cancels their own booking; a mentor can cancel any of theirs
- * Every call returns the caller's updated list. The server hides who booked a slot from other students.
+ *   POST   /mentor-slots/:id/book           student: locks the slot (409 when taken or already booked)
+ *   DELETE /mentor-slots/:id/book           student/mentor: cancels a booking
+ * Every call returns the caller's updated slot list. The backend hides other students' booking identities.
  */
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
 
-export type { Actor }
+// Who is asking. Unused here: the server reads the caller from the token. It stays in the
+// signature because useMeetingSlots and the test mock both pass it (the mock needs it for roles).
+type Actor = { id: number; name: string; roles: string[] }
 
-export async function fetchSlots(actor: Actor): Promise<MeetingSlot[]> {
-  await wait()
-  return listSlots(actor)
+interface MentorSlotResponse {
+  id: string
+  mentor_id: number
+  mentor_name: string
+  starts_at: string // ISO
+  ends_at: string // ISO
+  booked: boolean
+  booked_by?: number
+  booked_by_name?: string
 }
 
-export async function createAvailability(actor: Actor, window: AvailabilityWindow): Promise<MeetingSlot[]> {
-  await wait()
-  return addWindow(actor, window)
+function toMeetingSlot(s: MentorSlotResponse): MeetingSlot {
+  return {
+    id: s.id,
+    mentorId: s.mentor_id,
+    mentorName: s.mentor_name,
+    startsAt: s.starts_at,
+    endsAt: s.ends_at,
+    booked: s.booked,
+    ...(s.booked_by !== undefined ? { bookedBy: { id: s.booked_by, name: s.booked_by_name ?? '' } } : {}),
+  }
 }
 
-export async function removeSlot(actor: Actor, id: string): Promise<MeetingSlot[]> {
-  await wait()
-  return deleteSlot(actor, id)
+export async function fetchSlots(_actor: Actor): Promise<MeetingSlot[]> {
+  const rows = await authedRequest<MentorSlotResponse[] | null>('/mentor-slots')
+  return (rows ?? []).map(toMeetingSlot)
 }
 
-export async function bookSlot(actor: Actor, id: string): Promise<MeetingSlot[]> {
-  await wait()
-  return reserve(actor, id)
+export async function createAvailability(_actor: Actor, window: AvailabilityWindow): Promise<MeetingSlot[]> {
+  const rows = await authedRequest<MentorSlotResponse[] | null>('/mentor-slots', {
+    method: 'POST',
+    body: { date: window.date, start: window.start, end: window.end },
+  })
+  return (rows ?? []).map(toMeetingSlot)
 }
 
-export async function cancelBooking(actor: Actor, id: string): Promise<MeetingSlot[]> {
-  await wait()
-  return release(actor, id)
+export async function removeSlot(_actor: Actor, id: string): Promise<MeetingSlot[]> {
+  const rows = await authedRequest<MentorSlotResponse[] | null>(`/mentor-slots/${id}`, {
+    method: 'DELETE',
+  })
+  return (rows ?? []).map(toMeetingSlot)
+}
+
+export async function bookSlot(_actor: Actor, id: string): Promise<MeetingSlot[]> {
+  const rows = await authedRequest<MentorSlotResponse[] | null>(`/mentor-slots/${id}/book`, {
+    method: 'POST',
+  })
+  return (rows ?? []).map(toMeetingSlot)
+}
+
+export async function cancelBooking(_actor: Actor, id: string): Promise<MeetingSlot[]> {
+  const rows = await authedRequest<MentorSlotResponse[] | null>(`/mentor-slots/${id}/book`, {
+    method: 'DELETE',
+  })
+  return (rows ?? []).map(toMeetingSlot)
 }
