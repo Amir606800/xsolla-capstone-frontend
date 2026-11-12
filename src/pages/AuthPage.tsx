@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router'
+import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { DEMO_ACCOUNTS } from '../api/auth.mock'
 import { hasBackend } from '../api/http'
 import { roleLabel } from '../utils/roles'
+import { goTo } from '../utils/teleport'
 import officePhoto from '../assets/images/CrescentOfficesPhoto.webp'
 import { XsollaLogo } from '../components/XsollaLogo'
 import { useAuth } from '../hooks/useAuth'
@@ -11,21 +12,30 @@ import { useTheme } from '../hooks/useTheme'
 import { isValidEmail, isValidPassword } from '../utils/validation'
 import './AuthPage.css'
 
-// Accounts are created by an admin, so this page only signs in (the sign-up API is still in src/api).
 export default function AuthPage() {
   const { isAuthenticated, signIn } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const returnTo = searchParams.get('returnTo')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
-  // an error shows once the person has left that field (or tried to sign in): the button stays off until it is fixed
   const [touched, setTouched] = useState({ email: false, password: false })
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  useEffect(() => {
+    if (isAuthenticated && returnTo) {
+      goTo(returnTo)
+    }
+  }, [isAuthenticated, returnTo])
+
+  if (isAuthenticated) {
+    if (returnTo) return null
+    return <Navigate to="/dashboard" replace />
+  }
 
   const emailOk = isValidEmail(email)
   const passwordOk = isValidPassword(password, false)
@@ -39,6 +49,10 @@ export default function AuthPage() {
     setFormError('')
     try {
       await signIn(email, password)
+      if (returnTo) {
+        goTo(returnTo)
+        return
+      }
       navigate('/dashboard', { replace: true })
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Something went wrong')
