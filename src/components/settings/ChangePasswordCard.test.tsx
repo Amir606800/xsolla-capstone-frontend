@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { NOT_SUPPORTED, WRONG_CURRENT } from '../../api/password'
+import { NOT_SUPPORTED } from '../../api/password'
 import { saveTokens } from '../../api/session'
 import { passwordMatches } from '../../mocks/directory'
 import { renderWithProviders } from '../../test/renderWithProviders'
@@ -11,81 +11,62 @@ import { stubHttp } from '../../test/stubHttp'
 vi.setConfig({ testTimeout: 20_000 })
 
 const SAM = { id: 1, name: 'Sam Student', email: 'student@xsolla.school', roles: ['student'] }
-const signIn = (u: object = SAM) => localStorage.setItem('auth_user', JSON.stringify(u))
+const ADMIN = { id: 1000, name: 'School Admin', email: 'admin@xsolla.school', roles: ['admin'] }
+const signIn = (u: object) => localStorage.setItem('auth_user', JSON.stringify(u))
 const GOOD = 'Zebra-Quartz-7781'
 
-async function open() {
+async function open(route: string) {
   const user = userEvent.setup()
-  renderWithProviders(<App />, { route: '/settings' })
+  renderWithProviders(<App />, { route })
   await screen.findByRole('heading', { name: 'Change password' })
-  const fill = async (current: string, next: string, again: string) => {
-    for (const [label, value] of [
-      ['Current password', current],
-      ['New password', next],
-      ['New password again', again],
-    ] as const) {
-      const input = screen.getByLabelText(label)
-      await user.clear(input)
-      await user.type(input, value)
-    }
+  const fill = async (next: string, again: string) => {
+    await user.type(screen.getByLabelText('New password'), next)
+    await user.type(screen.getByLabelText('New password again'), again)
     await user.click(screen.getByRole('button', { name: 'Change password' }))
   }
-  return { user, fill }
+  return { fill }
 }
 
-describe('change my own password', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.unstubAllGlobals()
-  })
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
+})
 
-  it('checks every field before anything is sent', async () => {
-    signIn()
-    const { user } = await open()
-    await user.click(screen.getByRole('button', { name: 'Change password' }))
-    expect(screen.getByText('Enter your current password.')).toBeInTheDocument()
-    expect(screen.getByText('Enter a new password.')).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Current password'), 'old-one')
-    await user.type(screen.getByLabelText('New password'), 'short')
-    await user.type(screen.getByLabelText('New password again'), 'other')
+describe('everyone sets their own new password: no current password, no e-mail', () => {
+  it('there is no current-password field, and the new one is checked', async () => {
+    signIn(SAM)
+    const { fill } = await open('/settings')
+    expect(screen.queryByLabelText(/Current password/)).not.toBeInTheDocument()
+    await fill('short', 'other')
     expect(screen.getByText('Use 10 to 72 characters.')).toBeInTheDocument()
-    expect(screen.getByText('The two new passwords are not the same.')).toBeInTheDocument()
+    expect(screen.getByText('The two passwords are not the same.')).toBeInTheDocument()
   })
 
-  it('refuses the same password as the current one', async () => {
-    signIn()
-    const { fill } = await open()
-    await fill(GOOD, GOOD, GOOD)
-    expect(screen.getByText('Choose a password different from the current one.')).toBeInTheDocument()
-  })
-
-  it('changes it: the old one stops working in the demo, the form empties and says so', async () => {
-    signIn()
-    const { fill } = await open()
-    await fill('anything', GOOD, GOOD)
+  it('a student: saves in the demo, the form empties, and only the new password works from then on', async () => {
+    signIn(SAM)
+    const { fill } = await open('/settings')
+    await fill(GOOD, GOOD)
     expect(await screen.findByRole('status')).toHaveTextContent('Your password is changed')
-    expect(screen.getByLabelText('Current password')).toHaveValue('')
+    expect(screen.getByLabelText('New password')).toHaveValue('')
     expect(passwordMatches(1, GOOD)).toBe(true)
     expect(passwordMatches(1, 'anything')).toBe(false)
   })
 
-  it('a wrong current password is said plainly (in the demo, once one was set)', async () => {
-    signIn()
-    const { fill } = await open()
-    await fill('anything', GOOD, GOOD)
-    await screen.findByRole('status')
-    await fill('not-the-old-one', 'Quartz-Zebra-9917', 'Quartz-Zebra-9917')
-    expect(await screen.findByRole('alert')).toHaveTextContent(WRONG_CURRENT)
-  })
-
-  it('works for a lecturer too', async () => {
+  it('a lecturer too', async () => {
     signIn({ id: 902, name: 'Elvin Huseynov', email: 'teacher@xsolla.school', roles: ['lecturer'] })
-    const { fill } = await open()
-    await fill('x', GOOD, GOOD)
+    const { fill } = await open('/settings')
+    await fill(GOOD, GOOD)
     expect(await screen.findByRole('status')).toHaveTextContent('Your password is changed')
   })
 
-  it('on the real server: sends the current and the new password; a server without the route says so', async () => {
+  it('an admin in the demo stays signed in', async () => {
+    signIn(ADMIN)
+    const { fill } = await open('/admin/settings')
+    await fill(GOOD, GOOD)
+    expect(await screen.findByRole('status')).toHaveTextContent('Your password is changed')
+  })
+
+  it('real server, a student: PUT /users/me/password with only the new password; a server without it says so', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
     const sent: unknown[] = []
@@ -98,10 +79,30 @@ describe('change my own password', () => {
         return new Response(JSON.stringify({ error: 'not_found', message: 'nope' }), { status: 404 })
       }),
     )
-    signIn()
-    const { fill } = await open()
-    await fill('old-pass-1', GOOD, GOOD)
+    signIn(SAM)
+    const { fill } = await open('/settings')
+    await fill(GOOD, GOOD)
     expect(await screen.findByText(NOT_SUPPORTED)).toBeInTheDocument()
-    expect(sent).toEqual([{ current_password: 'old-pass-1', password: GOOD }])
+    expect(sent).toEqual([{ password: GOOD }])
+  })
+
+  it('real server, an admin: the existing route with their own id, then signed out to sign in with the new password', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+    const sent: { path: string; method?: string; body?: unknown }[] = []
+    await stubHttp(
+      vi.fn(async (url: string, init: RequestInit) => {
+        const path = url.replace('https://api.test', '')
+        sent.push({ path, method: init.method, ...(init.body ? { body: JSON.parse(init.body as string) } : {}) })
+        if (path === '/users/1000/password') return new Response(null, { status: 204 })
+        return new Response(JSON.stringify({ error: 'not_found', message: 'nope' }), { status: 404 })
+      }),
+    )
+    signIn(ADMIN)
+    const { fill } = await open('/admin/settings')
+    await fill(GOOD, GOOD)
+    expect(await screen.findByRole('heading', { name: 'Sign in to the admin panel' })).toBeInTheDocument()
+    expect(screen.getByText('Your password is changed. Sign in with the new one.')).toBeInTheDocument()
+    expect(sent.find((c) => c.path === '/users/1000/password')).toMatchObject({ method: 'PUT', body: { password: GOOD } })
   })
 })

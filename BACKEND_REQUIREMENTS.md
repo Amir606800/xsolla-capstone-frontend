@@ -168,30 +168,44 @@ The admin dashboard will need these later; the exact shapes can be agreed then.
 
 ---
 
-# Also needed: change my own password
+# Also needed: set my own password
 
-Settings now has a "Change password" form for **every role** (student, mentor, lecturer, admin). The server's only
-password route is the admin's `PUT /users/:id/password` (`RequireRole admin`), so for everyone else the form answers
-"The server cannot change your own password yet" (it treats 403, 404, 405 and 501 that way).
+There is no e-mail reset yet, so Settings has a "Change password" form for **every role**. It asks for the new
+password and its repeat only: **no current password and no e-mail confirmation**, so a person who forgot theirs can
+still get back in.
 
-### PUT /users/me/password
+| Who | Route |
+|---|---|
+| **Admin** | `PUT /users/:id/password` with their own id: **already on the server** |
+| Student, mentor, lecturer | **`PUT /users/me/password`: new, see below** |
 
-Auth: any signed-in user. Changes the caller's own password.
+## Admin: nothing new, one thing to know
+
+`PUT /users/{id}/password` `{ "password": "..." }` (admin only) validates the rules, hashes, and **deletes all of that
+user's refresh tokens**. For an admin changing their own password that signs them out as soon as the access token
+expires, so the front-end signs the admin out right away and shows "Your password is changed. Sign in with the new
+one." If you would rather keep the current session, spare the refresh token the request came with when `id` is the
+caller's own (tell us and we will drop the sign-out).
+
+## Student, mentor, lecturer: PUT /users/me/password
+
+Auth: any signed-in user (the access token is the only proof, as there is no current password to check).
 
 ```json
-{ "current_password": "Old-password-1", "password": "Zebra-Quartz-7781" }
+{ "password": "Zebra-Quartz-7781" }
 ```
 
 - **204** on success.
-- **422** `validation_failed` when `current_password` is wrong, or the new password breaks the rules (10 to 72
-  characters, a lowercase letter, an uppercase letter, a number, no spaces, not containing the user's name or e-mail),
-  or it equals the current one. The front-end shows the `message` as it is.
-- Store it hashed like any password and **end the user's other sessions** (delete their other `refresh_tokens`); keep
-  the one the request came with, so the user stays signed in on this device.
-- Never return or log either password.
-- Register it **before** `PUT /users/{id}/password` or give `me` priority, so `/users/me/password` is not read as
-  an id.
+- **422** `validation_failed` when the new password breaks the rules (10 to 72 characters, a lowercase letter, an
+  uppercase letter, a number, no spaces, not containing the user's name or e-mail). The front-end shows the `message`.
+- Store it hashed like any password and **end the user's other sessions** (delete their other `refresh_tokens`), but
+  keep the one the request came with, so the user stays signed in on this device.
+- Never return or log the password.
+- Register it so `/users/me/password` is not read as `/users/{id}/password` with id `me` (that route is admin only
+  and answers 403 / 400). Until this route exists, the form says "The server cannot change your own password yet.
+  Ask an admin to reset it for you."
 
-(Admin reset is unchanged: `PUT /users/:id/password { "password": "..." }`, admin only. The same rules apply there.)
-
-A "forgot my password" flow for someone who cannot sign in needs e-mail sending; until then an admin resets it.
+**Security note:** with no current password and no e-mail check, whoever has a signed-in browser can take the account.
+The access token should be short-lived (it is the only guard), and the front-end signs people out on request. If this
+becomes a concern, the cheapest step is to require the current password again for non-admins; the form already has a
+place for it in git history.

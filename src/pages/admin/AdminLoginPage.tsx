@@ -7,6 +7,7 @@ import { Icon } from '../../components/Icon'
 import { XsollaLogo } from '../../components/XsollaLogo'
 import { useAuth } from '../../hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
+import { takeLoginNotice } from '../../utils/loginNotice'
 import { isAdmin } from '../../utils/roles'
 import { isValidEmail, isValidPassword } from '../../utils/validation'
 import './admin.css'
@@ -19,6 +20,8 @@ export default function AdminLoginPage() {
   const { user, signInAdmin } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  // set when the admin changed their password in Settings and was signed out (read once)
+  const [notice] = useState(takeLoginNotice)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -62,6 +65,12 @@ export default function AdminLoginPage() {
 
         <h1 className="admin-auth__title">Sign in to the admin panel</h1>
         <p className="admin-auth__lead">For the people who run the school. Students and staff sign in on the LMS page.</p>
+
+        {notice && (
+          <p className="admin-auth__demo" role="status">
+            {notice}
+          </p>
+        )}
 
         {!hasBackend() && (
           <p className="admin-auth__demo">
