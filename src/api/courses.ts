@@ -88,6 +88,20 @@ export async function createModule(
   return addModule(patch, ctx.createdBy)
 }
 
+/**
+ * The two steps of importing a module template, without reloading the course after each (a reload is a request per
+ * module): make a module and return its id, and save one item in it. The caller reloads once at the end.
+ */
+export async function createModuleQuiet(patch: ModulePatch & { title: string }, ctx: { createdBy?: number } = {}): Promise<string> {
+  if (hasBackend()) return http.postModule(patch)
+  return addModule(patch, ctx.createdBy).id
+}
+
+export async function writeItemQuiet(item: ContentItem): Promise<void> {
+  if (hasBackend()) return http.writeItem(item)
+  putItem(item)
+}
+
 /** Makes someone the lecturer of a week (module), or takes the lecturer off it (null). Returns the whole course. */
 export async function assignLecturer(moduleId: string, lecturerId: number | null): Promise<CourseModule[]> {
   if (hasBackend()) return http.assignLecturer(moduleId, lecturerId)

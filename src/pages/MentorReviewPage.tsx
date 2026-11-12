@@ -3,6 +3,8 @@ import { Link } from 'react-router'
 import { Icon } from '../components/Icon'
 import { Loading } from '../components/loading/Loading'
 import { Avatar } from '../components/team/People'
+import { XsollaLogo } from '../components/XsollaLogo'
+import { useAuth } from '../hooks/useAuth'
 import { useMentorReview } from '../hooks/useMentorReview'
 import { NO_SESSION_REASONS, REVIEW_STATEMENTS, REVIEW_TOPICS } from '../types/mentorReview'
 import type { ReviewStatement, Score } from '../types/mentorReview'
@@ -22,6 +24,7 @@ import type { ReviewDraft } from '../utils/mentorReview'
 import '../styles/ui.css'
 import '../components/module/module.css'
 import './TeamPage.css'
+import '../components/authoring/authoring.css'
 import '../components/review/review.css'
 
 /** One 1-5 choice. `name` groups the radios; the legend or label around it says what is rated. */
@@ -50,12 +53,17 @@ function Scale({ name, value, onChange, low, high }: { name: string; value: Scor
  */
 export default function MentorReviewPage() {
   const { status, due, mentor, submit, reload } = useMentorReview()
+  const { signOut } = useAuth()
   const id = useId()
   const [draft, setDraft] = useState<ReviewDraft>(emptyDraft)
   const [touched, setTouched] = useState(false)
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState('')
   const [sent, setSent] = useState(false)
+  // locked: the form takes the whole screen (no menu to wander off into); it stays that way for the thank-you line
+  const [wasLocked, setWasLocked] = useState(false)
+  if (due?.locked && !wasLocked) setWasLocked(true)
+  const full = !!due?.locked || (sent && wasLocked)
 
   const set = (patch: Partial<ReviewDraft>) => setDraft((d) => ({ ...d, ...patch }))
   const errors = validateReview(draft)
@@ -77,7 +85,7 @@ export default function MentorReviewPage() {
     }
   }
 
-  return (
+  const page = (
     <section className="module mentor-review">
       <div>
         <h1 className="page-title">Mentor review</h1>
@@ -267,5 +275,18 @@ export default function MentorReviewPage() {
         </>
       )}
     </section>
+  )
+
+  if (!full) return page
+  return (
+    <div className="review-lock">
+      <header className="review-lock__bar">
+        <XsollaLogo className="review-lock__logo" />
+        <button type="button" className="btn btn--ghost btn--small" onClick={() => void signOut()}>
+          Sign out
+        </button>
+      </header>
+      {page}
+    </div>
   )
 }

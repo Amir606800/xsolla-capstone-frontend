@@ -110,10 +110,15 @@ export async function saveModule(id: string, patch: ModuleFields): Promise<Cours
   return fetchModules(false)
 }
 
+/** Creates a module and returns its id, without reloading the course (for importing many at once). */
+export async function postModule(patch: ModuleFields & { title: string }): Promise<string> {
+  const created = await authedRequest<ApiModule>('/modules', { method: 'POST', body: moduleBody(patch) })
+  return String(created.id)
+}
+
 /** A new module (the backend records who created it). */
 export async function createModule(patch: ModuleFields & { title: string }): Promise<{ id: string; modules: CourseModule[] }> {
-  const created = await authedRequest<ApiModule>('/modules', { method: 'POST', body: moduleBody(patch) })
-  return { id: String(created.id), modules: await fetchModules(false) }
+  return { id: await postModule(patch), modules: await fetchModules(false) }
 }
 
 export class NotSupportedError extends ApiError {
@@ -163,11 +168,16 @@ async function saveMaterial(r: ResourceItem): Promise<void> {
  * Quizzes have no place in the backend yet.
  */
 export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
+  await writeItem(item)
+  return fetchModules(false)
+}
+
+/** Saves one item without reloading the course (for importing many at once). */
+export async function writeItem(item: ContentItem): Promise<void> {
   if (!isServerId(item.moduleId)) throw new ApiError(400, 'bad_request', 'This module is not saved on the server.')
   if (item.type === 'assignment') await saveTask(item)
   else if (item.type === 'resource') await saveMaterial(item)
   else throw new NotSupportedError('Quizzes cannot be saved by the backend yet.')
-  return fetchModules(false)
 }
 
 /**

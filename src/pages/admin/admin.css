@@ -1538,3 +1538,96 @@ a.admin-cell {
   font-size: 14px;
   overflow-wrap: anywhere;
 }
+
+/* the Modules page head: export / import / new next to each other */
+.admin-module-head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------- Import a module template (dialog) ---------- */
+.import-template {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 24px 24px;
+}
+.import-template p {
+  margin: 0;
+}
+.import-template__lead,
+.import-template__hint {
+  color: var(--text-muted);
+}
+.import-template__hint {
+  font-size: var(--fs-label);
+}
+.import-template__field .field__label {
+  display: block;
+  margin: 0 0 8px;
+}
+.import-template__date {
+  width: 12rem;
+  height: 40px;
+}
+.import-template__note,
+.import-template__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+.import-template__note {
+  background: var(--active-bg);
+}
+.import-template__warn {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--warn);
+}
+.import-template__note svg,
+.import-template__warn svg {
+  flex: none;
+  margin-top: 2px;
+}
+.import-template__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+/* the file picker: a clear box instead of the browser's own button */
+.import-pick__box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px dashed var(--field-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.import-pick__box:hover {
+  background: var(--active-bg);
+}
+.import-pick__box.is-chosen {
+  border-style: solid;
+  border-color: var(--xs-cyan);
+}
+.import-pick:focus-within .import-pick__box {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.import-pick__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.import-pick__text strong {
+  overflow-wrap: anywhere;
+}
+.import-pick__text span {
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
