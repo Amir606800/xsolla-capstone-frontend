@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.gitignore
+# env files are not baked into the image: the address of the backend comes in as build arguments (docker-compose.yml)
+.env
+.env.*
+!.env.example
+e2e
+playwright-report
+test-results
+*.patch
+*.md
+!README.md
+Dockerfile
+docker-compose.yml
