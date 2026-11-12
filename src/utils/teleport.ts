@@ -25,14 +25,11 @@ export function attachLmsSession(rawUrl: string): string {
       tokens: readJson('auth_tokens'),
       origin: typeof window !== 'undefined' ? window.location.origin : '',
       apiUrl: (import.meta.env.VITE_API_URL ?? '').trim(),
-      standings: readJson('standings'),
-      courseEdits: readJson('course_edits'),
-      eventEdits: readJson('event_edits'),
-      submissions: readJson('submissions'),
     }
     const encoded = btoa(encodeURIComponent(JSON.stringify(payload)))
     const target = new URL(baseTarget, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5174')
-    target.searchParams.set('lms_session', encoded)
+    target.searchParams.delete('lms_session')
+    target.hash = `lms_session=${encoded}`
     return target.toString()
   } catch {
     return rawUrl
