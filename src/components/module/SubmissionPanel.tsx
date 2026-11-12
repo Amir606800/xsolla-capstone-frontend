@@ -14,6 +14,8 @@ interface SubmissionPanelProps {
   onSubmit: (assignmentId: string, payload: SubmitPayload) => Promise<void>
   /** Decides whether the deadline has passed (defaults to the moment of rendering). */
   now?: Date
+  /** When the task's module closes: after it nothing is handed in, the work can only be looked at. */
+  closesAt?: string
 }
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
@@ -27,7 +29,7 @@ const fileKey = (f: { name: string; size?: number; sizeBytes?: number }) => `${f
  * with a note or link and several files; the files of the current version can be carried over to the
  * next one. Every earlier version stays listed. After the deadline (or once graded) it is read-only.
  */
-export function SubmissionPanel({ assignment, onSubmit, now }: SubmissionPanelProps) {
+export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: SubmissionPanelProps) {
   const { submission } = assignment
   const uid = useId()
   const [text, setText] = useState(submission?.textBody ?? '')
@@ -49,7 +51,9 @@ export function SubmissionPanel({ assignment, onSubmit, now }: SubmissionPanelPr
   }
 
   const graded = submission?.gradedAt !== undefined
-  const closed = !graded && isPastDue(assignment, now ?? new Date())
+  const closed = !graded && isPastDue(assignment, now ?? new Date(), closesAt)
+  // the moment handing in ended: the task's deadline, or the module's closing date when that came first
+  const endedAt = closesAt && closesAt < assignment.dueAt ? closesAt : assignment.dueAt
   const history = submission?.history ?? []
   const versions = submission ? history.length + 1 : 0
   const canSubmit = (text.trim().length > 0 || files.length > 0 || keep.length > 0) && !busy && !graded && !closed
@@ -170,8 +174,8 @@ export function SubmissionPanel({ assignment, onSubmit, now }: SubmissionPanelPr
         <p className="submission__locked">
           <Icon name="lock" size={16} />
           {submission
-            ? `The deadline (${formatDateTime(assignment.dueAt)}) has passed, so no new version can be handed in.`
-            : `The deadline (${formatDateTime(assignment.dueAt)}) has passed. Nothing was handed in.`}
+            ? `The deadline (${formatDateTime(endedAt)}) has passed, so no new version can be handed in. You can still read what you handed in.`
+            : `The deadline (${formatDateTime(endedAt)}) has passed. Nothing was handed in.`}
         </p>
       )}
 

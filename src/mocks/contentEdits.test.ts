@@ -81,10 +81,10 @@ describe('course edits', () => {
     putItem(task({ id: 'k-1', moduleId: id }), NOW)
     putModule(id, { title: 'K8s' }, NOW)
     expect(mod(id)).toMatchObject({ title: 'K8s', items: [expect.objectContaining({ id: 'k-1' })] })
-    // a second one goes after it, even after a demo module is deleted
+    // a second one goes after it; the numbers follow the order the weeks open, so a deleted week leaves no gap
     removeModule('m12', NOW)
     const second = addModule({ title: 'Helm' }, 1000, new Date(NOW.getTime() + 1000))
-    expect(mod(second.id).position).toBe(14)
+    expect(mod(second.id).position).toBe(13)
     removeModule(id, NOW)
     expect(listModules(NOW).some((m) => m.id === id)).toBe(false)
   })

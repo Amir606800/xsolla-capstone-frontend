@@ -1,6 +1,7 @@
 import type { CalendarEvent, EventKind } from '../types/calendar'
 import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission, SubmissionVersion } from '../types/course'
 import type { WeeklyStanding } from '../types/standing'
+import { orderByOpening } from '../utils/progress'
 import { parseStandingLevel } from '../utils/standing'
 import type { ApiContentItem, ApiEvent, ApiModule, ApiSubmission, ApiWeeklyStanding } from './types'
 
@@ -125,7 +126,7 @@ export function mapContentItems(
 
 /**
  * GET /modules + each module's content items -> CourseModule[].
- * - The backend has no week number: modules are ordered by creation and numbered 1, 2, 3, ...
+ * - The backend has no week number: modules are ordered by when they open (then by creation) and numbered 1, 2, 3, ...
  * - Week dates (`opens_at` / `closes_at`) are read when the server sends them; it does not store them yet, so
  *   until then nothing is locked for students.
  */
@@ -135,8 +136,8 @@ export function mapModules(
   submissions: Record<string, ApiSubmission | undefined> = {},
   opts: { includeHidden?: boolean } = {},
 ): CourseModule[] {
-  return [...modules]
-    .sort((a, b) => a.created_at.localeCompare(b.created_at) || Number(a.id) - Number(b.id))
+  // the number of a week is its place in the order the weeks open, not the order an admin typed them in
+  return orderByOpening(modules.map((m) => ({ ...m, id: String(m.id), opensAt: m.opens_at ?? undefined, createdAt: m.created_at })))
     .map((m, i) => {
       const id = String(m.id)
       return {

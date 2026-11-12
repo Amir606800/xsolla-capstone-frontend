@@ -11,6 +11,8 @@ interface AssignmentCardProps {
   assignment: AssignmentItem
   now: Date
   onSubmit: (assignmentId: string, payload: SubmitPayload) => Promise<void>
+  /** When the module closes (handing in is over from then on). */
+  closesAt?: string
   /** Where the task belongs (e.g. "Module 6 · Go Basics"), shown in lists that mix several modules. */
   context?: string
 }
@@ -29,7 +31,7 @@ function StatusPill({ assignment, now }: { assignment: AssignmentItem; now: Date
   }
 }
 
-function AssignmentCardBase({ assignment, now, onSubmit, context }: AssignmentCardProps) {
+function AssignmentCardBase({ assignment, now, onSubmit, closesAt, context }: AssignmentCardProps) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
 
@@ -65,7 +67,7 @@ function AssignmentCardBase({ assignment, now, onSubmit, context }: AssignmentCa
               </ul>
             </>
           )}
-          <SubmissionPanel assignment={assignment} onSubmit={onSubmit} now={now} />
+          <SubmissionPanel assignment={assignment} onSubmit={onSubmit} now={now} closesAt={closesAt} />
         </div>
       )}
     </li>

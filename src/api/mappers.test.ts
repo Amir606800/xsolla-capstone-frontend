@@ -80,6 +80,27 @@ describe('mapModules', () => {
     expect(m2.items[0]).not.toHaveProperty('submission')
   })
 
+  it('numbers the weeks in the order they open, not the order they were made in', () => {
+    const made = (id: number, created: string, opens: string) => ({ id, title: `W${id}`, created_by: 9, created_at: created, opens_at: opens, closes_at: '2027-06-01T00:00:00Z' })
+    const out = mapModules(
+      [made(1, '2026-10-01T09:00:00Z', '2026-11-16T00:00:00Z'), made(2, '2026-10-02T09:00:00Z', '2026-11-02T00:00:00Z'), made(3, '2026-10-03T09:00:00Z', '2026-11-09T00:00:00Z')],
+      {},
+    )
+    expect(out.map((m) => [m.id, m.position])).toEqual([['2', 1], ['3', 2], ['1', 3]])
+  })
+
+  it('weeks that open together keep the order they were made in; a week without an opening date goes last', () => {
+    const out = mapModules(
+      [
+        { id: 5, title: 'No date', created_by: 9, created_at: '2026-10-01T00:00:00Z' },
+        { id: 4, title: 'B', created_by: 9, created_at: '2026-10-03T00:00:00Z', opens_at: '2026-11-02T00:00:00Z' },
+        { id: 3, title: 'A', created_by: 9, created_at: '2026-10-02T00:00:00Z', opens_at: '2026-11-02T00:00:00Z' },
+      ],
+      {},
+    )
+    expect(out.map((m) => m.id)).toEqual(['3', '4', '5'])
+  })
+
   it('keeps who created each module and when', () => {
     expect(mapModules(modules, items)[0]).toMatchObject({ createdBy: 9, createdAt: '2026-10-01T09:00:00Z' })
   })

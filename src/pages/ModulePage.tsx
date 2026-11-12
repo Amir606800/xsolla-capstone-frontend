@@ -85,7 +85,7 @@ export default function ModulePage() {
           ) : (
             <ul className="assignments">
               {assignments.map((a) => (
-                <AssignmentCard key={a.id} assignment={a} now={now} onSubmit={submitAssignment} />
+                <AssignmentCard key={a.id} assignment={a} now={now} onSubmit={submitAssignment} closesAt={module.closesAt} />
               ))}
             </ul>
           )}

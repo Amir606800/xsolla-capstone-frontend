@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fetchReviewedWeeks } from '../api/mentorReviews'
 import { fetchMyTeam } from '../api/teams'
 import App from '../App'
@@ -127,5 +127,37 @@ describe('weekly mentor review: who is never asked', () => {
     renderWithProviders(<App />, { route: '/dashboard' })
     expect(await screen.findByRole('heading', { name: /^Welcome/ })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Mentor review' })).not.toBeInTheDocument()
+  })
+})
+
+describe('weekly mentor review: trying it against a real server that has no review routes yet', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('the demo flag still locks, and the review is kept in the browser, never sent to the server', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    vi.mocked(fetchReviewedWeeks).mockClear()
+    signIn()
+    demo('locked')
+    const user = userEvent.setup()
+    renderWithProviders(<App />, { route: '/dashboard' })
+    const f = within(await form())
+    await user.click(f.getByRole('radio', { name: 'No' }))
+    await user.click(f.getByRole('radio', { name: 'My mentor was not available' }))
+    await user.click(within(f.getByRole('group', { name: /Overall, how satisfied/ })).getByRole('radio', { name: '3' }))
+    await user.click(f.getByRole('button', { name: 'Send review' }))
+    expect(await screen.findByText(/Thank you, your review is sent/)).toBeInTheDocument()
+    expect(listReviews()).toHaveLength(1)
+    expect(fetchReviewedWeeks).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('link', { name: 'Go to the dashboard' }))
+    expect(await screen.findByRole('heading', { name: /^Welcome/ })).toBeInTheDocument()
+  })
+
+  it('without the flag, the real server decides (a server without the routes locks nobody)', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    vi.mocked(fetchReviewedWeeks).mockResolvedValue(null)
+    signIn()
+    renderWithProviders(<App />, { route: '/dashboard' })
+    expect(await screen.findByRole('heading', { name: /^Welcome/ })).toBeInTheDocument()
+    expect(fetchReviewedWeeks).toHaveBeenCalled()
   })
 })

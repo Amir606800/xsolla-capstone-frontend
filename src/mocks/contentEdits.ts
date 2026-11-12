@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '../types/calendar'
 import type { ContentItem, CourseModule } from '../types/course'
 import { buildMockEvents } from './events'
+import { orderByOpening } from '../utils/progress'
 import { buildMockModules } from './courses'
 
 /**
@@ -96,8 +97,11 @@ export function applyCourseEdits(demo: CourseModule[], edits: CourseEdits): Cour
   })
 }
 
+/** The course in the order the weeks open; each module's number follows that order. */
+const numbered = (modules: CourseModule[]): CourseModule[] => orderByOpening(modules).map((m, i) => ({ ...m, position: i + 1 }))
+
 export function listModules(now: Date = new Date()): CourseModule[] {
-  return applyCourseEdits(buildMockModules(now), loadCourseEdits())
+  return numbered(applyCourseEdits(buildMockModules(now), loadCourseEdits()))
 }
 
 /** A module that is in the demo course (or was added) and was not deleted. */

@@ -120,6 +120,7 @@ export default function TasksPage() {
                     assignment={assignment}
                     now={now}
                     onSubmit={submitAssignment}
+                    closesAt={module.closesAt}
                     context={`Module ${module.position} · ${module.title}`}
                   />
                 ))}
