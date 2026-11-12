@@ -15,7 +15,7 @@ export interface ApiModule {
   title: string
   description?: string | null
   created_by?: ApiId
-  /** Proposed (BACKEND_REQUIREMENTS.md): the lecturer the week is assigned to. Until the server has it, `created_by` stands in. */
+  /** Proposed (BACKEND_REQUIREMENTS.md): the lecturer the week is assigned to. `created_by` is the admin who made it and is not used. */
   lecturer_id?: ApiId | null
   created_at: string
   /** Proposed (BACKEND_REQUIREMENTS.md 3.2): the week's dates. The server does not store them yet. */

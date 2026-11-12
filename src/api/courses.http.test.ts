@@ -134,13 +134,13 @@ describe('lecturer editing', () => {
 
   it('assigning a lecturer to a week sends lecturer_id and checks the server really changed it', async () => {
     await backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }) })
-    // the server accepts the request but still says created_by 9: it does not know the field yet
+    // the server accepts the request but leaves lecturer_id out of its answer: it does not know the field yet
     await expect(assignLecturer('4', 12)).rejects.toThrow('The server cannot change the lecturer of a week yet.')
     expect(json(find('PATCH', '/modules/4'))).toEqual({ lecturer_id: 12 })
-    // once the server applies it, created_by follows
+    // once the server applies it, lecturer_id comes back (and who made the module, created_by, is not the lecturer)
     await backend({
-      'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }),
-      'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', description: 'Go', created_by: 12, created_at: '2026-11-01T00:00:00Z' }] }),
+      'PATCH /modules/4': () => ({ status: 200, body: { id: 4, lecturer_id: 12 } }),
+      'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', description: 'Go', created_by: 9, lecturer_id: 12, created_at: '2026-11-01T00:00:00Z' }] }),
       ...ITEMS,
     })
     expect((await assignLecturer('4', 12))[0].createdBy).toBe(12)
@@ -148,11 +148,11 @@ describe('lecturer editing', () => {
 
   it('taking the lecturer off a week sends null; the server must then report no lecturer', async () => {
     await backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }) })
-    // this server still reports created_by 9
+    // a server without the field: "no lecturer" must not look like success
     await expect(assignLecturer('4', null)).rejects.toThrow('cannot change the lecturer of a week yet')
     expect(json(find('PATCH', '/modules/4'))).toEqual({ lecturer_id: null })
     await backend({
-      'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }),
+      'PATCH /modules/4': () => ({ status: 200, body: { id: 4, lecturer_id: null } }),
       'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', created_at: '2026-11-01T00:00:00Z' }] }),
       ...ITEMS,
     })

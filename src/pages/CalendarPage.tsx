@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { DayPanel } from '../components/calendar/DayPanel'
 import type { EventEditing, Notice } from '../components/calendar/DayPanel'
-import { DayTools } from '../components/calendar/DayTools'
+import { DayActions, DayForm } from '../components/calendar/DayTools'
 import type { Tool } from '../components/calendar/DayTools'
 import { MonthGrid } from '../components/calendar/MonthGrid'
 import { SlotList } from '../components/calendar/Slots'
@@ -262,12 +262,13 @@ export default function CalendarPage() {
                   />
                 )
               }
-              tools={
-                <DayTools
+              actions={
+                <DayActions canAddEvents={author} canAddSlots={mentor && meetings.status === 'ready'} tool={tool} onTool={setTool} onNotice={setNotice} />
+              }
+              form={
+                <DayForm
                   dayKey={selected}
                   now={today}
-                  canAddEvents={author}
-                  canAddSlots={mentor && meetings.status === 'ready'}
                   tool={tool}
                   onTool={setTool}
                   modules={eventModules}

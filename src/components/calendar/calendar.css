@@ -383,16 +383,6 @@
   padding: 16px 20px 20px;
   border-top: 1px solid var(--divider);
 }
-/* medium screens (the panel is under the month): the two parts stand side by side */
-@media (min-width: 760px) and (max-width: 1399px) {
-  .day-panel__body {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-  }
-  .day-panel__part + .day-panel__part {
-    border-left: 1px solid var(--divider);
-  }
-}
 .day-panel__heading {
   margin: 0 0 12px;
   color: var(--text-muted);
@@ -431,48 +421,19 @@
   margin: 0;
 }
 
-/* what the role can add: one choice per kind of thing */
-.day-tools__choices {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.day-tools__choice {
+/* the add buttons sit in the header: always in view, one per kind of thing the role can add */
+.day-actions {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--field-border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-basis: 100%;
 }
-.day-tools__choice:hover {
-  background: var(--active-bg);
-}
-.day-tools__choice:focus-visible {
+.day-actions__btn[aria-pressed='true'] {
   outline: 2px solid var(--xs-cyan);
   outline-offset: 2px;
 }
-.day-tools__choice > svg {
-  flex: none;
-  margin-top: 2px;
-  color: var(--xs-cyan);
-}
-.day-tools__choice-text {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.day-tools__choice-text span {
-  color: var(--text-muted);
-  font-size: var(--fs-label);
+.day-form {
+  background: color-mix(in srgb, var(--xs-cyan) 5%, var(--card));
 }
 
 /* ---------- Day panel: detailed event cards ---------- */

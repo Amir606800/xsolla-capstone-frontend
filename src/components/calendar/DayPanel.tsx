@@ -32,8 +32,10 @@ interface DayPanelProps {
   now: Date
   /** Part 1 extras, under the events: the 1:1 times. */
   schedule?: ReactNode
-  /** Part 2: what this role can add or change on the day (nothing for students). */
-  tools?: ReactNode
+  /** The "add" buttons of this role, in the header so they are always in view (nothing for students). */
+  actions?: ReactNode
+  /** The form of the open tool (add or edit), right under the header. */
+  form?: ReactNode
   notice?: Notice | null
   /** Lecturers: which events can be changed, and how. */
   editing?: EventEditing
@@ -157,7 +159,7 @@ function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date
   )
 }
 
-function DayPanelBase({ date, events, now, schedule, tools, notice, editing }: DayPanelProps) {
+function DayPanelBase({ date, events, now, schedule, actions, form, notice, editing }: DayPanelProps) {
   // open 1:1 times are listed by the 1:1 list (schedule), not by a card of their own
   const cards = events.filter((e) => e.kind !== 'availability')
   // `false` / null children (a list that is not shown) do not count as content
@@ -168,6 +170,7 @@ function DayPanelBase({ date, events, now, schedule, tools, notice, editing }: D
       <header className="day-panel__head">
         <h2 className="day-panel__title">{fullDateLabel(date)}</h2>
         {isToday && <span className="pill">Today</span>}
+        {actions}
       </header>
 
       {notice && (
@@ -175,6 +178,8 @@ function DayPanelBase({ date, events, now, schedule, tools, notice, editing }: D
           {notice.text}
         </p>
       )}
+
+      {form}
 
       <div className="day-panel__body">
         <section className="day-panel__part" aria-labelledby="day-panel-events">
@@ -191,8 +196,6 @@ function DayPanelBase({ date, events, now, schedule, tools, notice, editing }: D
           {schedule}
           {cards.length === 0 && !hasExtra && <p className="card__empty">No events on this day.</p>}
         </section>
-
-        {tools}
       </div>
     </section>
   )

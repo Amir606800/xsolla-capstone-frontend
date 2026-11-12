@@ -217,8 +217,10 @@ place for it in git history.
 An admin gives each module (week) to a **lecturer**, who prepares it (materials, tasks, quizzes, lectures). Today
 the server only knows `modules.created_by`, so "whose module is it" means "who created it" and an admin cannot hand a
 week to someone else. The front-end already shows each lecturer which modules are theirs (an "Assigned to you" mark,
-a filter "Assigned to me", and "what is missing" counted for their modules); it reads `lecturer_id` and, until the
-server sends it, falls back to `created_by`.
+a filter "Assigned to me", and "what is missing" counted for their modules). It reads **only** `lecturer_id`:
+`created_by` is always the admin who made the module, so the front-end no longer shows it anywhere and never takes it
+for the lecturer. Until the server sends `lecturer_id`, every module shows "no lecturer" and no lecturer has modules
+marked as theirs.
 
 ## Data
 
@@ -239,8 +241,9 @@ modules. `NULL` = nobody yet (the admin Overview already warns about those weeks
   `"lecturer_id": 902` (or `null`).
 - **`PATCH /modules/:id`** accepts `"lecturer_id": 902` or `null` (take the lecturer off). **Admin only.** `422`
   when the user does not exist, is inactive, or does not have the `lecturer` role. The front-end sends exactly this
-  from the admin's "Assign weeks" screen and, after the answer, checks that `lecturer_id` really changed (a server
-  that ignores the field answers 200 and changes nothing).
+  from the admin's "Assign weeks" screen and checks the answer: **the response body must include `lecturer_id`**
+  (`null` when nobody) with the value that was asked for. A server that ignores the field answers 200 without that key,
+  and the front-end then says "The server cannot change the lecturer of a week yet" instead of pretending.
 - **`POST /modules`** accepts an optional `"lecturer_id"` (admin). Without it: the creator if they are a lecturer,
   otherwise `null`.
 - *(Optional)* `GET /modules?lecturer_id=me` so a lecturer can ask for only theirs; the front-end filters

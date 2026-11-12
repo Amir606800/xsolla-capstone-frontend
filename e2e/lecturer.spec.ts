@@ -52,6 +52,8 @@ test('a task added from the dashboard shortcut shows up for the student', async 
 
 test('a link material and a quiz show up in the module for the student, without the answers', async ({ context }) => {
   const lecturer = await tabAs(context, LECTURER, '/courses')
+  // the list starts on the modules assigned to this lecturer (the odd weeks); week 6 is another lecturer's
+  await lecturer.getByRole('button', { name: /^All modules/ }).click()
   await lecturer.getByRole('link', { name: /Module 6/ }).click()
 
   await lecturer.getByRole('button', { name: 'Add', exact: true }).click()
@@ -148,7 +150,7 @@ test('the calendar day panel: events in one part, what the role can add in anoth
   const page = await tabAs(context, LECTURER, '/calendar')
   const panel = page.getByRole('region', { name: 'Day details' })
   await expect(panel.getByRole('heading', { name: 'On this day' })).toBeVisible()
-  await expect(panel.getByRole('heading', { name: 'Add to this day' })).toBeVisible()
+  await expect(panel.getByRole('group', { name: 'Add to this day' })).toBeVisible()
   await panel.getByRole('button', { name: 'Add a lecture or event' }).click()
   await expect(panel.getByRole('form', { name: 'New event' })).toBeVisible()
   expect(await overflow(page)).toBe(false)

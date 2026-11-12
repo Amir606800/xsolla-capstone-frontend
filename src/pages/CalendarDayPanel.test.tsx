@@ -18,13 +18,14 @@ async function open(who: object) {
   return { user, panel: within(panel) }
 }
 
-describe('the staff day panel: what is on the day, and what can be added', () => {
-  it('is two parts: "On this day" first, then "Add to this day" with one choice per thing the role can add', async () => {
+describe('the staff day panel: what is on the day, and the buttons to add to it', () => {
+  it('the add buttons sit in the header, one per thing the role can add, above the events', async () => {
     const { panel } = await open(BOTH)
-    const headings = panel.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-    expect(headings.slice(0, 2)).toEqual(['On this day', 'Add to this day'])
-    expect(panel.getByRole('button', { name: 'Add a lecture or event' })).toBeInTheDocument()
-    expect(panel.getByRole('button', { name: 'Add 1:1 times' })).toBeInTheDocument()
+    const group = panel.getByRole('group', { name: 'Add to this day' })
+    expect(within(group).getByRole('button', { name: 'Add a lecture or event' })).toBeInTheDocument()
+    expect(within(group).getByRole('button', { name: 'Add 1:1 times' })).toBeInTheDocument()
+    // header first, then the events
+    expect(group.compareDocumentPosition(panel.getByRole('heading', { name: 'On this day' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
@@ -40,22 +41,34 @@ describe('the staff day panel: what is on the day, and what can be added', () =>
     expect(panel.queryByRole('button', { name: 'Add a lecture or event' })).not.toBeInTheDocument()
   })
 
-  it('a choice opens its form in place of the choices; Cancel brings the choices back', async () => {
+  it('a button opens its form under the header; the buttons stay, and Cancel closes the form', async () => {
     const { user, panel } = await open(BOTH)
     await user.click(panel.getByRole('button', { name: 'Add a lecture or event' }))
     expect(panel.getByRole('heading', { name: 'New lecture or event' })).toBeInTheDocument()
     expect(panel.getByRole('form', { name: 'New event' })).toBeInTheDocument()
-    expect(panel.queryByRole('button', { name: 'Add 1:1 times' })).not.toBeInTheDocument()
-    // the events of the day stay in view above the form
+    // the events of the day stay in view, and so do the buttons
     expect(panel.getByRole('heading', { name: 'On this day' })).toBeInTheDocument()
+    expect(panel.getByRole('button', { name: 'Add 1:1 times' })).toBeInTheDocument()
 
     await user.click(panel.getByRole('button', { name: 'Cancel' }))
-    expect(panel.getByRole('heading', { name: 'Add to this day' })).toBeInTheDocument()
-    expect(panel.getByRole('button', { name: 'Add 1:1 times' })).toBeInTheDocument()
+    expect(panel.queryByRole('form')).not.toBeInTheDocument()
 
     await user.click(panel.getByRole('button', { name: 'Add 1:1 times' }))
     expect(panel.getByRole('heading', { name: 'Add 1:1 times' })).toBeInTheDocument()
     expect(panel.getByLabelText('From')).toBeInTheDocument()
+  })
+
+  it('after an event is added the same button is there for the next one, as many times as needed', async () => {
+    const { user, panel } = await open(LECTURER)
+    for (const title of ['First talk', 'Second talk', 'Third talk']) {
+      await user.click(panel.getByRole('button', { name: 'Add a lecture or event' }))
+      await user.type(panel.getByLabelText('Title'), title)
+      await user.click(panel.getByRole('button', { name: 'Add event' }))
+      expect(await panel.findByText(title)).toBeInTheDocument()
+      expect(panel.queryByRole('form')).not.toBeInTheDocument()
+      expect(panel.getByRole('button', { name: 'Add a lecture or event' })).toBeEnabled()
+    }
+    expect(within(panel.getByRole('list', { name: 'Events' })).getAllByText(/ talk$/)).toHaveLength(3)
   })
 
   it('moving to another day drops a half-filled form and the old message', async () => {
@@ -66,6 +79,6 @@ describe('the staff day panel: what is on the day, and what can be added', () =>
     await user.click(within(grid).getByRole('button', { name: /^Monday, November 16/ }))
     expect(panel.queryByLabelText('Title')).not.toBeInTheDocument()
     expect(panel.getByRole('heading', { name: 'Monday, November 16', level: 2 })).toBeInTheDocument()
-    expect(panel.getByRole('heading', { name: 'Add to this day' })).toBeInTheDocument()
+    expect(panel.getByRole('button', { name: 'Add a lecture or event' })).toBeInTheDocument()
   })
 })

@@ -10,7 +10,6 @@ import { useSort } from '../../../hooks/useSort'
 import type { CourseModule } from '../../../types/course'
 import { contentsLine, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
 import { modulePhase, PHASE_LABEL } from '../../../utils/content'
-import { formatShortDate } from '../../../utils/date'
 import { buildTemplate, templateFileName } from '../../../utils/moduleTemplate'
 import { ImportTemplate } from './ImportTemplate'
 import { ConfirmDialog } from '../ConfirmDialog'
@@ -143,7 +142,6 @@ export default function AdminModulesPage() {
                       <Link to={`/admin/modules/${m.id}`} className="admin-table__title">
                         {m.title}
                       </Link>
-                      {m.createdAt && <span className="admin-table__sub">Created {formatShortDate(m.createdAt)}</span>}
                     </td>
                     <td>{nameOf(m.createdBy)}</td>
                     <td className="admin-table__muted">{contentsLine(m)}</td>

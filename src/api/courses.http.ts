@@ -186,12 +186,17 @@ export async function writeItem(item: ContentItem): Promise<void> {
  * that does not know the field would accept the request and change nothing.
  */
 export async function assignLecturer(moduleId: string, lecturerId: number | null): Promise<CourseModule[]> {
-  await authedRequest(`/modules/${moduleId}`, { method: 'PATCH', body: { lecturer_id: lecturerId } })
-  const modules = await fetchModules(false)
-  if (modules.find((m) => m.id === moduleId)?.createdBy !== (lecturerId ?? undefined)) {
+  const saved = await authedRequest<{ lecturer_id?: number | string | null } | null>(`/modules/${moduleId}`, {
+    method: 'PATCH',
+    body: { lecturer_id: lecturerId },
+  })
+  // a server that knows the field answers with the module including `lecturer_id` (null when nobody); one that does not
+  // leaves the key out, whatever was asked, so "no lecturer" cannot be mistaken for "not supported"
+  const answered = saved !== null && typeof saved === 'object' && 'lecturer_id' in saved
+  if (!answered || (saved.lecturer_id == null ? null : Number(saved.lecturer_id)) !== lecturerId) {
     throw new NotSupportedError('The server cannot change the lecturer of a week yet.')
   }
-  return modules
+  return fetchModules(false)
 }
 
 /** Soft delete on the server: its items go with it, students' handed-in work is kept. */

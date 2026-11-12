@@ -15,7 +15,6 @@ import type { ContentItem, CourseModule } from '../../../types/course'
 import { contentsLine, ITEM_TYPE_LABEL, itemAuthor, itemSummary, keepMeta, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
 import { draftToMaterial, draftToQuiz, draftToTask } from '../../../utils/authoring'
 import { modulePhase, PHASE_LABEL } from '../../../utils/content'
-import { formatDateTime } from '../../../utils/date'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
 import { ItemDetails } from './ItemDetails'
@@ -133,10 +132,6 @@ export default function AdminModulePage() {
         <div>
           <dt>Lecturer</dt>
           <dd>{nameOf(module.createdBy)}</dd>
-        </div>
-        <div>
-          <dt>Created</dt>
-          <dd>{module.createdAt ? formatDateTime(module.createdAt) : 'Unknown'}</dd>
         </div>
         <div>
           <dt>Dates</dt>

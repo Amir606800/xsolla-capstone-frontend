@@ -101,8 +101,10 @@ describe('mapModules', () => {
     expect(out.map((m) => m.id)).toEqual(['3', '4', '5'])
   })
 
-  it('keeps who created each module and when', () => {
-    expect(mapModules(modules, items)[0]).toMatchObject({ createdBy: 9, createdAt: '2026-10-01T09:00:00Z' })
+  it('the lecturer of a week is the assigned one; who made the module (an admin) is never taken for it', () => {
+    expect(mapModules(modules, items)[0]).not.toHaveProperty('createdBy')
+    expect(mapModules([{ ...modules[1], lecturer_id: 12 }], items)[0]).toMatchObject({ createdBy: 12, createdAt: '2026-10-01T09:00:00Z' })
+    expect(mapModules([{ ...modules[1], lecturer_id: null }], items)[0]).not.toHaveProperty('createdBy')
   })
 
   it('for admins: hidden items are kept and marked hidden', () => {
