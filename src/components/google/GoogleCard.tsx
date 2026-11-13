@@ -97,7 +97,7 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
             Google Calendar
           </h2>
           <p className="google-card__lead">
-            {student ? 'Connect your Google account to the LMS.' : 'Put the lectures and events you add here on your own Google Calendar too.'}
+            {student ? 'Connect your Google account to see your own Google Calendar on the school calendar.' : 'Put the lectures and events you add here on your own Google Calendar too.'}
           </p>
         </div>
         {pill && <span className={`google-card__pill google-card__pill--${pill.tone}`}>{pill.text}</span>}
@@ -136,8 +136,8 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
           <ul className="google-card__facts">
             {student ? (
               <>
-                <li>Connecting sends nothing by itself.</li>
-                <li>The school’s events cannot be added to a student’s Google Calendar yet; this connection is ready for when they can.</li>
+                <li>Your own Google Calendar events now show on the school calendar, only for you. You cannot change them there.</li>
+                <li>Connecting sends nothing to Google: the school’s events are not added to your calendar.</li>
               </>
             ) : (
               <>

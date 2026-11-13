@@ -140,7 +140,7 @@ describe('the Settings pages', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Settings' }))
     expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Connect Google Calendar' })).toBeEnabled()
-    expect(screen.getByText('Connect your Google account to the LMS.')).toBeInTheDocument()
+    expect(screen.getByText('Connect your Google account to see your own Google Calendar on the school calendar.')).toBeInTheDocument()
     expect(screen.queryByText(/lectures and events you add/)).toBeNull()
     expect(screen.getByRole('heading', { name: 'Change password' })).toBeInTheDocument()
   })

@@ -1,6 +1,8 @@
-import { mockGoogleConnect, mockGoogleStatus } from '../mocks/google'
+import { mockGoogleCalendar, mockGoogleConnect, mockGoogleStatus } from '../mocks/google'
 import type { GoogleStatus } from '../types/google'
 import * as http from './google.http'
+import type { GoogleEventsResult } from './google.http'
+import { mapGoogleEvent } from './mappers'
 import { hasBackend } from './http'
 
 /**
@@ -28,4 +30,17 @@ export async function connectGoogle(user: { name: string; email: string }): Prom
   }
   await wait()
   return mockGoogleConnect(user)
+}
+
+/** The person's own Google Calendar around today (about a year), read-only. Only asked for when Google is connected. */
+export async function fetchGoogleCalendar(now: Date = new Date()): Promise<GoogleEventsResult> {
+  const DAY = 86_400_000
+  const from = new Date(now.getTime() - 120 * DAY)
+  const to = new Date(now.getTime() + 240 * DAY)
+  if (hasBackend()) return http.fetchCalendarEvents(from, to)
+  await wait()
+  const rows = mockGoogleCalendar(now)
+  if (rows === 'reconnect') return { state: 'reconnect' }
+  if (rows === 'disconnected') return { state: 'ok', events: [] }
+  return { state: 'ok', events: rows.map(mapGoogleEvent) }
 }

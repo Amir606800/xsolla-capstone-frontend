@@ -9,7 +9,9 @@ import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { canAuthor, canMentor, isAdmin, isStudent } from '../utils/roles'
 import { hasBackend } from '../api/http'
+import { Link } from 'react-router'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
+import { useGoogleCalendarEvents } from '../hooks/useGoogleCalendarEvents'
 import { useMeetingSlots } from '../hooks/useMeetingSlots'
 import { useCourses } from '../hooks/useCourses'
 import { useModuleAccess } from '../hooks/useModuleAccess'
@@ -18,7 +20,7 @@ import { myNextBooking, slotEvents, slotsOnDay } from '../utils/slots'
 import { draftToEvent, isEditableEvent } from '../utils/authoring'
 import type { EventDraft } from '../utils/authoring'
 import { isAssignedTo } from '../utils/content'
-import { savedNotice } from '../utils/googleSync'
+import { savedNotice, settingsPath } from '../utils/googleSync'
 import { newId } from '../mocks/contentEdits'
 import type { CalendarEvent, EventKind } from '../types/calendar'
 import '../styles/ui.css'
@@ -31,6 +33,7 @@ const LEGEND: [EventKind, string][] = [
   ['off-campus', 'Off-campus'],
   ['deadline', 'Deadline'],
   ['availability', '1:1 times'],
+  ['google', 'Google'],
 ]
 const HIDDEN_KEY = 'calendar_hidden_kinds'
 
@@ -50,6 +53,8 @@ export default function CalendarPage() {
   const isLocked = useModuleAccess()
   const { user } = useAuth()
   const meetings = useMeetingSlots()
+  // the person's own Google events: optional, never blocks or breaks the school calendar
+  const google = useGoogleCalendarEvents()
   // mentor part: 1:1 times. lecturer part: lectures and events. students: book a 1:1.
   const mentor = canMentor(user)
   const author = canAuthor(user)
@@ -82,14 +87,20 @@ export default function CalendarPage() {
   // deadlines of modules that are not open yet stay hidden from students
   // the 1:1 times are optional: if they can't be loaded the rest of the calendar still works
   // everything, for the day panel: the legend filter only changes what the grid shows
+  // an event of the school that was also put on Google is in both lists: keep the school's (it can be edited)
+  const googleOnly = useMemo(() => {
+    const synced = new Set(calendar.events.map((e) => e.googleEventId).filter(Boolean))
+    return google.events.filter((g) => !synced.has(g.googleEventId))
+  }, [calendar.events, google.events])
   const allByDay = useMemo(
     () =>
       groupByDay([
         ...calendar.events,
+        ...googleOnly,
         ...deadlineEvents(courses.modules.filter((m) => !isLocked(m))),
         ...(user && (mentor || student) ? slotEvents(meetings.slots, { id: user.id, isMentor: mentor }, today) : []),
       ]),
-    [calendar.events, courses.modules, isLocked, meetings.slots, user, mentor, student, today],
+    [calendar.events, googleOnly, courses.modules, isLocked, meetings.slots, user, mentor, student, today],
   )
   const eventsByDay = useMemo(() => {
     if (hidden.length === 0) return allByDay
@@ -239,6 +250,25 @@ export default function CalendarPage() {
                 </li>
               ))}
             </ul>
+
+            {google.connection === 'disconnected' && (
+              <p className="calendar__google">
+                Connect Google Calendar in <Link to={settingsPath(user)}>Settings</Link> to see your Google events here.
+              </p>
+            )}
+            {google.connection === 'reconnect' && (
+              <p className="calendar__google" role="status">
+                Reconnect Google Calendar in <Link to={settingsPath(user)}>Settings</Link> to see your Google events again.
+              </p>
+            )}
+            {google.status === 'error' && (
+              <p className="calendar__google" role="status">
+                Google Calendar events couldn’t be loaded.
+                <button type="button" className="btn btn--ghost btn--small" onClick={google.retry}>
+                  Retry
+                </button>
+              </p>
+            )}
 
             <MonthGrid month={month} today={today} selected={selected} eventsByDay={eventsByDay} onSelect={selectDay} />
           </div>

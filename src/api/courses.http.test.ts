@@ -284,7 +284,7 @@ describe('calendar events', () => {
       all_day: false,
       location: '',
       description: '',
-      meeting_url: null,
+      meeting_url: '',
       module_id: 4,
     })
     await saveEvent({ id: '5', title: 'Lecture 2', kind: 'lecture', startsAt: 's', endsAt: 'e' })

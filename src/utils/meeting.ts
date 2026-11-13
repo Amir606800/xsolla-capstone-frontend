@@ -5,7 +5,7 @@ export const JOIN_OPENS_MINUTES = 30
 const MINUTE = 60_000
 
 /** Events that can have an online meeting link: lectures and meetings, not off-campus days. */
-export const canHaveMeeting = (kind: CalendarEvent['kind']) => kind === 'lecture' || kind === 'meeting'
+export const canHaveMeeting = (kind: CalendarEvent['kind']) => kind === 'lecture' || kind === 'meeting' || kind === 'google'
 
 /** A Google Meet address like https://meet.google.com/abc-defg-hij. */
 export const isGoogleMeet = (url: string) => {

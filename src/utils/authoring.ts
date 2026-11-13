@@ -365,7 +365,7 @@ export function draftToEvent(d: EventDraft, id: string): CalendarEvent {
   }
 }
 
-/** Only events that come from the events API can be edited; deadlines and 1:1 times are derived. */
+/** Only events that come from the events API can be edited; deadlines, 1:1 times and the person's own Google events are not. */
 export function isEditableEvent(e: CalendarEvent): boolean {
-  return (e.kind === 'lecture' || e.kind === 'meeting' || e.kind === 'off-campus') && !e.id.startsWith('slot')
+  return (e.kind === 'lecture' || e.kind === 'meeting' || e.kind === 'off-campus') && !e.id.startsWith('slot') && e.source !== 'google'
 }

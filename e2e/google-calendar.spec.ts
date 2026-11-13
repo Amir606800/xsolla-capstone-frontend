@@ -117,7 +117,7 @@ test('students have Settings, with Google in their own words and a password form
   await page.getByRole('button', { name: 'Account menu' }).click()
   await page.getByRole('menuitem', { name: 'Settings' }).click()
   await expect(page).toHaveURL(/\/settings$/)
-  await expect(page.getByText('Connect your Google account to the LMS.')).toBeVisible()
+  await expect(page.getByText('Connect your Google account to see your own Google Calendar on the school calendar.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible()
 })
 

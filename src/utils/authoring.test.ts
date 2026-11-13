@@ -223,5 +223,8 @@ describe('calendar event', () => {
     expect(isEditableEvent({ ...base, id: 'deadline-a', kind: 'deadline' })).toBe(false)
     expect(isEditableEvent({ ...base, id: 'slots-2026', kind: 'availability' })).toBe(false)
     expect(isEditableEvent({ ...base, id: 'slot-s1', kind: 'meeting' })).toBe(false)
+    // the person's own Google events are shown, never edited
+    expect(isEditableEvent({ ...base, id: 'google-a', kind: 'google', source: 'google' })).toBe(false)
+    expect(isEditableEvent({ ...base, id: 'google-a', kind: 'lecture', source: 'google' })).toBe(false)
   })
 })

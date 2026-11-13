@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubHttp } from '../test/stubHttp'
-import { connectUrl, fetchStatus } from './google.http'
+import { connectUrl, fetchCalendarEvents, fetchStatus } from './google.http'
 import { saveEvent } from './events.http'
 import { getTokens, saveTokens } from './session'
 
@@ -123,5 +123,50 @@ describe('saving an event with sync_to_google', () => {
     const r = await saveEvent({ ...draft, id: '5' }, { syncToGoogle: true })
     expect('sync_to_google' in json(find('PATCH', '/events/5'))).toBe(false)
     expect(r.google).toBe('not-asked')
+  })
+})
+
+describe('the person’s own Google events (GET /google/calendar/events)', () => {
+  const from = new Date('2026-07-15T00:00:00Z')
+  const to = new Date('2027-03-12T00:00:00Z')
+
+  it('asks once for the window with the token and maps the events (all-day as local dates)', async () => {
+    await backend({
+      'GET /google/calendar/events': () => ({
+        status: 200,
+        body: [
+          { id: 'a', title: 'Dentist', starts_at: '2026-11-20T10:00:00+04:00', ends_at: '2026-11-20T11:00:00+04:00', all_day: false },
+          { id: 'b', title: 'Birthday', starts_at: '2026-11-20', ends_at: '2026-11-20', all_day: true },
+        ],
+      }),
+    })
+    const result = await fetchCalendarEvents(from, to)
+    expect(calls).toHaveLength(1)
+    expect(calls[0].url).toContain(`from=${encodeURIComponent(from.toISOString())}`)
+    expect(calls[0].url).toContain(`to=${encodeURIComponent(to.toISOString())}`)
+    expect(calls[0].init.headers).toMatchObject({ Authorization: 'Bearer acc' })
+    expect(result.state).toBe('ok')
+    if (result.state === 'ok') expect(result.events.map((e) => [e.id, e.kind, !!e.allDay])).toEqual([['google-a', 'google', false], ['google-b', 'google', true]])
+  })
+
+  it('an empty answer (null) is no events', async () => {
+    await backend({ 'GET /google/calendar/events': () => ({ status: 200, body: null }) })
+    expect(await fetchCalendarEvents(from, to)).toEqual({ state: 'ok', events: [] })
+  })
+
+  it('a revoked Google token says reconnect; a server without the route says unsupported', async () => {
+    await backend({ ...REFRESH, 'GET /google/calendar/events': err(401, 'google_token_expired') })
+    expect(await fetchCalendarEvents(from, to)).toEqual({ state: 'reconnect' })
+    await backend({ 'GET /google/calendar/events': err(404, 'not_found') })
+    expect(await fetchCalendarEvents(from, to)).toEqual({ state: 'unsupported' })
+    await backend({ 'GET /google/calendar/events': err(405, 'method_not_allowed') })
+    expect(await fetchCalendarEvents(from, to)).toEqual({ state: 'unsupported' })
+  })
+
+  it('Google being down (502) or a server problem (500) is an error for the page to show quietly', async () => {
+    await backend({ 'GET /google/calendar/events': err(502, 'upstream_error') })
+    await expect(fetchCalendarEvents(from, to)).rejects.toMatchObject({ status: 502 })
+    await backend({ 'GET /google/calendar/events': err(500, 'server_error') })
+    await expect(fetchCalendarEvents(from, to)).rejects.toMatchObject({ status: 500 })
   })
 })

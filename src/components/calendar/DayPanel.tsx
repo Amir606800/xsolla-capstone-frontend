@@ -17,6 +17,7 @@ const KIND_LABEL: Record<EventKind, string> = {
   'off-campus': 'Off-campus',
   deadline: 'Deadline',
   availability: '1:1 times',
+  google: 'Google',
 }
 
 /** A short message about what just happened on this day (event saved, times added, ...). */
@@ -100,6 +101,22 @@ function EventTools({ event, editing }: { event: CalendarEvent; editing: EventEd
   )
 }
 
+/** Who is on the event: names only (never emails), folded away so a big module does not fill the day. */
+function Attendees({ event }: { event: CalendarEvent }) {
+  const list = event.attendees ?? []
+  if (list.length === 0) return null
+  return (
+    <details className="event-card__attendees">
+      <summary>Attendees ({list.length})</summary>
+      <ul>
+        {list.map((a) => (
+          <li key={a.id}>{a.name}</li>
+        ))}
+      </ul>
+    </details>
+  )
+}
+
 function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date; editing?: EventEditing }) {
   const { user } = useAuth()
   const duration = formatDuration(event)
@@ -146,7 +163,15 @@ function EventDetails({ event, now, editing }: { event: CalendarEvent; now: Date
 
         {event.description && <p className="event-card__desc">{event.description}</p>}
 
-        <JoinMeeting event={event} now={now} always={!isStudent(user)} />
+        <Attendees event={event} />
+
+        <JoinMeeting event={event} now={now} always={!isStudent(user) || event.source === 'google'} />
+
+        {event.htmlLink && (
+          <a className="event-card__link-out" href={event.htmlLink} target="_blank" rel="noopener noreferrer">
+            Open in Google Calendar <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        )}
 
         {event.moduleId && (
           <Link className="btn btn--ghost event-card__link" to={`/courses/${event.moduleId}`}>

@@ -82,6 +82,27 @@ export interface ApiSubmission {
   history?: Omit<ApiSubmission, 'history'>[] | null
 }
 
+export interface ApiAttendee {
+  id: ApiId
+  name: string
+  email: string
+}
+
+/** GET /google/calendar/events: one event of the signed-in person's primary Google Calendar. */
+export interface ApiGoogleCalendarEvent {
+  id: string
+  title: string
+  description?: string | null
+  location?: string | null
+  /** RFC 3339, or YYYY-MM-DD when all_day */
+  starts_at: string
+  /** RFC 3339, or the last day (inclusive) as YYYY-MM-DD when all_day */
+  ends_at: string
+  all_day: boolean
+  meeting_url?: string | null
+  html_link?: string | null
+}
+
 /** GET /events (dto.EventResponse) */
 export interface ApiEvent {
   id: ApiId
@@ -97,6 +118,8 @@ export interface ApiEvent {
   module_id?: ApiId | null
   /** Set when the event was also created in the creator's Google Calendar. */
   google_event_id?: string | null
+  /** The module's lecturers and enrolled users (none for an event without a module). */
+  attendees?: ApiAttendee[] | null
   created_at?: string
 }
 

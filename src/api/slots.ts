@@ -2,6 +2,8 @@ import { addWindow, deleteSlot, listSlots, release, reserve } from '../mocks/slo
 import type { AvailabilityWindow, MeetingSlot } from '../types/slots'
 import { authedRequest } from './authed'
 import { hasBackend } from './http'
+import { attendeesField } from './mappers'
+import type { ApiAttendee } from './types'
 
 /**
  * Real 1:1 slot calls to the backend (internal/handlers/mentor_slot.go).
@@ -28,9 +30,11 @@ interface MentorSlotResponse {
   booked: boolean
   booked_by?: number
   booked_by_name?: string
+  meeting_url?: string | null
+  attendees?: ApiAttendee[] | null
 }
 
-function toMeetingSlot(s: MentorSlotResponse): MeetingSlot {
+export function toMeetingSlot(s: MentorSlotResponse): MeetingSlot {
   return {
     id: s.id,
     mentorId: s.mentor_id,
@@ -39,6 +43,8 @@ function toMeetingSlot(s: MentorSlotResponse): MeetingSlot {
     endsAt: s.ends_at,
     booked: s.booked,
     ...(s.booked_by !== undefined ? { bookedBy: { id: s.booked_by, name: s.booked_by_name ?? '' } } : {}),
+    ...(s.meeting_url ? { meetingUrl: s.meeting_url } : {}),
+    ...attendeesField(s.attendees),
   }
 }
 

@@ -1,9 +1,9 @@
-import type { CalendarEvent, EventKind } from '../types/calendar'
+import type { Attendee, CalendarEvent, EventKind } from '../types/calendar'
 import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission, SubmissionVersion } from '../types/course'
 import type { WeeklyStanding } from '../types/standing'
 import { orderByOpening } from '../utils/progress'
 import { parseStandingLevel } from '../utils/standing'
-import type { ApiContentItem, ApiEvent, ApiModule, ApiSubmission, ApiWeeklyStanding } from './types'
+import type { ApiAttendee, ApiContentItem, ApiEvent, ApiGoogleCalendarEvent, ApiModule, ApiSubmission, ApiWeeklyStanding } from './types'
 
 // ---------- content ----------
 
@@ -195,6 +195,41 @@ export function mapEvent(e: ApiEvent): CalendarEvent {
     ...(e.meeting_url ? { meetingUrl: e.meeting_url } : {}),
     ...(e.module_id != null ? { moduleId: String(e.module_id) } : {}),
     ...(e.google_event_id ? { googleEventId: e.google_event_id } : {}),
+    ...attendeesField(e.attendees),
+  }
+}
+
+/** `attendees` only when there are some. */
+export function attendeesField(list: ApiAttendee[] | null | undefined): { attendees?: Attendee[] } {
+  const attendees = (list ?? []).map((a) => ({ id: Number(a.id), name: a.name, email: a.email ?? '' }))
+  return attendees.length ? { attendees } : {}
+}
+
+/** A local date `YYYY-MM-DD` at the given time. Never `new Date('YYYY-MM-DD')`: that is UTC and can land on the day before. */
+function localDay(day: string, end: boolean): string {
+  const [y, m, d] = day.slice(0, 10).split('-').map(Number)
+  return (end ? new Date(y, m - 1, d, 23, 59, 59, 999) : new Date(y, m - 1, d)).toISOString()
+}
+
+/**
+ * One event of the person's own Google Calendar -> a read-only calendar event. All-day events come as plain dates (the last
+ * day included) and run from the start of the first day to the end of the last. Ids are prefixed so they never meet an LMS id.
+ */
+export function mapGoogleEvent(g: ApiGoogleCalendarEvent): CalendarEvent {
+  const allDay = !!g.all_day
+  return {
+    id: `google-${g.id}`,
+    title: g.title?.trim() || '(No title)',
+    kind: 'google',
+    source: 'google',
+    startsAt: allDay ? localDay(g.starts_at, false) : g.starts_at,
+    endsAt: allDay ? localDay(g.ends_at || g.starts_at, true) : g.ends_at,
+    ...(allDay ? { allDay: true } : {}),
+    ...(g.location ? { location: g.location } : {}),
+    ...(g.description ? { description: g.description } : {}),
+    ...(g.meeting_url && /^https?:\/\//.test(g.meeting_url) ? { meetingUrl: g.meeting_url } : {}),
+    ...(g.html_link && g.html_link.startsWith('https://') ? { htmlLink: g.html_link } : {}),
+    googleEventId: g.id,
   }
 }
 
@@ -209,8 +244,8 @@ export function eventToApi(e: CalendarEvent) {
     // always sent, empty when there is none: on an edit that is how a place or description is taken away
     location: e.location ?? '',
     description: e.description ?? '',
-    // null (not left out) so editing an event can also take the link away
-    meeting_url: e.meetingUrl ?? null,
+    // empty string, not null: the server keeps the link on null and clears it on ""
+    meeting_url: e.meetingUrl ?? '',
     ...(e.moduleId && /^\d+$/.test(e.moduleId) ? { module_id: Number(e.moduleId) } : {}),
   }
 }
