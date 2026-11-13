@@ -1,7 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubHttp } from '../test/stubHttp'
 import { authedRequest } from './authed'
-import { assignLecturer, createModule, deleteItem, deleteModule, fetchModules, saveItem, saveModule, submitWork } from './courses.http'
+import {
+  assignLecturer,
+  createModule,
+  deleteItem,
+  deleteModule,
+  fetchModules,
+  generateAiQuiz,
+  saveItem,
+  saveModule,
+  submitQuizAttempt,
+  submitWork,
+} from './courses.http'
 import { deleteEvent, fetchEvents, saveEvent } from './events.http'
 import { getTokens, saveTokens } from './session'
 
@@ -56,8 +67,7 @@ describe('fetchModules', () => {
       ['41', 'assignment', '4'],
     ])
     expect(calls.every((c) => (c.init.headers as Record<string, string>).Authorization === 'Bearer acc')).toBe(true)
-    expect(calls.filter((c) => c.path.includes('/submissions'))).toHaveLength(0) // staff: no per-task requests
-    expect(calls).toHaveLength(3) // modules, items, and the users list that tells who the lecturers are
+    expect(calls).toHaveLength(3)
   })
 
   it("students also get their own work from the module's submissions/me; 404 means none", async () => {
@@ -198,7 +208,11 @@ describe('lecturer editing', () => {
     await backend({ ...reload, 'DELETE /modules/4': () => ({ status: 204 }) })
     await deleteModule('4')
     expect(find('DELETE', '/modules/4').init.headers).toMatchObject({ Authorization: 'Bearer acc' })
-    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(expect.arrayContaining(['DELETE /modules/4', 'GET /modules', 'GET /modules/4/content-items']))
+    expect(calls.map((c) => `${c.method} ${c.path}`).slice(-3)).toEqual([
+      'GET /modules',
+      'GET /modules/4/content-items',
+      'GET /modules/4/quizzes',
+    ])
   })
 
   it('a new task is POSTed to its own module with a due date and max_points 0', async () => {
@@ -235,10 +249,55 @@ describe('lecturer editing', () => {
     expect(json(find('PATCH', '/content-items/44'))).toEqual({ title: 'Go docs', description: '', url: 'https://go.dev/doc/' })
   })
 
-  it('quizzes have no place in the backend yet: a clear error, nothing sent', async () => {
-    backend(reload)
-    await expect(saveItem({ id: 'q-1', moduleId: '4', type: 'quiz', title: 'Quiz' })).rejects.toThrow(/Quizzes cannot be saved/)
-    expect(calls).toHaveLength(0)
+  it('creates, updates, deletes quizzes and runs AI quiz generation + student attempts', async () => {
+    await backend({
+      ...reload,
+      'POST /modules/4/quizzes': () => ({ status: 201, body: { id: 9 } }),
+      'PATCH /quizzes/9': () => ({ status: 200, body: { id: 9 } }),
+      'DELETE /quizzes/9': () => ({ status: 204 }),
+      'POST /modules/4/quizzes/ai': () => ({ status: 202, body: { id: 15, status: 'generating' } }),
+      'POST /quizzes/9/attempts': () => ({ status: 200, body: { id: 9 } }),
+    })
+
+    await saveItem({
+      id: 'quiz-local',
+      moduleId: '4',
+      type: 'quiz',
+      title: 'Manual Quiz',
+      questions: [{ id: 'q1', prompt: 'What is Go?', options: ['Language', 'Database'], correct: 0 }],
+    })
+    expect(json(find('POST', '/modules/4/quizzes'))).toEqual({
+      title: 'Manual Quiz',
+      description: '',
+      due_at: null,
+      questions: [{ prompt: 'What is Go?', options: ['Language', 'Database'], correct: 0 }],
+    })
+
+    await saveItem({
+      id: 'quiz:9',
+      moduleId: '4',
+      type: 'quiz',
+      title: 'Updated Quiz',
+      questions: [{ id: 'q1', prompt: 'What is Go?', options: ['Language', 'Database'], correct: 0 }],
+    })
+    expect(json(find('PATCH', '/quizzes/9'))).toMatchObject({
+      title: 'Updated Quiz',
+      clear_due_at: true,
+      replace_questions: true,
+    })
+
+    const aiRes = await generateAiQuiz({ moduleId: '4', contentItemId: '12', title: 'Lecture Check' })
+    expect(aiRes.quizId).toBe('quiz:15')
+    expect(json(find('POST', '/modules/4/quizzes/ai'))).toEqual({
+      content_item_id: 12,
+      title: 'Lecture Check',
+    })
+
+    await submitQuizAttempt('quiz:9', [0])
+    expect(json(find('POST', '/quizzes/9/attempts'))).toEqual({ answers: [0] })
+
+    await deleteItem('quiz:9')
+    expect(find('DELETE', '/quizzes/9')).toBeDefined()
   })
 
   it('module dates are PATCHed as opens_at / closes_at, and an emptied one as null', async () => {

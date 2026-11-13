@@ -14,6 +14,9 @@ import { newId } from '../../../mocks/contentEdits'
 import type { ContentItem, CourseModule } from '../../../types/course'
 import { contentsLine, ITEM_TYPE_LABEL, itemAuthor, itemSummary, keepMeta, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
 import { draftToMaterial, draftToQuiz, draftToTask } from '../../../utils/authoring'
+import { modulePhase, PHASE_LABEL } from '../../../utils/content'
+import { formatDateTime } from '../../../utils/date'
+import { hasRole } from '../../../utils/roles'
 import { lecturersOf, modulePhase, PHASE_LABEL } from '../../../utils/content'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
@@ -156,7 +159,7 @@ export default function AdminModulePage() {
       <div className="admin-toolbar">
         <h2 className="admin-section-title">Contents</h2>
         <div className="admin-actions admin-toolbar__add" role="group" aria-label="Add content">
-          {ADD_BUTTONS.map((b) => (
+          {ADD_BUTTONS.filter((b) => b.type !== 'quiz' || hasRole(user, 'lecturer')).map((b) => (
             <button key={b.type} type="button" className="admin-btn" onClick={() => open({ kind: 'add', type: b.type })}>
               <Icon name="plus" size={16} /> {b.label}
             </button>

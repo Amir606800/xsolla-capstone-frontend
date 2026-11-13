@@ -15,7 +15,7 @@ import { Loading } from '../components/loading/Loading'
 
 export default function ModulePage() {
   const { moduleId } = useParams()
-  const { status, modules, now, reload, submitAssignment } = useCourses()
+  const { status, modules, now, reload, submitAssignment, submitQuizAttempt } = useCourses()
   const isLocked = useModuleAccess()
 
   if (status === 'loading') {
@@ -93,7 +93,7 @@ export default function ModulePage() {
 
         <div className="module__side">
           <ResourceList resources={resources} />
-          <QuizzesCard quizzes={quizzesOf(module)} />
+          <QuizzesCard quizzes={quizzesOf(module)} onSubmitAttempt={submitQuizAttempt} />
         </div>
       </div>
     </div>

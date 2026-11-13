@@ -9,6 +9,7 @@ import { DownloadButton } from '../../components/DownloadButton'
 import { Icon } from '../../components/Icon'
 import type { IconName } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
+import { Spinner } from '../../components/loading/Spinner'
 import { useAuth } from '../../hooks/useAuth'
 import { useCourses } from '../../hooks/useCourses'
 import { newId } from '../../mocks/contentEdits'
@@ -17,6 +18,7 @@ import { draftToMaterial, draftToQuiz, draftToTask, MATERIAL_KINDS } from '../..
 import { contentGaps, isAssignedTo, materialsOf, modulePhase, PHASE_LABEL, quizzesOf, tasksOf } from '../../utils/content'
 import { isAdmin } from '../../utils/roles'
 import { formatDateTime, formatShortDate } from '../../utils/date'
+import { hasRole } from '../../utils/roles'
 import '../../styles/ui.css'
 import '../../components/module/module.css'
 import './lecturer.css'
@@ -25,7 +27,6 @@ import { Loading } from '../../components/loading/Loading'
 type Kind = 'module' | 'material' | 'task' | 'quiz'
 interface Editing {
   kind: Kind
-  /** The item being changed; none = a new one. */
   id?: string
 }
 
@@ -39,15 +40,16 @@ function Section({
   title,
   addLabel,
   onAdd,
+  extraActions,
   empty,
   children,
 }: {
   id: string
   icon: IconName
   title: string
-  addLabel: string
-  /** Left out when the person may only read the module. */
+  addLabel?: string
   onAdd?: () => void
+  extraActions?: React.ReactNode
   empty: string | null
   children: React.ReactNode
 }) {
@@ -58,35 +60,37 @@ function Section({
           <Icon name={icon} size={20} />
         </span>
         <h2 id={id}>{title}</h2>
-        {onAdd && (
-          <button type="button" className="btn btn--ghost btn--small editor__add" onClick={onAdd}>
-            <Icon name="plus" size={16} /> {addLabel}
-          </button>
-        )}
+        <div className="editor__actions">
+          {extraActions}
+          {addLabel && onAdd && (
+            <button type="button" className="btn btn--ghost btn--small editor__add" onClick={onAdd}>
+              <Icon name="plus" size={16} /> {addLabel}
+            </button>
+          )}
+        </div>
       </header>
       {empty ? <p className="card__empty">{empty}</p> : <ul className="list">{children}</ul>}
     </section>
   )
 }
 
-/** Lecturer: everything students get in one module - its dates, materials, tasks and quizzes. */
 export default function ModuleEditorPage() {
   const { moduleId } = useParams()
   const [params, setParams] = useSearchParams()
-  const { status, modules, now, reload, saveModule, saveItem, deleteItem } = useCourses()
   const { user } = useAuth()
+  const isLecturer = hasRole(user, 'lecturer')
+  const { status, modules, now, reload, saveModule, saveItem, deleteItem, generateAiQuiz } = useCourses()
 
-  // ?add=task (from the dashboard shortcuts) opens the form straight away
   const [editing, setEditing] = useState<Editing | null>(() => {
     const add = params.get('add')
+    if (add === 'quiz' && !isLecturer) return null
     return (ADDABLE as readonly string[]).includes(add ?? '') ? { kind: add as Kind } : null
   })
+  const [aiSourceId, setAiSourceId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
 
   if (status === 'loading') {
-    return (
-      <Loading className="module__state">Loading module…</Loading>
-    )
+    return <Loading className="module__state">Loading module…</Loading>
   }
   if (status === 'error') {
     return (
@@ -126,8 +130,6 @@ export default function ModuleEditorPage() {
     setEditing(null)
     if (params.has('add')) setParams({}, { replace: true })
   }
-  /** Saves, closes the form and says what happened. */
-  // a save may resolve with a warning about a part the server did not keep (e.g. week dates)
   const done = (text: string) => async (run: Promise<string | void | undefined>) => {
     const warning = await run
     close()
@@ -140,6 +142,10 @@ export default function ModuleEditorPage() {
   const open = (kind: Kind, id?: string) => {
     setMessage('')
     setEditing({ kind, id })
+  }
+  const openAiQuiz = (materialId?: string) => {
+    setMessage('')
+    setAiSourceId(materialId ?? materials[0]?.id ?? '')
   }
 
   const title = editing ? `${editing.id || editing.kind === 'module' ? 'Edit' : 'New'} ${NOUN[editing.kind]}` : ''
@@ -241,9 +247,26 @@ export default function ModuleEditorPage() {
                 onEdit={() => open('material', r.id)}
                 onDelete={removed('material', r.id)}
                 extra={
-                  r.kind === 'link' ? undefined : (
-                    <DownloadButton variant="icon" file={{ id: r.fileId, name: r.file?.name ?? r.title }} label={`Download ${r.title}`} />
-                  )
+                  <>
+                    {isLecturer && (
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--small"
+                        onClick={() => openAiQuiz(r.id)}
+                        aria-label={`AI Quiz from ${r.title}`}
+                        title="Generate 10-question AI quiz from this material"
+                      >
+                        <Icon name="sparkle" size={14} /> AI Quiz
+                      </button>
+                    )}
+                    {r.kind !== 'link' && (
+                      <DownloadButton
+                        variant="icon"
+                        file={{ id: r.fileId, name: r.file?.name ?? r.title }}
+                        label={`Download ${r.title}`}
+                      />
+                    )}
+                  </>
                 }
               />
             ))}
@@ -253,29 +276,189 @@ export default function ModuleEditorPage() {
             id="editor-quizzes"
             icon="sparkle"
             title="Quizzes"
-            addLabel="New quiz"
-            onAdd={canEdit ? () => open('quiz') : undefined}
-            empty={quizzes.length ? null : canEdit ? 'Optional: a short multiple-choice check for the week.' : 'No quizzes yet.'}
+            addLabel={isLecturer ? 'New quiz' : undefined}
+            onAdd={isLecturer ? () => open('quiz') : undefined}
+            extraActions={
+              isLecturer ? (
+                <button
+                  type="button"
+                  className="btn btn--small"
+                  disabled={materials.length === 0}
+                  onClick={() => openAiQuiz()}
+                  title={
+                    materials.length
+                      ? 'Generate a 10-question quiz in English with AI from a lesson material'
+                      : 'Upload a lesson material first'
+                  }
+                >
+                  <Icon name="sparkle" size={16} /> AI Quiz
+                </button>
+              ) : undefined
+            }
+            empty={quizzes.length ? null : 'Optional: a short multiple-choice check for the week.'}
           >
-            {quizzes.map((q: QuizItem) => (
-              <EditorRow
-                key={q.id}
-                icon={<Icon name="sparkle" size={18} />}
-                title={q.title}
-                meta={`${q.questions?.length ?? 0} ${q.questions?.length === 1 ? 'question' : 'questions'}${q.dueAt ? ` · due ${formatShortDate(q.dueAt)}` : ''}`}
-                readOnly={readOnly}
-                onEdit={() => open('quiz', q.id)}
-                onDelete={removed('quiz', q.id)}
-              />
-            ))}
+            {quizzes.map((q: QuizItem) => {
+              if (q.status === 'generating') {
+                return (
+                  <EditorRow
+                    key={q.id}
+                    icon={<Spinner size={18} />}
+                    title={q.title}
+                    meta="Generating 10 English multiple-choice questions in the background..."
+                    onDelete={removed('quiz', q.id)}
+                  />
+                )
+              }
+              if (q.status === 'failed') {
+                return (
+                  <EditorRow
+                    key={q.id}
+                    icon={<Icon name="sparkle" size={18} />}
+                    title={q.title}
+                    meta={q.errorMessage ? `AI generation failed: ${q.errorMessage}` : 'AI generation failed'}
+                    onEdit={isLecturer ? () => open('quiz', q.id) : undefined}
+                    onDelete={removed('quiz', q.id)}
+                  />
+                )
+              }
+              return (
+                <EditorRow
+                  key={q.id}
+                  icon={<Icon name="sparkle" size={18} />}
+                  title={q.title}
+                  meta={`${q.questions?.length ?? 0} ${q.questions?.length === 1 ? 'question' : 'questions'}${q.isAiGenerated ? ' · AI generated' : ''}${q.dueAt ? ` · due ${formatShortDate(q.dueAt)}` : ''}`}
+                  onEdit={isLecturer ? () => open('quiz', q.id) : undefined}
+                  onDelete={removed('quiz', q.id)}
+                />
+              )
+            })}
           </Section>
         </div>
       </div>
 
-      <Modal open={canEdit && editing !== null} onClose={close} title={title} initialFocus=".form input, .form select">
-        {canEdit && editing && <EditorForm editing={editing} module={module} now={now} current={current} done={done} actions={{ saveModule, saveItem }} onCancel={close} />}
+      <Modal open={editing !== null} onClose={close} title={title} initialFocus=".form input, .form select">
+        {editing && (
+          <EditorForm
+            editing={editing}
+            module={module}
+            now={now}
+            current={current}
+            done={done}
+            actions={{ saveModule, saveItem }}
+            onCancel={close}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={aiSourceId !== null}
+        onClose={() => setAiSourceId(null)}
+        title="AI Quiz"
+        initialFocus=".form select, .form input"
+      >
+        {aiSourceId !== null && (
+          <AiQuizForm
+            materials={materials}
+            initialMaterialId={aiSourceId}
+            onCancel={() => setAiSourceId(null)}
+            onGenerate={async (contentItemId, customTitle) => {
+              await generateAiQuiz({
+                moduleId: module.id,
+                contentItemId,
+                title: customTitle || undefined,
+              })
+              setAiSourceId(null)
+              setMessage('AI quiz generation started in the background. It will appear once ready.')
+            }}
+          />
+        )}
       </Modal>
     </div>
+  )
+}
+
+function AiQuizForm({
+  materials,
+  initialMaterialId,
+  onGenerate,
+  onCancel,
+}: {
+  materials: ResourceItem[]
+  initialMaterialId: string
+  onGenerate: (contentItemId: string, customTitle: string) => Promise<void>
+  onCancel: () => void
+}) {
+  const [materialId, setMaterialId] = useState(() => initialMaterialId || materials[0]?.id || '')
+  const [title, setTitle] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!materialId) {
+      setError('Select a lesson material to generate the quiz from.')
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await onGenerate(materialId, title.trim())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start AI quiz generation')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="form" onSubmit={handleSubmit}>
+      <p className="ai-quiz__hint">
+        AI will generate <strong>10 multiple-choice questions</strong> in <strong>English</strong> in the background based on the selected lesson material.
+      </p>
+
+      <div className="field">
+        <label htmlFor="ai-quiz-material">Lesson material</label>
+        <select
+          id="ai-quiz-material"
+          value={materialId}
+          onChange={(e) => setMaterialId(e.target.value)}
+          disabled={busy || materials.length === 0}
+        >
+          {materials.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.title}
+              {m.file?.name ? ` (${m.file.name})` : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="field">
+        <label htmlFor="ai-quiz-title">Quiz title (optional)</label>
+        <input
+          id="ai-quiz-title"
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Auto-generated from material if left blank"
+          disabled={busy}
+        />
+      </div>
+
+      {error && (
+        <p className="field__error" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="form__actions">
+        <button type="button" className="btn btn--ghost" onClick={onCancel} disabled={busy}>
+          Cancel
+        </button>
+        <button type="submit" className="btn" disabled={busy || !materialId}>
+          <Icon name="sparkle" size={16} /> {busy ? 'Starting...' : 'Generate AI Quiz'}
+        </button>
+      </div>
+    </form>
   )
 }
 
@@ -297,7 +480,6 @@ function EditorForm({
   onCancel: () => void
 }) {
   const verb = editing.id ? 'saved' : 'added'
-  // a new item gets its id when it is saved
   const idFor = () => editing.id ?? newId(editing.kind)
 
   switch (editing.kind) {

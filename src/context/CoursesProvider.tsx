@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { assignLecturer as apiAssignLecturer, createModule as apiCreateModule, deleteItem as apiDeleteItem, deleteModule as apiDeleteModule, fetchModules, saveItem as apiSaveItem, saveModule as apiSaveModule, submitWork } from '../api/courses'
+import {
+  assignLecturer as apiAssignLecturer,
+  createModule as apiCreateModule,
+  deleteItem as apiDeleteItem,
+  deleteModule as apiDeleteModule,
+  fetchModules,
+  generateAiQuiz as apiGenerateAiQuiz,
+  saveItem as apiSaveItem,
+  saveModule as apiSaveModule,
+  submitQuizAttempt as apiSubmitQuizAttempt,
+  submitWork,
+} from '../api/courses'
 import type { ModulePatch, SubmitPayload } from '../api/courses'
 import { useAuth } from '../hooks/useAuth'
 import type { ContentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
 import { datesNotKept } from '../utils/moduleDates'
 import { DEADLINE_PASSED, isModuleLocked, isPastDue } from '../utils/progress'
-import { canAuthor, isStudent } from '../utils/roles'
+import { canAuthor, hasRole, isStudent } from '../utils/roles'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
 
@@ -42,7 +53,9 @@ function forRole(modules: CourseModule[], student: boolean): CourseModule[] {
       ? {
           ...m,
           items: m.items.map((i) =>
-            i.type === 'quiz' && i.questions ? { ...i, questions: i.questions.map((q) => ({ ...q, correct: undefined })) } : i,
+            i.type === 'quiz' && i.questions && !i.attempt
+              ? { ...i, questions: i.questions.map((q) => ({ ...q, correct: undefined })) }
+              : i,
           ),
         }
       : m,
@@ -83,6 +96,29 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     setStatus('loading')
     setAttempt((a) => a + 1)
   }, [])
+
+  const hasGeneratingQuiz = useMemo(
+    () => modules.some((m) => m.items.some((i) => i.type === 'quiz' && i.status === 'generating')),
+    [modules],
+  )
+
+  useEffect(() => {
+    if (!hasGeneratingQuiz) return
+    let active = true
+    const timer = setInterval(() => {
+      fetchModules({ student, userId: user?.id })
+        .then((data) => {
+          if (!active) return
+          setModules(forRole(data, student))
+          setNow(new Date())
+        })
+        .catch(() => {})
+    }, 2500)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [hasGeneratingQuiz, student, user?.id])
 
   const submitAssignment = useCallback(
     async (assignmentId: string, payload: SubmitPayload) => {
@@ -147,10 +183,59 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     },
     [author, user?.id],
   )
+  const generateAiQuiz = useCallback(
+    async (input: { moduleId: string; contentItemId: string; title?: string; dueAt?: string }) => {
+      if (!hasRole(user, 'lecturer')) throw new Error('Only lecturers can create AI quizzes')
+      let quizId = ''
+      await author(async () => {
+        const res = await apiGenerateAiQuiz(input, { createdBy: user?.id })
+        quizId = res.quizId
+        return res.modules
+      })
+      return { quizId }
+    },
+    [author, user],
+  )
+  const submitQuizAttempt = useCallback(
+    async (quizId: string, answers: number[]) => {
+      const next = await apiSubmitQuizAttempt(quizId, answers, { studentId: user?.id })
+      setModules(forRole(next, student))
+      setNow(new Date())
+    },
+    [student, user?.id],
+  )
 
   const value = useMemo(
-    () => ({ status, modules, now, reload, submitAssignment, saveModule, saveItem, deleteItem, deleteModule, createModule, assignLecturer }),
-    [status, modules, now, reload, submitAssignment, saveModule, saveItem, deleteItem, deleteModule, createModule, assignLecturer],
+    () => ({
+      status,
+      modules,
+      now,
+      reload,
+      submitAssignment,
+      saveModule,
+      saveItem,
+      deleteItem,
+      deleteModule,
+      createModule,
+      assignLecturer,
+      generateAiQuiz,
+      submitQuizAttempt,
+    }),
+    [
+      status,
+      modules,
+      now,
+      reload,
+      submitAssignment,
+      saveModule,
+      saveItem,
+      deleteItem,
+      deleteModule,
+      createModule,
+      assignLecturer,
+      generateAiQuiz,
+      submitQuizAttempt,
+    ],
   )
 
   return <CoursesContext.Provider value={value}>{children}</CoursesContext.Provider>

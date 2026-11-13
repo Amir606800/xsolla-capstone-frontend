@@ -52,7 +52,7 @@ describe('ModulePage - content', () => {
     expect(within(resources).getAllByRole('listitem')).toHaveLength(2)
 
     const quizzes = screen.getByRole('region', { name: 'Quizzes' })
-    expect(within(quizzes).getByText('Coming soon')).toBeInTheDocument()
+    expect(within(quizzes).getByText('No quizzes in this module yet.')).toBeInTheDocument()
   })
 
   it('opens external links safely in a new tab and downloads files', async () => {

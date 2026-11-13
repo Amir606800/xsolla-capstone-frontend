@@ -1,9 +1,9 @@
-import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission, SubmissionFile } from '../types/course'
+import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission, SubmissionFile } from '../types/course'
 import { type UserDto, mapUser } from './auth.http'
 import { authedRequest } from './authed'
 import { ApiError } from './http'
-import { isServerId, joinDescription, mapModules, mapSubmission, taskToApi } from './mappers'
-import type { ApiContentItem, ApiFile, ApiModule, ApiSubmission } from './types'
+import { isServerId, joinDescription, mapModules, mapSubmission, parseQuizServerId, quizToApi, taskToApi, toQuizDomainId } from './mappers'
+import type { ApiContentItem, ApiFile, ApiModule, ApiQuiz, ApiSubmission } from './types'
 
 /**
  * Real calls against the Go backend (cmd/server/main.go). A backend "module" is one week:
@@ -65,12 +65,26 @@ async function lecturersByModule(moduleIds: number[]): Promise<Record<string, nu
 export async function fetchModules(withSubmissions: boolean): Promise<CourseModule[]> {
   const modules = await authedRequest<ApiModule[] | null>('/modules')
   const list = modules ?? []
-  const items = await Promise.all(
-    list.map((m) => authedRequest<ApiContentItem[] | null>(`/modules/${m.id}/content-items`).then((r) => r ?? [])),
-  )
+  const [items, quizzes] = await Promise.all([
+    Promise.all(
+      list.map((m) => authedRequest<ApiContentItem[] | null>(`/modules/${m.id}/content-items`).then((r) => r ?? [])),
+    ),
+    Promise.all(
+      list.map((m) =>
+        authedRequest<ApiQuiz[] | null>(`/modules/${m.id}/quizzes`)
+          .then((r) => r ?? [])
+          .catch((e) => {
+            if (e instanceof ApiError && e.status === 404) return []
+            throw e
+          }),
+      ),
+    ),
+  ])
   const itemsByModule: Record<string, ApiContentItem[]> = {}
+  const quizzesByModule: Record<string, ApiQuiz[]> = {}
   list.forEach((m, i) => {
     itemsByModule[String(m.id)] = items[i]
+    quizzesByModule[String(m.id)] = quizzes[i]
   })
 
   const mine: Record<string, ApiSubmission | undefined> = {}
@@ -81,11 +95,7 @@ export async function fetchModules(withSubmissions: boolean): Promise<CourseModu
       mine[aid] = found[i]
     })
   }
-  // staff also learn which lecturer teaches each week (students have no use for it)
-  const teaching = withSubmissions ? {} : await lecturersByModule(list.map((m) => Number(m.id)))
-  const withLecturer = list.map((m) => (teaching[String(m.id)] !== undefined ? { ...m, lecturer_ids: teaching[String(m.id)] } : m))
-  // only admins are sent hidden items (the backend filters them for everyone else); students never get them
-  return mapModules(withLecturer, itemsByModule, mine, { includeHidden: !withSubmissions })
+  return mapModules(list, itemsByModule, mine, { includeHidden: !withSubmissions }, quizzesByModule)
 }
 
 /** Uploads one file and returns its id as the NUMBER the backend expects in `file_ids` / `file_id`. */
@@ -199,6 +209,23 @@ async function saveMaterial(r: ResourceItem): Promise<void> {
  * Creates (app-made id) or edits (numeric server id) one item, always under its own module.
  * Quizzes have no place in the backend yet.
  */
+async function saveQuiz(q: QuizItem) {
+  const serverId = parseQuizServerId(q.id)
+  const body = quizToApi(q)
+  if (serverId == null) {
+    await authedRequest(`/modules/${q.moduleId}/quizzes`, { method: 'POST', body })
+    return
+  }
+  await authedRequest(`/quizzes/${serverId}`, {
+    method: 'PATCH',
+    body: {
+      ...body,
+      clear_due_at: !q.dueAt,
+      replace_questions: true,
+    },
+  })
+}
+
 export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
   await writeItem(item)
   return fetchModules(false)
@@ -209,7 +236,38 @@ export async function writeItem(item: ContentItem): Promise<void> {
   if (!isServerId(item.moduleId)) throw new ApiError(400, 'bad_request', 'This module is not saved on the server.')
   if (item.type === 'assignment') await saveTask(item)
   else if (item.type === 'resource') await saveMaterial(item)
-  else throw new NotSupportedError('Quizzes cannot be saved by the backend yet.')
+  else await saveQuiz(item)
+  return fetchModules(false)
+}
+
+export async function generateAiQuiz(input: {
+  moduleId: string
+  contentItemId: string
+  title?: string
+  dueAt?: string
+}): Promise<{ quizId: string; modules: CourseModule[] }> {
+  if (!isServerId(input.moduleId) || !isServerId(input.contentItemId)) {
+    throw new ApiError(400, 'bad_request', 'Module and material must be saved on the server.')
+  }
+  const created = await authedRequest<ApiQuiz>(`/modules/${input.moduleId}/quizzes/ai`, {
+    method: 'POST',
+    body: {
+      content_item_id: Number(input.contentItemId),
+      ...(input.title ? { title: input.title } : {}),
+      ...(input.dueAt ? { due_at: input.dueAt } : {}),
+    },
+  })
+  return { quizId: toQuizDomainId(created.id), modules: await fetchModules(false) }
+}
+
+export async function submitQuizAttempt(quizId: string, answers: number[]): Promise<CourseModule[]> {
+  const serverId = parseQuizServerId(quizId)
+  if (serverId == null) throw new ApiError(400, 'bad_request', 'This quiz is not saved on the server.')
+  await authedRequest<ApiQuiz>(`/quizzes/${serverId}/attempts`, {
+    method: 'POST',
+    body: { answers },
+  })
+  return fetchModules(true)
 }
 
 /**
@@ -235,6 +293,8 @@ export async function deleteModule(id: string): Promise<CourseModule[]> {
 }
 
 export async function deleteItem(id: string): Promise<CourseModule[]> {
-  await authedRequest<void>(`/content-items/${id}`, { method: 'DELETE' })
+  const quizId = parseQuizServerId(id)
+  if (quizId != null) await authedRequest<void>(`/quizzes/${quizId}`, { method: 'DELETE' })
+  else await authedRequest<void>(`/content-items/${id}`, { method: 'DELETE' })
   return fetchModules(false)
 }

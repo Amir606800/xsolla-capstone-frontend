@@ -1,6 +1,17 @@
-import { addModule, listModules, type ModulePatch, putItem, putModule, removeItem, removeModule, setLecturer } from '../mocks/contentEdits'
+import {
+  addModule,
+  listModules,
+  type ModulePatch,
+  putItem,
+  putModule,
+  quizAttemptsOf,
+  removeItem,
+  removeModule,
+  saveQuizAttempt,
+} from '../mocks/contentEdits'
 import { handIn, submissionsOf } from '../mocks/submissions'
-import type { ContentItem, CourseModule, Submission, SubmissionFile } from '../types/course'
+import type { ContentItem, CourseModule, QuizAttempt, QuizItem, ResourceItem, Submission, SubmissionFile } from '../types/course'
+import { generateAiQuizFromMaterial } from '../utils/aiQuizClient'
 import * as http from './courses.http'
 import { hasBackend } from './http'
 
@@ -17,10 +28,18 @@ const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS)
 export type { ModulePatch }
 
 /** Puts this student's own work (from the submissions store) on the tasks; nobody else's. */
-function withWork(modules: CourseModule[], mine: Record<string, Submission>): CourseModule[] {
+function withWork(
+  modules: CourseModule[],
+  mine: Record<string, Submission>,
+  attempts: Record<string, QuizAttempt> = {},
+): CourseModule[] {
   return modules.map((m) => ({
     ...m,
     items: m.items.map((i) => {
+      if (i.type === 'quiz') {
+        const attempt = attempts[i.id]
+        return attempt ? { ...i, attempt } : i
+      }
       if (i.type !== 'assignment') return i
       const { submission: _demo, ...task } = i
       void _demo
@@ -34,7 +53,9 @@ export async function fetchModules(opts: { student?: boolean; userId?: number } 
   if (hasBackend()) return http.fetchModules(opts.student ?? false)
   await wait()
   const modules = listModules()
-  return withWork(modules, opts.student && opts.userId !== undefined ? submissionsOf(opts.userId) : {})
+  const submissions = opts.student && opts.userId !== undefined ? submissionsOf(opts.userId) : {}
+  const attempts = opts.userId !== undefined ? quizAttemptsOf(opts.userId) : {}
+  return withWork(modules, submissions, attempts)
 }
 
 export interface SubmitPayload {
@@ -120,4 +141,65 @@ export async function deleteItem(id: string): Promise<CourseModule[]> {
   if (hasBackend()) return http.deleteItem(id)
   await wait()
   return removeItem(id)
+}
+
+export async function generateAiQuiz(
+  input: { moduleId: string; contentItemId: string; title?: string; dueAt?: string },
+  ctx: { createdBy?: number } = {},
+): Promise<{ quizId: string; modules: CourseModule[] }> {
+  if (hasBackend()) return http.generateAiQuiz(input)
+  await wait()
+  const mod = listModules().find((m) => m.id === input.moduleId)
+  const material = mod?.items.find((i): i is ResourceItem => i.type === 'resource' && i.id === input.contentItemId)
+  if (!material) throw new Error('Lesson material not found')
+
+  const quizId = `ai-quiz-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+  const pending: QuizItem = {
+    id: quizId,
+    moduleId: input.moduleId,
+    type: 'quiz',
+    title: input.title?.trim() || `AI Quiz: ${material.title}`,
+    description: 'Generating 10 multiple-choice questions from lesson material...',
+    dueAt: input.dueAt,
+    status: 'generating',
+    isAiGenerated: true,
+    sourceContentItemId: material.id,
+    createdBy: ctx.createdBy,
+    questions: [],
+  }
+  const modules = putItem(pending)
+
+  void generateAiQuizFromMaterial(material)
+    .then((gen) => {
+      putItem({
+        ...pending,
+        title: input.title?.trim() || gen.title,
+        description: gen.description,
+        status: 'ready',
+        questions: gen.questions,
+      })
+    })
+    .catch((err) => {
+      putItem({
+        ...pending,
+        status: 'failed',
+        errorMessage: err instanceof Error ? err.message : 'AI quiz generation failed',
+      })
+    })
+
+  return { quizId, modules }
+}
+
+export async function submitQuizAttempt(
+  quizId: string,
+  answers: number[],
+  ctx: { studentId?: number } = {},
+): Promise<CourseModule[]> {
+  if (hasBackend()) return http.submitQuizAttempt(quizId, answers)
+  await wait()
+  const userId = ctx.studentId ?? 0
+  saveQuizAttempt(userId, quizId, answers)
+  const submissions = submissionsOf(userId)
+  const attempts = quizAttemptsOf(userId)
+  return withWork(listModules(), submissions, attempts)
 }

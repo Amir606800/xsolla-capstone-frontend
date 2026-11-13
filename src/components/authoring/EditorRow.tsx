@@ -22,7 +22,7 @@ export function EditorRow({
   meta?: ReactNode
   /** Extra line in the confirmation, e.g. "Students' work for it will be hidden too." */
   warning?: string
-  onEdit: () => void
+  onEdit?: () => void
   onDelete: () => Promise<void>
   /** More tools before Edit, e.g. a download button. */
   extra?: ReactNode
@@ -73,9 +73,11 @@ export function EditorRow({
       ) : (
         <div className="editor-row__tools">
           {extra}
-          <button type="button" className="icon-btn" onClick={onEdit} aria-label={`Edit ${title}`} title="Edit">
-            <Icon name="edit" size={18} />
-          </button>
+          {onEdit && (
+            <button type="button" className="icon-btn" onClick={onEdit} aria-label={`Edit ${title}`} title="Edit">
+              <Icon name="edit" size={18} />
+            </button>
+          )}
           <button
             type="button"
             className="icon-btn"
