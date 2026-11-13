@@ -1,0 +1,380 @@
+/* The quiz pop-up (taking a quiz, and its results). The top bar and the bottom bar stay in view while the questions scroll. */
+.quiz-modal {
+  display: flex;
+  flex-direction: column;
+  margin: -4px 0; /* the pop-up body has 4px of padding: the sticky bars sit flush with its edges */
+}
+.quiz-top {
+  position: sticky;
+  top: -4px; /* the scroll box has 4px of padding above: stick to its very edge, so no question peeks out above the bar */
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 12px;
+  background: var(--card);
+  border-bottom: 1px solid var(--divider);
+}
+.quiz-top__sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.quiz-top__result {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.quiz-top__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+.quiz-top__msg {
+  margin: 0;
+  font-size: var(--fs-h4);
+  font-weight: var(--fw-medium);
+}
+.quiz-top__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+/* score ring: filled to the percentage */
+.quiz-ring {
+  --c: var(--ok);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: conic-gradient(var(--c) calc(var(--pct) * 1%), var(--divider) 0);
+  position: relative;
+}
+.quiz-ring--danger {
+  --c: var(--danger);
+}
+.quiz-ring::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: var(--card);
+}
+.quiz-ring span {
+  position: relative;
+  font-weight: var(--fw-medium);
+  font-size: 17px;
+}
+
+/* progress while answering */
+.quiz-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.quiz-progress__label {
+  margin: 0;
+  flex: none;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  color: var(--text-muted);
+}
+.quiz-progress__track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--divider);
+  overflow: hidden;
+}
+.quiz-progress__track span {
+  display: block;
+  height: 100%;
+  background: var(--xs-cyan);
+  transition: width 0.2s ease;
+}
+
+/* question numbers: jump to a question; filled when answered (or green / red in the results) */
+.quiz-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.quiz-jump__dot {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--field-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.quiz-jump__dot:hover {
+  border-color: var(--xs-cyan);
+  color: var(--text);
+}
+.quiz-jump__dot:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.quiz-jump__dot.is-done {
+  border-color: var(--xs-cyan);
+  background: var(--xs-cyan);
+  color: #04202a;
+}
+.quiz-jump__dot.is-right {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  color: var(--text);
+}
+.quiz-jump__dot.is-wrong {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--text);
+}
+
+/* all / missed / right */
+.quiz-filter {
+  display: inline-flex;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.quiz-filter button {
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.quiz-filter button + button {
+  border-left: 1px solid var(--field-border);
+}
+.quiz-filter button[aria-pressed='true'] {
+  background: var(--tab-active-bg);
+  color: var(--tab-active-text);
+}
+.quiz-filter button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.quiz-filter span {
+  margin-left: 4px;
+  opacity: 0.75;
+}
+
+/* the questions */
+.quiz-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 16px 20px;
+  list-style: none;
+}
+.quiz-question {
+  scroll-margin-top: 150px; /* below the sticky top bar */
+  padding: 14px 16px;
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  background: var(--main-bg);
+}
+.quiz-question.is-answered {
+  border-color: color-mix(in srgb, var(--xs-cyan) 40%, var(--divider));
+}
+.quiz-question.is-right {
+  border-left: 4px solid var(--ok);
+}
+.quiz-question.is-wrong {
+  border-left: 4px solid var(--danger);
+}
+.quiz-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.quiz-question__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.quiz-question__num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--active-bg);
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+}
+.quiz-question__prompt {
+  flex: 1;
+  margin: 3px 0 0;
+  font-size: 15px;
+  font-weight: var(--fw-medium);
+  line-height: 1.45;
+}
+.quiz-question__head .pill {
+  flex: none;
+}
+
+/* the answers: a letter badge, the text, and a tag under it in the results */
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.quiz-option {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 14px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+.quiz-option:hover:not(.quiz-option--review) {
+  border-color: var(--xs-cyan);
+}
+.quiz-option input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.quiz-option:has(input:focus-visible) {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.quiz-option--review {
+  cursor: default;
+}
+.quiz-option--selected {
+  border-color: var(--xs-cyan);
+  background: color-mix(in srgb, var(--xs-cyan) 12%, var(--card));
+}
+.quiz-option--correct {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, var(--card));
+}
+.quiz-option--wrong {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--card));
+}
+.quiz-option__letter {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--field-border);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  color: var(--text-muted);
+}
+.quiz-option--selected .quiz-option__letter {
+  border-color: var(--xs-cyan);
+  background: var(--xs-cyan);
+  color: #04202a;
+}
+.quiz-option--correct .quiz-option__letter {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: #04202a;
+}
+.quiz-option--wrong .quiz-option__letter {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+.quiz-option__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 2px;
+}
+.quiz-option__text {
+  overflow-wrap: anywhere;
+}
+.quiz-option__tag {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  color: var(--ok);
+}
+.quiz-option__tag--wrong {
+  color: var(--danger);
+}
+
+/* bottom bar: the hint on the left, the buttons on the right */
+.quiz-foot {
+  position: sticky;
+  bottom: -6px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px 16px;
+  background: var(--card);
+  border-radius: 12px;
+  border-top: 1px solid var(--divider);
+}
+.quiz-foot__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  /* on a phone the top bar would take half the screen: it scrolls away with the page instead of sticking */
+  .quiz-top {
+    position: static;
+  }
+  .quiz-top,
+  .quiz-questions,
+  .quiz-foot {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .quiz-ring {
+    width: 60px;
+    height: 60px;
+  }
+  .quiz-question {
+    scroll-margin-top: 12px;
+  }
+}

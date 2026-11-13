@@ -1258,9 +1258,7 @@ button.admin-table__title:hover {
 }
 
 /* ---------- notifications ---------- */
-.admin-compose {
-  max-width: 760px;
-}
+
 .admin-compose__text {
   height: auto;
   padding: 10px 12px;
