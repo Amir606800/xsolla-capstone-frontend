@@ -5,12 +5,14 @@
   --ev-off-campus: #c27a06;
   --ev-deadline: #c4553a;
   --ev-availability: #14795a;
+  --ev-google: #1a73e8;
 }
 :root[data-theme='dark'] {
   --ev-meeting: #9b7bff;
   --ev-off-campus: #f5a524;
   --ev-deadline: #ff7a59;
   --ev-availability: #4cc9a0;
+  --ev-google: #6ea8ff;
 }
 
 .calendar {
@@ -39,15 +41,34 @@
   min-width: 0;
   scroll-margin-top: 12px;
 }
-/* wide screens: the panel sits beside the month and stays in view while you scroll */
+/* wide screens: the panel sits beside the whole page (title included), so it is in view from the very top and
+   stays there while you scroll the month */
 @media (min-width: 1400px) {
-  .calendar__layout {
+  .calendar {
+    display: grid;
     grid-template-columns: minmax(0, 1fr) 400px;
+    column-gap: 16px;
+    row-gap: 0;
+    align-items: start;
+  }
+  .calendar > * {
+    grid-column: 1;
+    margin-bottom: 16px;
+  }
+  .calendar__layout {
+    display: contents;
+  }
+  .calendar__main {
+    grid-column: 1;
   }
   .calendar__side {
+    grid-column: 2;
+    grid-row: 1 / span 12;
+    margin-bottom: 0;
     position: sticky;
-    top: 16px;
-    max-height: calc(100vh - 32px);
+    /* the app header (about 67px) stays on screen, so stick just under it, not behind it */
+    top: 84px;
+    max-height: calc(100vh - 100px);
     overflow-y: auto;
   }
 }
@@ -245,6 +266,9 @@
 .ev--availability {
   --c: var(--ev-availability);
 }
+.ev--google {
+  --c: var(--ev-google);
+}
 .ev--deadline.is-done {
   --c: var(--ok);
 }
@@ -383,16 +407,6 @@
   padding: 16px 20px 20px;
   border-top: 1px solid var(--divider);
 }
-/* medium screens (the panel is under the month): the two parts stand side by side */
-@media (min-width: 760px) and (max-width: 1399px) {
-  .day-panel__body {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-  }
-  .day-panel__part + .day-panel__part {
-    border-left: 1px solid var(--divider);
-  }
-}
 .day-panel__heading {
   margin: 0 0 12px;
   color: var(--text-muted);
@@ -431,48 +445,19 @@
   margin: 0;
 }
 
-/* what the role can add: one choice per kind of thing */
-.day-tools__choices {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.day-tools__choice {
+/* the add buttons sit in the header: always in view, one per kind of thing the role can add */
+.day-actions {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--field-border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-basis: 100%;
 }
-.day-tools__choice:hover {
-  background: var(--active-bg);
-}
-.day-tools__choice:focus-visible {
+.day-actions__btn[aria-pressed='true'] {
   outline: 2px solid var(--xs-cyan);
   outline-offset: 2px;
 }
-.day-tools__choice > svg {
-  flex: none;
-  margin-top: 2px;
-  color: var(--xs-cyan);
-}
-.day-tools__choice-text {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.day-tools__choice-text span {
-  color: var(--text-muted);
-  font-size: var(--fs-label);
+.day-form {
+  background: color-mix(in srgb, var(--xs-cyan) 5%, var(--card));
 }
 
 /* ---------- Day panel: detailed event cards ---------- */
@@ -657,4 +642,39 @@
 }
 .google-sync__note {
   margin: 0;
+}
+
+/* who is on an event: names only, folded away */
+.event-card__attendees {
+  margin-top: 8px;
+  font-size: var(--fs-label);
+}
+.event-card__attendees summary {
+  cursor: pointer;
+  color: var(--text-muted, inherit);
+}
+.event-card__attendees ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  columns: 2 160px;
+}
+.event-card__link-out {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--ev-google);
+  font-size: var(--fs-label);
+}
+
+/* the person's Google Calendar: a quiet line under the legend */
+.calendar__google {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-label);
+  color: var(--text-muted, inherit);
+}
+.calendar__google a {
+  color: var(--ev-google);
 }

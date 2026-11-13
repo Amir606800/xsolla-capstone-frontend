@@ -1,7 +1,10 @@
+import type { CalendarEvent } from '../types/calendar'
 import type { GoogleAccount, GoogleStatus } from '../types/google'
 import { authedRequest, refresh } from './authed'
 import { ApiError, apiBaseUrl } from './http'
+import { mapGoogleEvent } from './mappers'
 import { getTokens } from './session'
+import type { ApiGoogleCalendarEvent } from './types'
 
 /**
  * Real Google calls (internal/handlers/auth.go):
@@ -49,4 +52,27 @@ export async function connectUrl(): Promise<string> {
   const tokens = getTokens()
   if (!tokens) throw new ApiError(401, 'unauthorized', 'Please sign in again')
   return `${apiBaseUrl()}/auth/google/login?access_token=${encodeURIComponent(tokens.accessToken)}`
+}
+
+/** What asking for the person's own Google events can answer besides the events themselves. */
+export type GoogleEventsResult = { state: 'ok'; events: CalendarEvent[] } | { state: 'reconnect' } | { state: 'unsupported' }
+
+/**
+ * GET /google/calendar/events?from=&to= : the signed-in person's primary Google Calendar, read-only (at most 366 days).
+ * 401 = the Google token is no longer good (reconnect); 404/405 = a server without the route (or not connected: the
+ * page does not ask then). Anything else (502 Google down, 500, no network) throws, and the calendar shows a quiet retry.
+ */
+export async function fetchCalendarEvents(from: Date, to: Date): Promise<GoogleEventsResult> {
+  try {
+    const rows = await authedRequest<ApiGoogleCalendarEvent[] | null>(
+      `/google/calendar/events?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`,
+    )
+    return { state: 'ok', events: (rows ?? []).map(mapGoogleEvent) }
+  } catch (e) {
+    if (e instanceof ApiError) {
+      if (e.status === 401) return { state: 'reconnect' }
+      if (e.status === 404 || e.status === 405 || e.status === 501) return { state: 'unsupported' }
+    }
+    throw e
+  }
 }

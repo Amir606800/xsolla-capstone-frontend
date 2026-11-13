@@ -126,6 +126,8 @@ export function slotEvents(slots: MeetingSlot[], viewer: Viewer, now: Date): Cal
           startsAt: s.startsAt,
           endsAt: s.endsAt,
           description: 'A student booked this time.',
+          ...(s.meetingUrl ? { meetingUrl: s.meetingUrl } : {}),
+          ...(s.attendees ? { attendees: s.attendees } : {}),
         })
       }
     } else if (s.bookedBy?.id === viewer.id) {
@@ -136,6 +138,8 @@ export function slotEvents(slots: MeetingSlot[], viewer: Viewer, now: Date): Cal
         startsAt: s.startsAt,
         endsAt: s.endsAt,
         description: 'The time you booked with your mentor.',
+        ...(s.meetingUrl ? { meetingUrl: s.meetingUrl } : {}),
+        ...(s.attendees ? { attendees: s.attendees } : {}),
       })
     } else if (!s.booked && future) {
       const list = days.get(dateKey(new Date(s.startsAt))) ?? []

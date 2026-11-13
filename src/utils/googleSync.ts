@@ -10,7 +10,7 @@ export const settingsPath = (user: Pick<User, 'roles' | 'roleUntil'> | null | un
  * itself is fine (the server never fails it for that), so this says both, and `warn` makes the screen style it as a warning.
  */
 export function savedNotice(base: string, google: GoogleOutcome, { meetingLinkLost = false } = {}): { text: string; warn: boolean } {
-  const link = meetingLinkLost ? ' The server does not store meeting links yet, so the link was not saved.' : ''
+  const link = meetingLinkLost ? ' The server did not keep the meeting link.' : ''
   if (google === 'synced') return { text: `${base} It is on your Google Calendar too.${link}`, warn: meetingLinkLost }
   if (google === 'failed') {
     return { text: `${base} But it did not reach your Google Calendar. Open Settings and connect Google again.${link}`, warn: true }

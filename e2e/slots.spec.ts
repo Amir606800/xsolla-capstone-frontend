@@ -69,7 +69,7 @@ test.describe('Student: 1:1 times', () => {
   test('there is no form to add times, and a day without times has no panel', async ({ context }) => {
     const page = await pageAs(context, STUDENT)
     await page.locator('.cell:has(.ev--availability)').first().click()
-    await expect(page.getByRole('region', { name: 'Day details' }).getByLabel('From')).toHaveCount(0)
+    await expect(page.getByRole('region', { name: 'Day details' }).getByLabel('From', { exact: true })).toHaveCount(0)
 
     await page.locator('.cell:not(:has(.ev))').filter({ hasNot: page.locator('.is-outside') }).first().click()
     await expect(page.getByRole('region', { name: 'Day details' })).toContainText('No events on this day.')
@@ -99,8 +99,8 @@ test.describe('Mentor: availability', () => {
 
     const dialog = mentor.getByRole('region', { name: 'Day details' })
     await dialog.getByRole('button', { name: 'Add 1:1 times' }).click()
-    await dialog.getByLabel('From').fill('08:00')
-    await dialog.getByLabel('To').fill('09:30')
+    await dialog.getByLabel('From', { exact: true }).fill('08:00')
+    await dialog.getByLabel('To', { exact: true }).fill('09:30')
     await expect(dialog).toContainText('3 times: 08:00 - 08:30, 08:30 - 09:00, 09:00 - 09:30')
     await dialog.getByRole('button', { name: 'Add availability' }).click()
     await expect(dialog.getByRole('status')).toContainText('Added 3 times.')
@@ -131,7 +131,7 @@ test.describe('Mentor: availability', () => {
     await page.locator('.cell.is-today + .cell').click()
     const dialog = page.getByRole('region', { name: 'Day details' })
     await dialog.getByRole('button', { name: 'Add 1:1 times' }).click()
-    await dialog.getByLabel('To').fill('14:00')
+    await dialog.getByLabel('To', { exact: true }).fill('14:00')
     await expect(dialog).toContainText('The end time must be after the start time.')
     await expect(dialog.getByRole('button', { name: 'Add availability' })).toBeDisabled()
   })
@@ -141,8 +141,8 @@ test.describe('Mentor: availability', () => {
     await page.locator('.cell.is-today + .cell').click()
     const dialog = page.getByRole('region', { name: 'Day details' })
     await dialog.getByRole('button', { name: 'Add 1:1 times' }).click()
-    await dialog.getByLabel('From').fill('07:00')
-    await dialog.getByLabel('To').fill('08:00')
+    await dialog.getByLabel('From', { exact: true }).fill('07:00')
+    await dialog.getByLabel('To', { exact: true }).fill('08:00')
     await dialog.getByRole('button', { name: 'Add availability' }).click()
     await expect(earlySlots(page)).toHaveCount(2)
 

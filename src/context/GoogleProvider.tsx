@@ -50,6 +50,11 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     await ask(userId)
   }, [userId, ask])
 
+  const markReconnect = useCallback(() => {
+    if (userId === null) return
+    setKnown((k) => (k && k.userId === userId && k.status.connection === 'connected' ? { userId, status: { ...k.status, connection: 'reconnect' } } : k))
+  }, [userId])
+
   const connect = useCallback(async () => {
     if (!user) return
     setConnecting(true)
@@ -67,8 +72,8 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   const value = useMemo(
-    () => ({ status, loading: pending > 0, connecting, load, reload, connect }),
-    [status, pending, connecting, load, reload, connect],
+    () => ({ status, loading: pending > 0, connecting, load, reload, markReconnect, connect }),
+    [status, pending, connecting, load, reload, markReconnect, connect],
   )
   return <GoogleContext.Provider value={value}>{children}</GoogleContext.Provider>
 }

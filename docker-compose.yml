@@ -1,0 +1,39 @@
+# Front-end of the Xsolla School LMS.
+#
+#   docker compose up --build            the built app on http://localhost:3000   (WEB_PORT changes the port)
+#   docker compose --profile dev up dev  the dev server with hot reload on http://localhost:5173
+#
+# VITE_* values are read from your .env (or the shell) and baked into the build, so after changing one, run
+# `docker compose up --build` again. Leave VITE_API_URL empty to use the built-in demo data.
+services:
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_SLACK_URL: ${VITE_SLACK_URL:-}
+        VITE_GITLAB_URL: ${VITE_GITLAB_URL:-}
+        VITE_OFFICE_TOUR_URL: ${VITE_OFFICE_TOUR_URL:-}
+    image: xsolla-lms-front
+    ports:
+      - '${WEB_PORT:-3000}:80'
+    restart: unless-stopped
+
+  dev:
+    profiles: ['dev']
+    build:
+      context: .
+      target: dev
+    ports:
+      - '5173:5173'
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-}
+      VITE_SLACK_URL: ${VITE_SLACK_URL:-}
+      VITE_GITLAB_URL: ${VITE_GITLAB_URL:-}
+      VITE_OFFICE_TOUR_URL: ${VITE_OFFICE_TOUR_URL:-}
+      # file changes on a bind mount are not announced on Windows/macOS: poll for them
+      CHOKIDAR_USEPOLLING: 'true'
+    volumes:
+      - .:/app
+      - /app/node_modules

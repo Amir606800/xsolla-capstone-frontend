@@ -2,6 +2,7 @@ import type { Broadcast } from '../mocks/broadcasts'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { CalendarEvent } from '../types/calendar'
 import type { CourseModule } from '../types/course'
+import { lecturersOf } from './content'
 import { isSchoolEvent } from './adminCalendar'
 import { daysLeft } from './adminRoles'
 import { formatShortDate } from './date'
@@ -53,7 +54,7 @@ export function buildAlerts(data: AlertData, now: Date): AdminAlert[] {
   // ---------- attention ----------
 
   // weeks without a lecturer: the ones that are on or open soon are urgent, the rest are only mentioned
-  const bare = data.modules.filter((m) => m.createdBy === undefined).sort((a, b) => a.position - b.position)
+  const bare = data.modules.filter((m) => lecturersOf(m).length === 0).sort((a, b) => a.position - b.position)
   const soon = (m: CourseModule) => !!m.opensAt && !!m.closesAt && new Date(m.closesAt).getTime() >= nowMs && new Date(m.opensAt).getTime() <= nowMs + 14 * DAY
   for (const m of bare.filter(soon)) {
     const on = new Date(m.opensAt as string).getTime() <= nowMs

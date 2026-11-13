@@ -132,18 +132,37 @@ describe('the Settings pages', () => {
     expect(await screen.findByRole('button', { name: 'Connect Google Calendar' })).toBeEnabled()
   })
 
-  it('a student has no Settings: no menu item, and the address goes back to the dashboard', async () => {
+  it('a student has Settings too: a menu item, the Google card in its own words, and the password form', async () => {
     signIn(STUDENT)
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/dashboard' })
     await user.click(await screen.findByRole('button', { name: 'Account menu' }))
-    expect(screen.queryByRole('menuitem', { name: 'Settings' })).toBeNull()
+    await user.click(screen.getByRole('menuitem', { name: 'Settings' }))
+    expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Connect Google Calendar' })).toBeEnabled()
+    expect(screen.getByText('Connect your Google account to see your own Google Calendar on the school calendar.')).toBeInTheDocument()
+    expect(screen.queryByText(/lectures and events you add/)).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Change password' })).toBeInTheDocument()
   })
 
-  it('a student opening /settings lands on the dashboard', async () => {
+  it('a student opening /settings stays there', async () => {
     signIn(STUDENT)
     renderWithProviders(<App />, { route: '/settings' })
-    expect(await screen.findByRole('heading', { name: /^Welcome/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
+  })
+
+  it('every role finds the password form on its Settings page, the admin in the admin section', async () => {
+    for (const who of [LECTURER, STUDENT]) {
+      localStorage.clear()
+      signIn(who)
+      const { unmount } = renderWithProviders(<App />, { route: '/settings' })
+      expect(await screen.findByRole('heading', { name: 'Change password' })).toBeInTheDocument()
+      unmount()
+    }
+    localStorage.clear()
+    signIn(ADMIN)
+    renderWithProviders(<App />, { route: '/admin/settings' })
+    expect(await screen.findByRole('heading', { name: 'Change password' })).toBeInTheDocument()
   })
 
   it('the admin has Settings in the sidebar, and Google’s return trip to /settings ends up there with its answer', async () => {

@@ -15,7 +15,8 @@ import { useCourses } from '../../hooks/useCourses'
 import { newId } from '../../mocks/contentEdits'
 import type { AssignmentItem, CourseModule, QuizItem, ResourceItem } from '../../types/course'
 import { draftToMaterial, draftToQuiz, draftToTask, MATERIAL_KINDS } from '../../utils/authoring'
-import { contentGaps, materialsOf, modulePhase, PHASE_LABEL, quizzesOf, tasksOf } from '../../utils/content'
+import { contentGaps, isAssignedTo, materialsOf, modulePhase, PHASE_LABEL, quizzesOf, tasksOf } from '../../utils/content'
+import { isAdmin } from '../../utils/roles'
 import { formatDateTime, formatShortDate } from '../../utils/date'
 import { hasRole } from '../../utils/roles'
 import '../../styles/ui.css'
@@ -119,6 +120,10 @@ export default function ModuleEditorPage() {
   const quizzes = quizzesOf(module)
   const gaps = contentGaps([module], now)
   const phase = modulePhase(module, now)
+  const mine = !isAdmin(user) && isAssignedTo(module, user?.id)
+  // admins change any module; a lecturer only the ones they are assigned to (the others they can read, not change)
+  const canEdit = isAdmin(user) || isAssignedTo(module, user?.id)
+  const readOnly = !canEdit
   const current = editing?.id ? module.items.find((i) => i.id === editing.id) : undefined
 
   function close() {
@@ -156,9 +161,16 @@ export default function ModuleEditorPage() {
         <div className="editor__title-row">
           <h1 className="page-title">{module.title}</h1>
           <span className={`pill phase phase--${phase}`}>{PHASE_LABEL[phase]}</span>
-          <button type="button" className="btn btn--ghost btn--small" onClick={() => open('module')}>
-            <Icon name="edit" size={16} /> Edit details
-          </button>
+          {mine && (
+            <span className="pill pill--mine">
+              <Icon name="check" size={14} /> Assigned to you
+            </span>
+          )}
+          {canEdit && (
+            <button type="button" className="btn btn--ghost btn--small" onClick={() => open('module')}>
+              <Icon name="edit" size={16} /> Edit details
+            </button>
+          )}
         </div>
         {module.description && <p className="page-subtitle">{module.description}</p>}
         <dl className="module-head__meta">
@@ -173,11 +185,17 @@ export default function ModuleEditorPage() {
         </dl>
       </header>
 
+      {readOnly && (
+        <p className="editor__readonly" role="note">
+          <Icon name="eye" size={16} /> You can read everything in this module, but only the lecturers assigned to it can change it.
+        </p>
+      )}
+
       <p className="editor__status" role="status">
         {message}
       </p>
 
-      {gaps.length > 0 && (
+      {canEdit && gaps.length > 0 && (
         <ul className="editor__gaps" aria-label="Still missing">
           {gaps.map((g) => (
             <li key={g.id}>
@@ -193,8 +211,8 @@ export default function ModuleEditorPage() {
           icon="tasks"
           title="Tasks"
           addLabel="New task"
-          onAdd={() => open('task')}
-          empty={tasks.length ? null : 'No tasks yet. Students see what to hand in and by when.'}
+          onAdd={canEdit ? () => open('task') : undefined}
+          empty={tasks.length ? null : canEdit ? 'No tasks yet. Students see what to hand in and by when.' : 'No tasks yet.'}
         >
           {tasks.map((t: AssignmentItem) => (
             <EditorRow
@@ -203,6 +221,7 @@ export default function ModuleEditorPage() {
               title={t.title}
               meta={`Due ${formatDateTime(t.dueAt)}${t.requirements?.length ? ` · ${t.requirements.length} ${t.requirements.length === 1 ? 'requirement' : 'requirements'}` : ''}`}
               warning={t.submission ? "Students' work for it will be hidden too." : undefined}
+              readOnly={readOnly}
               onEdit={() => open('task', t.id)}
               onDelete={removed('task', t.id)}
             />
@@ -215,8 +234,8 @@ export default function ModuleEditorPage() {
             icon="file"
             title="Materials"
             addLabel="Add"
-            onAdd={() => open('material')}
-            empty={materials.length ? null : 'No materials yet: add the lecture slides or useful links.'}
+            onAdd={canEdit ? () => open('material') : undefined}
+            empty={materials.length ? null : canEdit ? 'No materials yet: add the lecture slides or useful links.' : 'No materials yet.'}
           >
             {materials.map((r) => (
               <EditorRow
@@ -224,6 +243,7 @@ export default function ModuleEditorPage() {
                 icon={<Icon name={r.kind === 'link' ? 'link' : 'file'} size={18} />}
                 title={r.title}
                 meta={[kindLabel(r.kind), r.file?.name, r.description].filter(Boolean).join(' · ')}
+                readOnly={readOnly}
                 onEdit={() => open('material', r.id)}
                 onDelete={removed('material', r.id)}
                 extra={

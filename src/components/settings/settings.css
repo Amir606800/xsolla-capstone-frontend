@@ -1,0 +1,67 @@
+/* "Change password" card on the Settings pages (LMS and admin). Flat, like the Google card. */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pw-card {
+  max-width: 640px;
+  padding: 20px 22px;
+  background: var(--card);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  color: var(--text);
+}
+.pw-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.pw-card__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--active-bg);
+}
+.pw-card__title {
+  margin: 0;
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+}
+.pw-card__lead {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+}
+.pw-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.pw-card__field .field__label {
+  display: block;
+  margin: 0 0 6px;
+}
+.pw-card__hint {
+  margin: -4px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.pw-card__show {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.pw-card__show input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--xs-cyan);
+}
+.pw-card__ok {
+  margin: 0;
+  color: var(--ok);
+}

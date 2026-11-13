@@ -5,6 +5,7 @@ import { useCourses } from '../../../hooks/useCourses'
 import { useDirectory } from '../../../hooks/useDirectory'
 import { useSort } from '../../../hooks/useSort'
 import type { SchoolUser } from '../../../types/admin'
+import { lecturersOf } from '../../../utils/content'
 import { matchesQuery } from '../../../utils/adminPeople'
 import { isStaffRole, mainRoleOf, roleBadges, rolesSummary } from '../../../utils/adminRoles'
 import { canMentor, hasRole } from '../../../utils/roles'
@@ -44,12 +45,12 @@ export default function AdminLecturersPage() {
   const lecturers = useMemo(() => users.filter((u) => hasRole(u, 'lecturer') && !u.leftAt), [users])
   const modulesBy = useMemo(() => {
     const map = new Map<number, number>()
-    for (const m of courses.modules) if (m.createdBy !== undefined) map.set(m.createdBy, (map.get(m.createdBy) ?? 0) + 1)
+    for (const m of courses.modules) for (const id of lecturersOf(m)) map.set(id, (map.get(id) ?? 0) + 1)
     return map
   }, [courses.modules])
   const weeksOf = (id: number) =>
     courses.modules
-      .filter((m) => m.createdBy === id)
+      .filter((m) => lecturersOf(m).includes(id))
       .map((m) => m.position)
       .sort((a, b) => a - b)
   const nameOf = useMemo(() => {
@@ -305,7 +306,7 @@ export default function AdminLecturersPage() {
             nameOf={nameOf}
             onCancel={close}
             onSave={async ({ assign, unassign }) => {
-              for (const id of unassign) await courses.assignLecturer(id, null)
+              for (const id of unassign) await courses.assignLecturer(id, target.id, false)
               for (const id of assign) await courses.assignLecturer(id, target.id)
               const parts = [
                 assign.length ? `now teaches ${assign.length === 1 ? 'week' : 'weeks'} ${weekNumbers(assign)}` : '',

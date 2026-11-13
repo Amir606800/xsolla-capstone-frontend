@@ -1,0 +1,219 @@
+/* Weekly mentor review: the weekend reminder on top of a page, and the form. */
+.review-reminder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--warn);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warn) 10%, var(--card));
+}
+.review-reminder > svg {
+  flex: none;
+  color: var(--warn);
+}
+.review-reminder p {
+  flex: 1 1 260px;
+  min-width: 0;
+  margin: 0;
+}
+
+.mentor-review {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto; /* centred, not pushed to the left */
+}
+
+/* locked: the form covers the whole screen, above the menu and the header, with the form in the middle */
+.review-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 32px;
+  overflow-y: auto;
+  background: var(--main-bg);
+  color: var(--text);
+}
+.review-lock__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: 16px 0;
+}
+.review-lock__logo {
+  height: 28px;
+  width: auto;
+}
+.review-lock .mentor-review {
+  flex: none;
+}
+.mentor-review__lock {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--warn);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warn) 10%, var(--card));
+}
+.mentor-review__lock svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warn);
+}
+.mentor-review__who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--divider);
+}
+.mentor-review__who p {
+  margin: 0;
+}
+.mentor-review__form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 20px;
+}
+.mentor-review__q {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.mentor-review__q > legend,
+.mentor-review__label {
+  display: block;
+  margin: 0 0 8px;
+  padding: 0;
+  font-weight: var(--fw-medium);
+}
+.mentor-review__hint {
+  margin: -4px 0 10px;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.mentor-review__options {
+  display: grid;
+  gap: 6px;
+}
+.mentor-review__options--row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mentor-review__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.mentor-review__option:has(input:checked) {
+  border-color: var(--xs-cyan);
+  background: color-mix(in srgb, var(--xs-cyan) 10%, var(--card));
+}
+.mentor-review__option:has(input:focus-visible) {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.mentor-review__option input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--xs-cyan);
+}
+.mentor-review__other {
+  margin-top: 8px;
+}
+
+/* a 1-5 scale: five round choices in a row, the ends explained under it */
+.mentor-review__scale {
+  display: flex;
+  gap: 8px;
+}
+.mentor-review__score {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--field-border);
+  border-radius: 50%;
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.mentor-review__score input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.mentor-review__score:has(input:checked) {
+  border-color: var(--xs-cyan);
+  background: var(--xs-cyan);
+  color: #06232b;
+}
+.mentor-review__score:has(input:focus-visible) {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.mentor-review__ends {
+  display: flex;
+  justify-content: space-between;
+  max-width: 252px;
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.mentor-review__statements {
+  display: grid;
+  gap: 16px;
+}
+.mentor-review__statement {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.mentor-review__statement > legend {
+  margin: 0 0 8px;
+  padding: 0;
+}
+.mentor-review__count {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: right;
+}
+.mentor-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.mentor-review__done {
+  padding: 24px 20px;
+}
+.mentor-review__done p {
+  margin: 0 0 14px;
+}

@@ -57,7 +57,7 @@ vi.mock('../api/courses', async () => {
     saveItem: vi.fn(async (item: import('../types/course').ContentItem) => store.putItem(item)),
     deleteItem: vi.fn(async (id: string) => store.removeItem(id)),
     deleteModule: vi.fn(async (id: string) => store.removeModule(id)),
-    assignLecturer: vi.fn(async (id: string, lecturerId: number | null) => store.putModule(id, { createdBy: lecturerId })),
+    assignLecturer: vi.fn(async (id: string, lecturerId: number, assigned = true) => store.setLecturer(id, lecturerId, assigned)),
     createModule: vi.fn(async (patch: Parameters<typeof store.addModule>[0], ctx?: { createdBy?: number }) => store.addModule(patch, ctx?.createdBy)),
     generateAiQuiz: vi.fn(
       async (
@@ -93,6 +93,8 @@ vi.mock('../api/courses', async () => {
         items: m.items.map((i) => (i.type === 'quiz' && attempts[i.id] ? { ...i, attempt: attempts[i.id] } : i)),
       }))
     }),
+    createModuleQuiet: vi.fn(async (patch: Parameters<typeof store.addModule>[0], ctx?: { createdBy?: number }) => store.addModule(patch, ctx?.createdBy).id),
+    writeItemQuiet: vi.fn(async (item: import('../types/course').ContentItem) => void store.putItem(item)),
   }
 })
 
@@ -132,6 +134,16 @@ vi.mock('../api/teams', async () => {
   return {
     fetchMyTeam: vi.fn(async (user: P) => buildMockTeam(user)),
     fetchMentorTeam: vi.fn(async (user: P) => buildMentorTeam(user)),
+  }
+})
+
+// weekly mentor reviews: the demo store without the latency (nothing is due unless a test sets the demo flag)
+vi.mock('../api/mentorReviews', async () => {
+  const m = await import('../mocks/mentorReviews')
+  type R = import('../types/mentorReview').MentorReview
+  return {
+    fetchReviewedWeeks: vi.fn(async (studentId: number) => m.reviewedWeeks(studentId)),
+    submitReview: vi.fn(async (studentId: number, mentorId: number | undefined, review: R) => m.addReview(studentId, mentorId, review)),
   }
 })
 

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { useAuth } from '../../hooks/useAuth'
 import { useGoogle } from '../../hooks/useGoogle'
 import type { GoogleAccount, GoogleConnection } from '../../types/google'
+import { isStudent } from '../../utils/roles'
 import { Icon } from '../Icon'
 import { Loading } from '../loading/Loading'
 import { Spinner } from '../loading/Spinner'
@@ -38,6 +40,8 @@ function Avatar({ account }: { account: GoogleAccount }) {
  */
 export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
   const { status, loading, connecting, reload, connect } = useGoogle()
+  const { user } = useAuth()
+  const student = isStudent(user)
   const [params, setParams] = useSearchParams()
   // Google comes back with a full page load, so the answer is there when this mounts
   const [came, setCame] = useState<'connected' | 'error' | null>(() => {
@@ -92,7 +96,9 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
           <h2 id="google-card-title" className="google-card__title">
             Google Calendar
           </h2>
-          <p className="google-card__lead">Put the lectures and events you add here on your own Google Calendar too.</p>
+          <p className="google-card__lead">
+            {student ? 'Connect your Google account to see your own Google Calendar on the school calendar.' : 'Put the lectures and events you add here on your own Google Calendar too.'}
+          </p>
         </div>
         {pill && <span className={`google-card__pill google-card__pill--${pill.tone}`}>{pill.text}</span>}
       </header>
@@ -128,8 +134,17 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
             </div>
           )}
           <ul className="google-card__facts">
-            <li>Tick “Add to my Google Calendar” when you create an event. It goes on your calendar, not on your students’.</li>
-            <li>Changing or deleting that event in the LMS changes or removes your Google copy too.</li>
+            {student ? (
+              <>
+                <li>Your own Google Calendar events now show on the school calendar, only for you. You cannot change them there.</li>
+                <li>Connecting sends nothing to Google: the school’s events are not added to your calendar.</li>
+              </>
+            ) : (
+              <>
+                <li>Tick “Add to my Google Calendar” when you create an event. It goes on your calendar, not on your students’.</li>
+                <li>Changing or deleting that event in the LMS changes or removes your Google copy too.</li>
+              </>
+            )}
           </ul>
           <div className="google-card__actions">
             {connectButton('Use a different Google account', false)}

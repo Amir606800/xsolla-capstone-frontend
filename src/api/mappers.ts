@@ -1,6 +1,7 @@
 import type { CalendarEvent, EventKind } from '../types/calendar'
 import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission, SubmissionVersion } from '../types/course'
 import type { WeeklyStanding } from '../types/standing'
+import { orderByOpening } from '../utils/progress'
 import { parseStandingLevel } from '../utils/standing'
 import type { ApiContentItem, ApiEvent, ApiModule, ApiQuiz, ApiSubmission, ApiWeeklyStanding } from './types'
 
@@ -125,7 +126,7 @@ export function mapContentItems(
 
 /**
  * GET /modules + each module's content items -> CourseModule[].
- * - The backend has no week number: modules are ordered by creation and numbered 1, 2, 3, ...
+ * - The backend has no week number: modules are ordered by when they open (then by creation) and numbered 1, 2, 3, ...
  * - Week dates (`opens_at` / `closes_at`) are read when the server sends them; it does not store them yet, so
  *   until then nothing is locked for students.
  */
@@ -175,8 +176,8 @@ export function mapModules(
   opts: { includeHidden?: boolean } = {},
   quizzesByModule: Record<string, ApiQuiz[]> = {},
 ): CourseModule[] {
-  return [...modules]
-    .sort((a, b) => a.created_at.localeCompare(b.created_at) || Number(a.id) - Number(b.id))
+  // the number of a week is its place in the order the weeks open, not the order an admin typed them in
+  return orderByOpening(modules.map((m) => ({ ...m, id: String(m.id), opensAt: m.opens_at ?? undefined, createdAt: m.created_at })))
     .map((m, i) => {
       const id = String(m.id)
       const contentItems = mapContentItems(itemsByModule[id] ?? [], id, submissions, opts)
@@ -186,7 +187,10 @@ export function mapModules(
         position: i + 1,
         title: m.title,
         ...(m.description ? { description: m.description } : {}),
-        ...(m.created_by != null ? { createdBy: Number(m.created_by) } : {}),
+        // the lecturer of the week is the ASSIGNED one (`lecturer_id`). Who made the module (`created_by`) is always an
+        // admin, so it says nothing about the lecturer and is not shown anywhere. (`createdBy` is the app's name for
+        // "the week's lecturer": see utils/content isAssignedTo.)
+        ...lecturerFields(m),
         ...(m.opens_at ? { opensAt: m.opens_at } : {}),
         ...(m.closes_at ? { closesAt: m.closes_at } : {}),
         createdAt: m.created_at,
@@ -240,6 +244,41 @@ export function mapEvent(e: ApiEvent): CalendarEvent {
     ...(e.meeting_url ? { meetingUrl: e.meeting_url } : {}),
     ...(e.module_id != null ? { moduleId: String(e.module_id) } : {}),
     ...(e.google_event_id ? { googleEventId: e.google_event_id } : {}),
+    ...attendeesField(e.attendees),
+  }
+}
+
+/** `attendees` only when there are some. */
+export function attendeesField(list: ApiAttendee[] | null | undefined): { attendees?: Attendee[] } {
+  const attendees = (list ?? []).map((a) => ({ id: Number(a.id), name: a.name, email: a.email ?? '' }))
+  return attendees.length ? { attendees } : {}
+}
+
+/** A local date `YYYY-MM-DD` at the given time. Never `new Date('YYYY-MM-DD')`: that is UTC and can land on the day before. */
+function localDay(day: string, end: boolean): string {
+  const [y, m, d] = day.slice(0, 10).split('-').map(Number)
+  return (end ? new Date(y, m - 1, d, 23, 59, 59, 999) : new Date(y, m - 1, d)).toISOString()
+}
+
+/**
+ * One event of the person's own Google Calendar -> a read-only calendar event. All-day events come as plain dates (the last
+ * day included) and run from the start of the first day to the end of the last. Ids are prefixed so they never meet an LMS id.
+ */
+export function mapGoogleEvent(g: ApiGoogleCalendarEvent): CalendarEvent {
+  const allDay = !!g.all_day
+  return {
+    id: `google-${g.id}`,
+    title: g.title?.trim() || '(No title)',
+    kind: 'google',
+    source: 'google',
+    startsAt: allDay ? localDay(g.starts_at, false) : g.starts_at,
+    endsAt: allDay ? localDay(g.ends_at || g.starts_at, true) : g.ends_at,
+    ...(allDay ? { allDay: true } : {}),
+    ...(g.location ? { location: g.location } : {}),
+    ...(g.description ? { description: g.description } : {}),
+    ...(g.meeting_url && /^https?:\/\//.test(g.meeting_url) ? { meetingUrl: g.meeting_url } : {}),
+    ...(g.html_link && g.html_link.startsWith('https://') ? { htmlLink: g.html_link } : {}),
+    googleEventId: g.id,
   }
 }
 
@@ -254,8 +293,8 @@ export function eventToApi(e: CalendarEvent) {
     // always sent, empty when there is none: on an edit that is how a place or description is taken away
     location: e.location ?? '',
     description: e.description ?? '',
-    // null (not left out) so editing an event can also take the link away
-    meeting_url: e.meetingUrl ?? null,
+    // empty string, not null: the server keeps the link on null and clears it on ""
+    meeting_url: e.meetingUrl ?? '',
     ...(e.moduleId && /^\d+$/.test(e.moduleId) ? { module_id: Number(e.moduleId) } : {}),
   }
 }

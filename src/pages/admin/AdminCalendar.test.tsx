@@ -158,6 +158,18 @@ describe('Admin calendar', () => {
     expect(listEvents().some((e) => e.title === 'Guest talk' && e.kind === 'meeting')).toBe(true)
   })
 
+  it('keeps an add button beside the list while events are shown, so the next one can be added', async () => {
+    renderWithProviders(<App />, { route: '/admin/calendar' })
+    const user = userEvent.setup()
+    const region = await list()
+    await user.click(within(region).getByRole('button', { name: /^Add an event/ }))
+    const form = within(await dialog())
+    await user.type(form.getByLabelText('Title'), 'Another talk')
+    await user.click(form.getByRole('button', { name: 'Add event' }))
+    expect(await screen.findByText('Event added.')).toBeInTheDocument()
+    expect(within(await list()).getByRole('button', { name: /^Add an event/ })).toBeEnabled()
+  })
+
   it('edits an event', async () => {
     renderWithProviders(<App />, { route: '/admin/calendar' })
     const user = userEvent.setup()

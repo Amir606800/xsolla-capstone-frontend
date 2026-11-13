@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CalendarEvent } from '../types/calendar'
 import type { AssignmentItem } from '../types/course'
-import { addModule, listEvents, listModules, putEvent, putItem, putModule, removeEvent, removeItem, removeModule } from './contentEdits'
+import { addModule, listEvents, listModules, putEvent, putItem, putModule, setLecturer, removeEvent, removeItem, removeModule } from './contentEdits'
 
 const NOW = new Date(2026, 10, 4, 12, 0)
 const mod = (id: string) => listModules(NOW).find((m) => m.id === id)!
@@ -81,26 +81,39 @@ describe('course edits', () => {
     putItem(task({ id: 'k-1', moduleId: id }), NOW)
     putModule(id, { title: 'K8s' }, NOW)
     expect(mod(id)).toMatchObject({ title: 'K8s', items: [expect.objectContaining({ id: 'k-1' })] })
-    // a second one goes after it, even after a demo module is deleted
+    // a second one goes after it; the numbers follow the order the weeks open, so a deleted week leaves no gap
     removeModule('m12', NOW)
     const second = addModule({ title: 'Helm' }, 1000, new Date(NOW.getTime() + 1000))
-    expect(mod(second.id).position).toBe(14)
+    expect(mod(second.id).position).toBe(13)
     removeModule(id, NOW)
     expect(listModules(NOW).some((m) => m.id === id)).toBe(false)
   })
 
   it('a week can be given to another lecturer', () => {
-    putModule('m1', { createdBy: 902 }, NOW)
+    putModule('m1', { lecturerIds: [902] }, NOW)
     expect(mod('m1').createdBy).toBe(902)
     expect(mod('m3').createdBy).toBe(900)
   })
 
   it('a week can have no lecturer, and that is kept', () => {
-    putModule('m1', { createdBy: null }, NOW)
+    putModule('m1', { lecturerIds: [] }, NOW)
     expect(mod('m1').createdBy).toBeUndefined()
-    expect(JSON.parse(localStorage.getItem('course_edits')!).modules.m1.createdBy).toBeNull()
-    putModule('m1', { createdBy: 902 }, NOW)
+    expect(mod('m1').lecturerIds).toEqual([])
+    putModule('m1', { lecturerIds: [902] }, NOW)
     expect(mod('m1').createdBy).toBe(902)
+  })
+
+  it('a week can have several lecturers, and a lecturer several weeks', () => {
+    setLecturer('m1', 902, true, NOW)
+    expect(mod('m1').lecturerIds).toEqual([900, 902])
+    setLecturer('m2', 900, true, NOW)
+    expect(mod('m2').lecturerIds).toEqual([902, 900])
+    expect(mod('m1').lecturerIds).toContain(900)
+    // adding twice changes nothing; taking one off leaves the others
+    setLecturer('m1', 902, true, NOW)
+    expect(mod('m1').lecturerIds).toEqual([900, 902])
+    setLecturer('m1', 900, false, NOW)
+    expect(mod('m1').lecturerIds).toEqual([902])
   })
 
   it('demo modules know their lecturer and when they were created', () => {

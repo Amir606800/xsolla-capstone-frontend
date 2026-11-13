@@ -1,6 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
+import { listModules, setLecturer } from '../../mocks/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import type { Role } from '../../types/user'
 
@@ -26,6 +27,8 @@ const dashboard = async () => screen.findByRole('navigation', { name: 'Quick act
 
 describe('one staff dashboard, sections by role', () => {
   it('mentor + lecturer: team card and the course cards, all shortcuts, both nav items', async () => {
+    // the add shortcuts are for modules assigned to the lecturer: give Rashad them all here
+    for (const m of listModules(new Date(2026, 10, 4, 12))) setLecturer(m.id, 900, true, new Date(2026, 10, 4, 12))
     renderAs('both')
     const actions = await dashboard()
     expect(within(actions).getByRole('link', { name: 'New task' })).toBeInTheDocument()

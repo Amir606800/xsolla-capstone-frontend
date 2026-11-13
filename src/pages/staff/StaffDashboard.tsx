@@ -12,9 +12,9 @@ import { useMeetingSlots } from '../../hooks/useMeetingSlots'
 import { useMyTeam } from '../../hooks/useMyTeam'
 import { useTeamStandings } from '../../hooks/useTeamStandings'
 import { useTeamSubmissions } from '../../hooks/useTeamSubmissions'
-import { contentGaps, focusModule, modulePhase, nextDueTasks } from '../../utils/content'
+import { contentGaps, focusModule, isAssignedTo, modulePhase, nextDueTasks } from '../../utils/content'
 import { gradesDue, indexStandings, newWork } from '../../utils/review'
-import { canAuthor, canMentor, roleLabel } from '../../utils/roles'
+import { canAuthor, canMentor, isAdmin, roleLabel } from '../../utils/roles'
 import { slotEvents } from '../../utils/slots'
 import '../../styles/ui.css'
 import '../../components/dashboard/dashboard.css'
@@ -51,7 +51,11 @@ export default function StaffDashboard() {
   const weekGrades = useTeamStandings()
 
   const focus = useMemo(() => focusModule(modules, now), [modules, now])
-  const gaps = useMemo(() => contentGaps(modules, now), [modules, now])
+  // a lecturer with assigned modules is told what is missing in THOSE, not in the whole course
+  const gaps = useMemo(() => {
+    const mine = modules.filter((m) => isAssignedTo(m, user?.id))
+    return contentGaps(author && !isAdmin(user) && mine.length > 0 ? mine : modules, now)
+  }, [modules, now, user, author])
   const due = useMemo(() => nextDueTasks(modules, now, MAX_ROWS), [modules, now])
   const comingUp = useMemo(() => {
     // a mentor's own booked 1:1s are part of their week
@@ -64,12 +68,14 @@ export default function StaffDashboard() {
   }, [calendar.events, meetings.slots, user, mentor, now])
 
   const editor = focus ? `/courses/${focus.id}` : '/courses'
-  const teaching: Shortcut[] = [
+  // a lecturer can add content only to a module they are assigned to (the others they can only read)
+  const mayAdd = !focus || isAdmin(user) || isAssignedTo(focus, user?.id)
+  const adding: Shortcut[] = [
     { to: `${editor}?add=task`, icon: 'tasks', label: 'New task' },
     { to: `${editor}?add=material`, icon: 'file', label: 'Add material' },
     { to: `${editor}?add=quiz`, icon: 'sparkle', label: 'New quiz' },
-    { to: '/calendar', icon: 'calendar', label: 'Schedule a lecture' },
   ]
+  const teaching: Shortcut[] = [...(mayAdd ? adding : []), { to: '/calendar', icon: 'calendar', label: 'Schedule a lecture' }]
   const mentoring: Shortcut[] = [
     { to: '/grading', icon: 'grades', label: 'Grade the week' },
     { to: '/calendar', icon: 'clock', label: 'Set 1:1 times' },

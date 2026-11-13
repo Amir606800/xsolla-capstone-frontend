@@ -232,3 +232,54 @@
 .lect__more {
   color: var(--link);
 }
+
+/* ---------- "assigned to you": the modules a lecturer has to prepare ---------- */
+.pill--mine {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--xs-cyan);
+  color: #06232b;
+  font-weight: var(--fw-medium);
+}
+.content-row--mine {
+  border-color: var(--xs-cyan);
+  box-shadow: inset 4px 0 0 var(--xs-cyan);
+}
+.content-assigned {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.content-assigned__text {
+  flex: 1 1 280px;
+  margin: 0;
+}
+.content-assigned__filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.content-chip {
+  padding: 6px 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.content-chip:hover {
+  background: var(--active-bg);
+}
+.content-chip[aria-pressed='true'] {
+  border-color: var(--xs-cyan);
+  background: color-mix(in srgb, var(--xs-cyan) 16%, var(--card));
+  color: var(--text);
+}
+.content-chip:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}

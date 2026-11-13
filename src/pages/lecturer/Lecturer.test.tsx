@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { removeItem } from '../../mocks/contentEdits'
+import { removeItem, setLecturer } from '../../mocks/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 // "Today" is Wed 4 Nov 2026: module 6 (Go Basics) is running, module 7 opens next week.
@@ -72,6 +72,7 @@ describe('Lecturer dashboard', () => {
   })
 
   it('has shortcuts to the things students depend on', async () => {
+    setLecturer('m6', 900, true)
     renderAs(LECTURER, '/dashboard')
     const nav = await screen.findByRole('navigation', { name: 'Quick actions' })
     expect(within(nav).getByRole('link', { name: 'New task' })).toHaveAttribute('href', '/courses/m6?add=task')
@@ -111,29 +112,88 @@ describe('Lecturer dashboard', () => {
 })
 
 describe('Course content', () => {
-  it('lists the 12 modules with their phase and contents', async () => {
-    renderAs(LECTURER, '/courses')
+  it('starts on the modules assigned to the lecturer, marked "Assigned to you"; "All modules" shows the whole course', async () => {
+    const user = userEvent.setup()
+    renderAs(LECTURER, '/courses') // Rashad (900) is given the odd weeks in the demo
     expect(await screen.findByRole('heading', { name: 'Course content', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('You are assigned to 6 modules: 1, 3, 5, 7, 9, 11.')
+    const mine = within(screen.getByRole('list', { name: 'Modules' })).getAllByRole('link')
+    expect(mine).toHaveLength(6)
+    for (const row of mine) expect(row).toHaveTextContent('Assigned to you')
+    expect(screen.getByRole('button', { name: 'Assigned to me (6)' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'All modules (12)' }))
     const rows = within(screen.getByRole('list', { name: 'Modules' })).getAllByRole('link')
     expect(rows).toHaveLength(12)
     expect(rows[0]).toHaveTextContent('Finished')
+    expect(rows[0]).toHaveTextContent('Assigned to you')
+    expect(rows[1]).not.toHaveTextContent('Assigned to you') // week 2 is Elvin's
     expect(rows[5]).toHaveTextContent('Module 6 · Go Basics')
     expect(rows[5]).toHaveTextContent('Running now')
     expect(rows[5]).toHaveTextContent('2 materials · 2 tasks · 0 quizzes')
     expect(rows[6]).toHaveTextContent('Upcoming')
-    expect(rows[8]).toHaveAttribute('href', '/courses/m9') // lecturers open every module
+    expect(rows[8]).toHaveAttribute('href', '/courses/m9')
+  })
+
+  it('a lecturer with nothing assigned is told so and sees the whole course', async () => {
+    renderAs({ id: 905, name: 'New Lecturer', email: 'new@xsolla.school', role: 'teacher' }, '/courses')
+    expect(await screen.findByText(/No modules are assigned to you yet/)).toBeInTheDocument()
+    expect(within(screen.getByRole('list', { name: 'Modules' })).getAllByRole('link')).toHaveLength(12)
+    expect(screen.queryByRole('button', { name: /Assigned to me/ })).not.toBeInTheDocument()
   })
 
   it('flags a module with missing content', async () => {
     removeItem('m8-r1')
     removeItem('m8-r2')
+    const user = userEvent.setup()
     renderAs(LECTURER, '/courses')
+    await user.click(await screen.findByRole('button', { name: 'All modules (12)' }))
     const row = (await screen.findAllByRole('link', { name: /Module 8/ }))[0]
     expect(row).toHaveTextContent('1 thing to do')
+  })
+
+  it('the module page says it is assigned to you', async () => {
+    renderAs(LECTURER, '/courses/m5')
+    expect(await screen.findByText('Assigned to you')).toBeInTheDocument()
+  })
+})
+
+describe('Module editor: a module that is not yours', () => {
+  it('can be read, with its materials, tasks and quizzes, but nothing can be added, changed or deleted', async () => {
+    // week 6 belongs to Elvin (902) in the demo, Rashad (900) is not on it
+    renderAs(LECTURER, '/courses/m6')
+    expect(await screen.findByRole('heading', { name: /./, level: 1 })).toBeInTheDocument()
+    expect(await screen.findByText(/only the lecturers assigned to it can change it/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Tasks' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /New task|New quiz|^Add$|Edit details/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Edit |^Delete / })).toBeNull()
+    expect(screen.queryByText('Assigned to you')).toBeNull()
+  })
+
+  it('the form of a shortcut link does not open on it either', async () => {
+    renderAs(LECTURER, '/courses/m6?add=task')
+    await screen.findByText(/only the lecturers assigned to it can change it/)
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('the dashboard offers no add shortcuts for the week it shows when that week is not yours', async () => {
+    renderAs(LECTURER, '/dashboard')
+    const nav = await screen.findByRole('navigation', { name: 'Quick actions' })
+    expect(within(nav).queryByRole('link', { name: 'New task' })).toBeNull()
+    expect(within(nav).getByRole('link', { name: 'Schedule a lecture' })).toBeInTheDocument()
+  })
+
+  it('an admin can still change any module', async () => {
+    localStorage.setItem('auth_user', JSON.stringify({ id: 1000, name: 'School Admin', email: 'a@x.az', roles: ['admin'] }))
+    renderWithProviders(<App />, { route: '/admin/modules/m6' })
+    expect((await screen.findAllByRole('button', { name: /^Edit/ })).length).toBeGreaterThan(0)
   })
 })
 
 describe('Module editor: tasks', () => {
+  // Rashad is assigned to the running week (6) for these: a lecturer changes only the modules assigned to them
+  beforeEach(() => void setLecturer('m6', 900, true))
+
   it('adds a task that students then see in the module', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAs(LECTURER, '/courses/m6')
@@ -213,6 +273,9 @@ describe('Module editor: tasks', () => {
 })
 
 describe('Module editor: materials', () => {
+  // Rashad is assigned to the running week (6) for these: a lecturer changes only the modules assigned to them
+  beforeEach(() => void setLecturer('m6', 900, true))
+
   it('adds a link, checking that it is a real web address', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAs(LECTURER, '/courses/m6')
@@ -249,6 +312,9 @@ describe('Module editor: materials', () => {
 })
 
 describe('Module editor: quizzes (optional)', () => {
+  // Rashad is assigned to the running week (6) for these: a lecturer changes only the modules assigned to them
+  beforeEach(() => void setLecturer('m6', 900, true))
+
   it('builds a quiz; students see it exists, but never the answers', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAs(LECTURER, '/courses/m6')
@@ -292,6 +358,9 @@ describe('Module editor: quizzes (optional)', () => {
 })
 
 describe('Module editor: module details', () => {
+  // Rashad is assigned to the running week (6) for these: a lecturer changes only the modules assigned to them
+  beforeEach(() => void setLecturer('m6', 900, true))
+
   it('renames a module and moves its dates; students see the change', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAs(LECTURER, '/courses/m6')

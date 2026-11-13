@@ -143,31 +143,65 @@ describe('lecturer editing', () => {
     expect(modules.map((m) => m.id)).toEqual(['4'])
   })
 
-  it('assigning a lecturer to a week sends lecturer_id and checks the server really changed it', async () => {
-    await backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }) })
-    // the server accepts the request but still says created_by 9: it does not know the field yet
-    await expect(assignLecturer('4', 12)).rejects.toThrow('The server cannot change the lecturer of a week yet.')
-    expect(json(find('PATCH', '/modules/4'))).toEqual({ lecturer_id: 12 })
-    // once the server applies it, created_by follows
-    await backend({
-      'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }),
-      'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', description: 'Go', created_by: 12, created_at: '2026-11-01T00:00:00Z' }] }),
-      ...ITEMS,
-    })
-    expect((await assignLecturer('4', 12))[0].createdBy).toBe(12)
-  })
+  describe('the lecturer of a week is the lecturer enrolled in it', () => {
+    const USERS = {
+      'GET /users': () => ({
+        status: 200,
+        body: [
+          { id: 9, name: 'Admin', email: 'a@x.az', roles: ['admin'] },
+          { id: 12, name: 'Lena', email: 'l@x.az', roles: ['lecturer'] },
+          { id: 13, name: 'Leo', email: 'o@x.az', roles: ['lecturer'] },
+          { id: 20, name: 'Sam', email: 's@x.az', roles: ['student'] },
+        ],
+      }),
+    }
+    const enrolled = (...ids: number[]) => ({ 'GET /modules/4/enrollments': () => ({ status: 200, body: ids.map((u) => ({ id: u, module_id: 4, user_id: u })) }) })
 
-  it('taking the lecturer off a week sends null; the server must then report no lecturer', async () => {
-    await backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }) })
-    // this server still reports created_by 9
-    await expect(assignLecturer('4', null)).rejects.toThrow('cannot change the lecturer of a week yet')
-    expect(json(find('PATCH', '/modules/4'))).toEqual({ lecturer_id: null })
-    await backend({
-      'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }),
-      'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', created_at: '2026-11-01T00:00:00Z' }] }),
-      ...ITEMS,
+    it('is read from the enrollments: every enrolled user with the lecturer role, never a student or the admin', async () => {
+      await backend({ ...reload, ...USERS, ...enrolled(9, 20, 12, 13) })
+      expect((await fetchModules(false))[0]).toMatchObject({ lecturerIds: [12, 13], createdBy: 12 })
+      await backend({ ...reload, ...USERS, ...enrolled(9, 20) })
+      expect((await fetchModules(false))[0].lecturerIds).toBeUndefined()
     })
-    expect((await assignLecturer('4', null))[0].createdBy).toBeUndefined()
+
+    it('students never ask for it', async () => {
+      await backend({ ...reload, ...USERS, ...enrolled(12) })
+      await fetchModules(true)
+      expect(calls.some((c) => c.path.endsWith('/enrollments') || c.path === '/users')).toBe(false)
+    })
+
+    it('a server that refuses the lists simply shows no lecturer', async () => {
+      await backend(reload)
+      expect((await fetchModules(false))[0].createdBy).toBeUndefined()
+    })
+
+    it('assigning enrols the lecturer and leaves the other lecturers of the week alone', async () => {
+      let list = [9, 13]
+      await backend({
+        ...reload,
+        ...USERS,
+        'GET /modules/4/enrollments': () => ({ status: 200, body: list.map((u) => ({ user_id: u })) }),
+        'POST /modules/4/enrollments': (init) => {
+          list = [...list, JSON.parse(init.body as string).user_id]
+          return { status: 201, body: {} }
+        },
+      })
+      expect((await assignLecturer('4', 12))[0].lecturerIds).toEqual([13, 12])
+      expect(json(find('POST', '/modules/4/enrollments'))).toEqual({ user_id: 12 })
+      expect(calls.some((c) => c.method === 'DELETE')).toBe(false)
+    })
+
+    it('an enrolment that already exists (409) is fine', async () => {
+      await backend({ ...reload, ...USERS, ...enrolled(9), 'POST /modules/4/enrollments': () => ({ status: 409, body: { error: 'conflict', message: 'already', status: 409 } }) })
+      await expect(assignLecturer('4', 12)).resolves.toBeDefined()
+    })
+
+    it('taking a lecturer off unenrols only them', async () => {
+      await backend({ ...reload, ...USERS, ...enrolled(12, 13), 'DELETE /modules/4/enrollments/12': () => ({ status: 204 }) })
+      await assignLecturer('4', 12, false)
+      expect(find('DELETE', '/modules/4/enrollments/12')).toBeDefined()
+      expect(calls.some((c) => c.method === 'POST' || c.path.endsWith('/13'))).toBe(false)
+    })
   })
 
   it('an admin deletes a whole module: DELETE /modules/:id, then the course is loaded again', async () => {
@@ -309,7 +343,7 @@ describe('calendar events', () => {
       all_day: false,
       location: '',
       description: '',
-      meeting_url: null,
+      meeting_url: '',
       module_id: 4,
     })
     await saveEvent({ id: '5', title: 'Lecture 2', kind: 'lecture', startsAt: 's', endsAt: 'e' })

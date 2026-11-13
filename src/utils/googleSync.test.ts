@@ -18,7 +18,7 @@ describe('savedNotice', () => {
 describe('savedNotice: a meeting link the server did not keep', () => {
   it('says so and makes it a warning', () => {
     expect(savedNotice('Event saved.', 'not-asked', { meetingLinkLost: true })).toEqual({
-      text: 'Event saved. The server does not store meeting links yet, so the link was not saved.',
+      text: 'Event saved. The server did not keep the meeting link.',
       warn: true,
     })
     expect(savedNotice('Event added.', 'synced', { meetingLinkLost: true }).warn).toBe(true)

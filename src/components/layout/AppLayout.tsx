@@ -2,9 +2,11 @@ import { Suspense, useCallback, useState } from 'react'
 import { Outlet } from 'react-router'
 import { CoursesProvider } from '../../context/CoursesProvider'
 import { DashboardLayoutProvider } from '../../context/DashboardLayoutProvider'
+import { MentorReviewProvider } from '../../context/MentorReviewProvider'
 import { NotificationsProvider } from '../../context/NotificationsProvider'
 import { StandingsProvider } from '../../context/StandingsProvider'
 import { usePersistedState } from '../../hooks/usePersistedState'
+import { ReviewGate } from '../review/ReviewGate'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import './AppLayout.css'
@@ -29,6 +31,7 @@ export default function AppLayout() {
       <NotificationsProvider>
       <DashboardLayoutProvider>
       <StandingsProvider>
+      <MentorReviewProvider>
       <div className="shell">
         <Header onMenuClick={openNav} />
         <div className="shell__body">
@@ -40,11 +43,15 @@ export default function AppLayout() {
           />
           <main className="shell__main">
             <Suspense fallback={<PageLoader />}>
-              <Outlet />
+              {/* a student who owes last week's mentor review is sent to the form from every page */}
+              <ReviewGate>
+                <Outlet />
+              </ReviewGate>
             </Suspense>
           </main>
         </div>
       </div>
+      </MentorReviewProvider>
       </StandingsProvider>
       </DashboardLayoutProvider>
       </NotificationsProvider>

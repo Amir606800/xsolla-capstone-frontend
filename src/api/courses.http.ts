@@ -1,4 +1,5 @@
 import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission, SubmissionFile } from '../types/course'
+import { type UserDto, mapUser } from './auth.http'
 import { authedRequest } from './authed'
 import { ApiError } from './http'
 import { isServerId, joinDescription, mapModules, mapSubmission, parseQuizServerId, quizToApi, taskToApi, toQuizDomainId } from './mappers'
@@ -29,6 +30,34 @@ async function mySubmission(moduleId: string, assignmentId: string): Promise<Api
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) return undefined
     throw e
+  }
+}
+
+interface EnrollmentDto {
+  user_id: number | string
+}
+
+/**
+ * Who teaches each week. The backend has no "lecturer of a module" field: a lecturer is ENROLLED in the module
+ * (POST /modules/:id/enrollments { user_id }), so the lecturers of a week are the enrolled users who have the lecturer role.
+ * Best effort: when the lists cannot be read (a role without access, an older server) no week has a lecturer.
+ */
+async function lecturersByModule(moduleIds: number[]): Promise<Record<string, number[]>> {
+  try {
+    const users = await authedRequest<UserDto[] | null>('/users?search=')
+    const lecturers = new Set((users ?? []).map(mapUser).filter((u) => u.roles.includes('lecturer')).map((u) => u.id))
+    if (lecturers.size === 0) return {}
+    const lists = await Promise.all(
+      moduleIds.map((id) => authedRequest<EnrollmentDto[] | null>(`/modules/${id}/enrollments`).then((r) => r ?? [], () => [] as EnrollmentDto[])),
+    )
+    const out: Record<string, number[]> = {}
+    moduleIds.forEach((id, i) => {
+      const found = lists[i].map((e) => Number(e.user_id)).filter((u) => lecturers.has(u))
+      if (found.length) out[String(id)] = found
+    })
+    return out
+  } catch {
+    return {}
   }
 }
 
@@ -123,10 +152,15 @@ export async function saveModule(id: string, patch: ModuleFields): Promise<Cours
   return fetchModules(false)
 }
 
+/** Creates a module and returns its id, without reloading the course (for importing many at once). */
+export async function postModule(patch: ModuleFields & { title: string }): Promise<string> {
+  const created = await authedRequest<ApiModule>('/modules', { method: 'POST', body: moduleBody(patch) })
+  return String(created.id)
+}
+
 /** A new module (the backend records who created it). */
 export async function createModule(patch: ModuleFields & { title: string }): Promise<{ id: string; modules: CourseModule[] }> {
-  const created = await authedRequest<ApiModule>('/modules', { method: 'POST', body: moduleBody(patch) })
-  return { id: String(created.id), modules: await fetchModules(false) }
+  return { id: await postModule(patch), modules: await fetchModules(false) }
 }
 
 export class NotSupportedError extends ApiError {
@@ -193,6 +227,12 @@ async function saveQuiz(q: QuizItem) {
 }
 
 export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
+  await writeItem(item)
+  return fetchModules(false)
+}
+
+/** Saves one item without reloading the course (for importing many at once). */
+export async function writeItem(item: ContentItem): Promise<void> {
   if (!isServerId(item.moduleId)) throw new ApiError(400, 'bad_request', 'This module is not saved on the server.')
   if (item.type === 'assignment') await saveTask(item)
   else if (item.type === 'resource') await saveMaterial(item)
@@ -231,17 +271,19 @@ export async function submitQuizAttempt(quizId: string, answers: number[]): Prom
 }
 
 /**
- * Makes `lecturerId` the lecturer of the week (module), or takes the lecturer off it (null). The backend has no field for this yet; the call
- * uses the proposed one (PATCH /modules/:id { lecturer_id }) and checks the answer, because a server
- * that does not know the field would accept the request and change nothing.
+ * Adds `lecturerId` to the lecturers of the week (module), or takes them off it (`assigned: false`). A week can have
+ * several lecturers and a lecturer several weeks: each is an enrollment (POST /modules/:id/enrollments { user_id },
+ * DELETE /modules/:id/enrollments/:userId).
  */
-export async function assignLecturer(moduleId: string, lecturerId: number | null): Promise<CourseModule[]> {
-  await authedRequest(`/modules/${moduleId}`, { method: 'PATCH', body: { lecturer_id: lecturerId } })
-  const modules = await fetchModules(false)
-  if (modules.find((m) => m.id === moduleId)?.createdBy !== (lecturerId ?? undefined)) {
-    throw new NotSupportedError('The server cannot change the lecturer of a week yet.')
+export async function assignLecturer(moduleId: string, lecturerId: number, assigned = true): Promise<CourseModule[]> {
+  try {
+    if (assigned) await authedRequest(`/modules/${moduleId}/enrollments`, { method: 'POST', body: { user_id: lecturerId } })
+    else await authedRequest(`/modules/${moduleId}/enrollments/${lecturerId}`, { method: 'DELETE' })
+  } catch (e) {
+    // already enrolled / already not enrolled: nothing to change
+    if (!(e instanceof ApiError && e.status === (assigned ? 409 : 404))) throw e
   }
-  return modules
+  return fetchModules(false)
 }
 
 /** Soft delete on the server: its items go with it, students' handed-in work is kept. */

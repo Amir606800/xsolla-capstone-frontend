@@ -185,7 +185,7 @@ export function SlotList({ slots, isMentor, userId, booking, now, actions, onMes
                             : act(s.id, () => actions.remove(s.id), 'Time removed.')
                         }
                       >
-                        {s.booked ? 'Cancel booking' : 'Remove'}
+                        {s.booked ? 'Cancel' : 'Remove'}
                       </button>
                     )}
                   </>

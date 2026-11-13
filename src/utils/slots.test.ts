@@ -180,6 +180,19 @@ describe('slots on the calendar', () => {
     expect(events.filter((e) => e.kind === 'meeting').map((e) => e.title)).toEqual(['1:1 with Sam'])
   })
 
+  it('the meeting cards carry the Meet link and the people on the 1:1; the free-times summary does not', () => {
+    const people = [
+      { id: 900, name: 'Rashad', email: 'r@x.az' },
+      { id: 1, name: 'Sam', email: 's@x.az' },
+    ]
+    const withMeet = slots.map((s) => (s.bookedBy?.id === 1 ? { ...s, meetingUrl: 'https://meet.google.com/abc-defg-hij', attendees: people } : s))
+    for (const viewer of [{ id: 1, isMentor: false }, { id: 900, isMentor: true }]) {
+      const events = slotEvents(withMeet, viewer, NOW)
+      expect(events.find((e) => e.kind === 'meeting')).toMatchObject({ meetingUrl: 'https://meet.google.com/abc-defg-hij', attendees: people })
+      expect(events.find((e) => e.kind === 'availability')).not.toHaveProperty('attendees')
+    }
+  })
+
   it('no slots, no events', () => {
     expect(slotEvents([], { id: 1, isMentor: false }, NOW)).toEqual([])
   })

@@ -132,8 +132,8 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       if (target?.type === 'assignment' && target.submission?.gradedAt !== undefined) {
         throw new Error('This task has already been graded')
       }
-      // Work is handed in until the deadline; after it the task is closed. The backend must refuse it too.
-      if (student && target?.type === 'assignment' && isPastDue(target, new Date())) {
+      // Work is handed in until the deadline or the module's closing date; after it the task is only for reading. The backend must refuse it too.
+      if (student && target?.type === 'assignment' && isPastDue(target, new Date(), owner?.closesAt)) {
         throw new Error(DEADLINE_PASSED)
       }
       const result = await submitWork(assignmentId, payload, { studentId: user?.id, moduleId: owner?.id })
@@ -167,7 +167,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   )
   const saveItem = useCallback((item: ContentItem) => author(() => apiSaveItem(item)), [author])
   const deleteItem = useCallback((id: string) => author(() => apiDeleteItem(id)), [author])
-  const assignLecturer = useCallback((moduleId: string, lecturerId: number | null) => author(() => apiAssignLecturer(moduleId, lecturerId)), [author])
+  const assignLecturer = useCallback((moduleId: string, lecturerId: number, assigned = true) => author(() => apiAssignLecturer(moduleId, lecturerId, assigned)), [author])
   const deleteModule = useCallback((id: string) => author(() => apiDeleteModule(id)), [author])
   const createModule = useCallback(
     async (patch: ModulePatch & { title: string }) => {

@@ -1,3 +1,5 @@
+import type { Attendee } from './calendar'
+
 /** Length of one 1:1, in minutes. A mentor's availability window is cut into slots of this size. */
 export const SLOT_MINUTES = 30
 
@@ -14,6 +16,10 @@ export interface MeetingSlot {
   endsAt: string // ISO
   booked: boolean
   bookedBy?: { id: number; name: string }
+  /** The Google Meet link of a booked 1:1 (only the people on it get it). */
+  meetingUrl?: string
+  /** Who is on the 1:1: the mentor, and the student when the viewer may see who booked. */
+  attendees?: Attendee[]
 }
 
 /** What a mentor enters: "on this day I am free from 15:00 to 18:00". Times are local, HH:MM. */

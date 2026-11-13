@@ -49,6 +49,8 @@ export function resourcesOf(module: CourseModule): ResourceItem[] {
 /**
  * A module that has not opened yet. Students must not see its content;
  * a module without an `opensAt` date is always open.
+ * Once a module has closed it stays open for reading: the tasks and the student's own hand-ins can still be looked at,
+ * only handing in is over (see isPastDue).
  */
 export function isModuleLocked(module: CourseModule, now: Date): boolean {
   return module.opensAt !== undefined && new Date(module.opensAt) > now
@@ -65,9 +67,30 @@ export type AssignmentStatus = 'open' | 'overdue' | 'submitted' | 'graded'
 /** The error a hand-in after the deadline gets (the screen tells the student in its own words). */
 export const DEADLINE_PASSED = 'The deadline for this task has passed'
 
-/** The deadline has passed: no new version can be handed in (what was sent before stays). */
-export function isPastDue(a: Pick<AssignmentItem, 'dueAt'>, now: Date): boolean {
-  return new Date(a.dueAt).getTime() < now.getTime()
+/**
+ * The deadline has passed: no new version can be handed in (what was sent before stays, and can be read).
+ * `closesAt` is the closing date of the task's module: after it nothing is handed in, even for a task whose own
+ * deadline was set later.
+ */
+export function isPastDue(a: Pick<AssignmentItem, 'dueAt'>, now: Date, closesAt?: string): boolean {
+  const t = now.getTime()
+  return new Date(a.dueAt).getTime() < t || (closesAt !== undefined && new Date(closesAt).getTime() < t)
+}
+
+/**
+ * Modules in the order they open (the earliest first), then by when they were made. A module's number ("Module 3",
+ * "Week 3") is its place in this order, so a module that opens earlier is never listed after one that opens later.
+ * Modules without an opening date go last, in the order they were made.
+ */
+export function orderByOpening<T extends { id: string; opensAt?: string; createdAt?: string }>(modules: T[]): T[] {
+  const at = (m: T) => (m.opensAt ? new Date(m.opensAt).getTime() : Number.POSITIVE_INFINITY)
+  return [...modules].sort(
+    (a, b) =>
+      (at(a) === at(b) ? 0 : at(a) < at(b) ? -1 : 1) ||
+      (a.createdAt ?? '').localeCompare(b.createdAt ?? '') ||
+      Number(a.id) - Number(b.id) ||
+      a.id.localeCompare(b.id),
+  )
 }
 
 export function assignmentStatus(a: AssignmentItem, now: Date): AssignmentStatus {
