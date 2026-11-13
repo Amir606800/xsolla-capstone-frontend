@@ -271,40 +271,31 @@ lecturer wrote stays in the module.
 # Also needed: quizzes, and (optionally) a bulk module import
 
 The admin can export the modules as a template file and import it for a new group. Import uses the routes that exist
-today, so **modules, tasks and links already work**. What the server cannot take yet:
+today, so **modules, tasks and links already work**. What is still open:
 
-## 1. Quizzes (needed: the import skips every quiz until this exists)
+## 1. Quizzes (the backend branch `feat/ai-quiz` has them; four rules need to change)
 
-Lecturers write quizzes in the LMS (a title, an optional deadline, multiple-choice questions) and students see that
-they exist. With a real server they cannot be saved at all ("Quizzes cannot be saved by the backend yet"), so an
-imported template loses them and a lecturer's quiz form fails.
+The quiz routes exist on `origin/feat/ai-quiz` of `xsolla-capstone-backend` (migration `018_quizzes`, `quiz_service.go`,
+`ai_quiz.go`) and the front-end already calls them with the same shapes: `GET/POST /modules/:id/quizzes`,
+`POST /modules/:id/quizzes/ai`, `GET/PATCH/DELETE /quizzes/:id`, `POST /quizzes/:id/attempts`. Hiding `correct` from a
+student until they have an attempt is done there, as are the `generating` / `ready` / `failed` states.
+What needs to change on the server, found by reading that branch:
 
-- Add `quiz` to the allowed `content_items.type` values, next to `file`, `assignment`, `link`.
-- A quiz is a content item with: `title`, `description`, optional `due_at`, `is_visible`, and a list of questions.
-  Suggested table:
-
-```sql
-CREATE TABLE quiz_questions (
-    id          bigserial PRIMARY KEY,
-    content_item_id bigint NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
-    position    int  NOT NULL DEFAULT 0,
-    prompt      text NOT NULL,
-    options     text[] NOT NULL CHECK (array_length(options, 1) BETWEEN 2 AND 8),
-    correct     int  NULL CHECK (correct >= 0)      -- index into options
-);
-```
-
-- `POST /modules/:id/content-items` and `PATCH /content-items/:id` accept the quiz:
-
-```json
-{ "type": "quiz", "title": "Go basics", "description": "", "due_at": "2026-11-20T18:00:00Z",
-  "questions": [ { "prompt": "2 + 2?", "options": ["3", "4", "5"], "correct": 1 } ] }
-```
-
-  `422` when a question has fewer than 2 options or `correct` is not one of them.
-- **Never send `correct` to students** (`GET /modules/:id/content-items`): they only get `prompt` and `options`.
-  Lecturers (of that module) and admins get the answers.
-- Taking a quiz (answers, score) is **not** asked for here; students only see that the quiz exists.
+1. **"Teacher of the module" is `modules.created_by`** (`IsUserTeacherOfModule`). Admins create the modules, so no lecturer
+   is ever their teacher and **nobody can create, edit, delete or generate a quiz**. Use the assigned lecturer instead
+   (a lecturer enrolled in the module, see "Assign modules to lecturers"). The same check decides what a lecturer
+   sees: today a lecturer who is only enrolled is treated like a student (no `generating` / `failed` quizzes, no
+   `correct`).
+2. **`GET /modules/:id/quizzes` answers `403` to a mentor, and to a lecturer who is not the creator or not enrolled.**
+   The front-end loads every module's quizzes for staff, so please let mentors and every lecturer read them (without
+   `correct` for mentors, or with it, your call). The front-end now treats `403` as "no quizzes" so the course still
+   loads, but the quizzes of those modules are missing for them until this is changed.
+3. **Admins cannot create quizzes** (`ErrQuizForbidden` unless the `lecturer` role). The front-end follows that and
+   hides the quiz tools from an admin who is not also a lecturer. Say if admins should be allowed.
+4. **Attempts ignore `due_at` and the module closing**, and an attempt is saved over the old one (`UpsertQuizAttempt`),
+   so a student can retake through the API. The front-end shows results as soon as an attempt exists and offers no
+   retake. Please decide: refuse attempts after `due_at` / after the module closed, and refuse a second attempt (409)
+   or keep the best one. Also only students should be able to submit.
 
 ## 2. One-call module import (optional, nicer than what we do now)
 

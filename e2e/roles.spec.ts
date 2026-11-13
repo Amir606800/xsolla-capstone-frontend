@@ -29,7 +29,8 @@ for (const c of cases) {
   test(`${c.button}: one dashboard with the parts of their roles`, async ({ page, isMobile }) => {
     await signIn(page, c.button)
     const actions = page.getByRole('navigation', { name: 'Quick actions' })
-    await expect(actions.getByRole('link', { name: 'New task' })).toHaveCount(c.authoring ? 1 : 0)
+    // (the add shortcuts show only for a week the lecturer is assigned to, so the always-there one is checked)
+    await expect(actions.getByRole('link', { name: 'Schedule a lecture' })).toHaveCount(c.authoring ? 1 : 0)
     await expect(actions.getByRole('link', { name: 'Set 1:1 times' })).toHaveCount(c.team ? 1 : 0)
     await expect(page.getByRole('heading', { name: /^My team · / })).toHaveCount(c.team ? 1 : 0)
     await expect(page.getByRole('heading', { name: 'Needs attention' })).toHaveCount(c.authoring ? 1 : 0)

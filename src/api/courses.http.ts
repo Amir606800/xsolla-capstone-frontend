@@ -74,7 +74,9 @@ export async function fetchModules(withSubmissions: boolean): Promise<CourseModu
         authedRequest<ApiQuiz[] | null>(`/modules/${m.id}/quizzes`)
           .then((r) => r ?? [])
           .catch((e) => {
-            if (e instanceof ApiError && e.status === 404) return []
+            // 404: a server without quizzes. 403: the server only lists a module's quizzes to its students, its creator and
+            // admins (a mentor, or a lecturer who is not the creator, is refused): no quizzes for them, not a broken course.
+            if (e instanceof ApiError && (e.status === 404 || e.status === 403)) return []
             throw e
           }),
       ),
@@ -95,7 +97,11 @@ export async function fetchModules(withSubmissions: boolean): Promise<CourseModu
       mine[aid] = found[i]
     })
   }
-  return mapModules(list, itemsByModule, mine, { includeHidden: !withSubmissions }, quizzesByModule)
+  // staff also learn which lecturers teach each week (students have no use for it)
+  const teaching = withSubmissions ? {} : await lecturersByModule(list.map((m) => Number(m.id)))
+  const withLecturer = list.map((m) => (teaching[String(m.id)] !== undefined ? { ...m, lecturer_ids: teaching[String(m.id)] } : m))
+  // only admins are sent hidden items (the backend filters them for everyone else); students never get them
+  return mapModules(withLecturer, itemsByModule, mine, { includeHidden: !withSubmissions }, quizzesByModule)
 }
 
 /** Uploads one file and returns its id as the NUMBER the backend expects in `file_ids` / `file_id`. */
@@ -205,10 +211,7 @@ async function saveMaterial(r: ResourceItem): Promise<void> {
   })
 }
 
-/**
- * Creates (app-made id) or edits (numeric server id) one item, always under its own module.
- * Quizzes have no place in the backend yet.
- */
+/** A quiz is created (app-made id) or edited (numeric server id) under its own module, with all its questions. */
 async function saveQuiz(q: QuizItem) {
   const serverId = parseQuizServerId(q.id)
   const body = quizToApi(q)
@@ -226,6 +229,7 @@ async function saveQuiz(q: QuizItem) {
   })
 }
 
+/** Creates (app-made id) or edits (numeric server id) one item, always under its own module. */
 export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
   await writeItem(item)
   return fetchModules(false)
@@ -237,7 +241,6 @@ export async function writeItem(item: ContentItem): Promise<void> {
   if (item.type === 'assignment') await saveTask(item)
   else if (item.type === 'resource') await saveMaterial(item)
   else await saveQuiz(item)
-  return fetchModules(false)
 }
 
 export async function generateAiQuiz(input: {

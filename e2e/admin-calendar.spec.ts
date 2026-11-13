@@ -13,7 +13,7 @@ async function openCalendar(page: Page) {
 
 test('the admin adds an event, postpones it by a week, then deletes it', async ({ page }) => {
   await openCalendar(page)
-  await page.getByRole('button', { name: 'New event' }).click()
+  await page.getByRole('button', { name: /^Add an event/ }).click()
   const form = page.getByRole('dialog')
   await form.getByLabel('Title').fill('Guest talk')
   await form.getByRole('button', { name: 'Add event' }).click()

@@ -148,7 +148,7 @@ describe('Admin calendar', () => {
     renderWithProviders(<App />, { route: '/admin/calendar' })
     const user = userEvent.setup()
     await list()
-    await user.click(screen.getByRole('button', { name: 'New event' }))
+    await user.click(screen.getByRole('button', { name: /^Add an event/ }))
     const form = within(await dialog())
     await user.type(form.getByLabelText('Title'), 'Guest talk')
     await user.selectOptions(form.getByLabelText('Type'), 'Meeting')

@@ -1,9 +1,9 @@
-import type { CalendarEvent, EventKind } from '../types/calendar'
+import type { Attendee, CalendarEvent, EventKind } from '../types/calendar'
 import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission, SubmissionVersion } from '../types/course'
 import type { WeeklyStanding } from '../types/standing'
 import { orderByOpening } from '../utils/progress'
 import { parseStandingLevel } from '../utils/standing'
-import type { ApiContentItem, ApiEvent, ApiModule, ApiQuiz, ApiSubmission, ApiWeeklyStanding } from './types'
+import type { ApiAttendee, ApiContentItem, ApiEvent, ApiGoogleCalendarEvent, ApiModule, ApiQuiz, ApiSubmission, ApiWeeklyStanding } from './types'
 
 // ---------- content ----------
 
@@ -124,12 +124,6 @@ export function mapContentItems(
   return out
 }
 
-/**
- * GET /modules + each module's content items -> CourseModule[].
- * - The backend has no week number: modules are ordered by when they open (then by creation) and numbered 1, 2, 3, ...
- * - Week dates (`opens_at` / `closes_at`) are read when the server sends them; it does not store them yet, so
- *   until then nothing is locked for students.
- */
 export const toQuizDomainId = (id: number | string) => `quiz:${id}`
 
 export const parseQuizServerId = (id: string): string | null => /^quiz:(\d+)$/.exec(id)?.[1] ?? null
@@ -169,6 +163,18 @@ export function mapQuiz(q: ApiQuiz): QuizItem {
   }
 }
 
+function lecturerFields(m: ApiModule): { lecturerIds?: number[]; createdBy?: number } {
+  const ids = m.lecturer_ids ?? (m.lecturer_id != null ? [m.lecturer_id] : [])
+  const lecturers = [...new Set(ids.map(Number))]
+  return lecturers.length ? { lecturerIds: lecturers, createdBy: lecturers[0] } : {}
+}
+
+/**
+ * GET /modules + each module's content items (and quizzes) -> CourseModule[].
+ * - The backend has no week number: modules are ordered by when they open (then by creation) and numbered 1, 2, 3, ...
+ * - Week dates (`opens_at` / `closes_at`) are read when the server sends them; it does not store them yet, so
+ *   until then nothing is locked for students.
+ */
 export function mapModules(
   modules: ApiModule[],
   itemsByModule: Record<string, ApiContentItem[]>,

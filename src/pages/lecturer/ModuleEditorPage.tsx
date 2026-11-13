@@ -124,6 +124,8 @@ export default function ModuleEditorPage() {
   // admins change any module; a lecturer only the ones they are assigned to (the others they can read, not change)
   const canEdit = isAdmin(user) || isAssignedTo(module, user?.id)
   const readOnly = !canEdit
+  // quizzes (also the AI ones) are the lecturers' own: someone who may change the module and has the lecturer role
+  const canQuiz = canEdit && isLecturer
   const current = editing?.id ? module.items.find((i) => i.id === editing.id) : undefined
 
   function close() {
@@ -248,7 +250,7 @@ export default function ModuleEditorPage() {
                 onDelete={removed('material', r.id)}
                 extra={
                   <>
-                    {isLecturer && (
+                    {canQuiz && (
                       <button
                         type="button"
                         className="btn btn--ghost btn--small"
@@ -276,10 +278,10 @@ export default function ModuleEditorPage() {
             id="editor-quizzes"
             icon="sparkle"
             title="Quizzes"
-            addLabel={isLecturer ? 'New quiz' : undefined}
-            onAdd={isLecturer ? () => open('quiz') : undefined}
+            addLabel={canQuiz ? 'New quiz' : undefined}
+            onAdd={canQuiz ? () => open('quiz') : undefined}
             extraActions={
-              isLecturer ? (
+              canQuiz ? (
                 <button
                   type="button"
                   className="btn btn--small"
@@ -295,7 +297,7 @@ export default function ModuleEditorPage() {
                 </button>
               ) : undefined
             }
-            empty={quizzes.length ? null : 'Optional: a short multiple-choice check for the week.'}
+            empty={quizzes.length ? null : canQuiz ? 'Optional: a short multiple-choice check for the week.' : 'No quizzes yet.'}
           >
             {quizzes.map((q: QuizItem) => {
               if (q.status === 'generating') {
@@ -305,6 +307,7 @@ export default function ModuleEditorPage() {
                     icon={<Spinner size={18} />}
                     title={q.title}
                     meta="Generating 10 English multiple-choice questions in the background..."
+                    readOnly={readOnly}
                     onDelete={removed('quiz', q.id)}
                   />
                 )
@@ -316,7 +319,8 @@ export default function ModuleEditorPage() {
                     icon={<Icon name="sparkle" size={18} />}
                     title={q.title}
                     meta={q.errorMessage ? `AI generation failed: ${q.errorMessage}` : 'AI generation failed'}
-                    onEdit={isLecturer ? () => open('quiz', q.id) : undefined}
+                    readOnly={readOnly}
+                    onEdit={canQuiz ? () => open('quiz', q.id) : undefined}
                     onDelete={removed('quiz', q.id)}
                   />
                 )
@@ -327,7 +331,8 @@ export default function ModuleEditorPage() {
                   icon={<Icon name="sparkle" size={18} />}
                   title={q.title}
                   meta={`${q.questions?.length ?? 0} ${q.questions?.length === 1 ? 'question' : 'questions'}${q.isAiGenerated ? ' · AI generated' : ''}${q.dueAt ? ` · due ${formatShortDate(q.dueAt)}` : ''}`}
-                  onEdit={isLecturer ? () => open('quiz', q.id) : undefined}
+                  readOnly={readOnly}
+                  onEdit={canQuiz ? () => open('quiz', q.id) : undefined}
                   onDelete={removed('quiz', q.id)}
                 />
               )
@@ -336,8 +341,8 @@ export default function ModuleEditorPage() {
         </div>
       </div>
 
-      <Modal open={editing !== null} onClose={close} title={title} initialFocus=".form input, .form select">
-        {editing && (
+      <Modal open={canEdit && editing !== null} onClose={close} title={title} initialFocus=".form input, .form select">
+        {canEdit && editing && (
           <EditorForm
             editing={editing}
             module={module}
@@ -351,12 +356,12 @@ export default function ModuleEditorPage() {
       </Modal>
 
       <Modal
-        open={aiSourceId !== null}
+        open={canQuiz && aiSourceId !== null}
         onClose={() => setAiSourceId(null)}
         title="AI Quiz"
         initialFocus=".form select, .form input"
       >
-        {aiSourceId !== null && (
+        {canQuiz && aiSourceId !== null && (
           <AiQuizForm
             materials={materials}
             initialMaterialId={aiSourceId}

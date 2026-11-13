@@ -8,6 +8,7 @@ import {
   removeItem,
   removeModule,
   saveQuizAttempt,
+  setLecturer,
 } from '../mocks/contentEdits'
 import { handIn, submissionsOf } from '../mocks/submissions'
 import type { ContentItem, CourseModule, QuizAttempt, QuizItem, ResourceItem, Submission, SubmissionFile } from '../types/course'

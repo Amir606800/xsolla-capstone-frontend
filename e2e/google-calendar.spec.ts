@@ -96,7 +96,7 @@ test('the admin has Settings in the sidebar, and sees which events are on Google
   await expect(page.getByText('boss@gmail.com')).toBeVisible()
 
   await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Calendar' }).click()
-  await page.getByRole('button', { name: 'New event' }).click()
+  await page.getByRole('button', { name: /^Add an event/ }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Title').fill('Board meeting')
   await dialog.getByRole('checkbox', { name: 'Also add to my Google Calendar' }).check()

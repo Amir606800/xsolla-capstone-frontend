@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import * as courses from '../../api/courses'
 import App from '../../App'
-import { listModules, putItem } from '../../mocks/contentEdits'
+import { listModules, putItem, setLecturer } from '../../mocks/contentEdits'
 import type { QuizQuestion } from '../../types/course'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
@@ -31,6 +31,8 @@ function asStudent() {
 describe('AI Quiz generation & student quiz flow', () => {
   it('lecturer generates an AI quiz in the background from a lesson material', async () => {
     asLecturer()
+    // quiz tools are for the lecturers assigned to the module
+    setLecturer('m6', 907, true)
     renderWithProviders(<App />, { route: '/courses/m6' })
     const user = userEvent.setup()
 

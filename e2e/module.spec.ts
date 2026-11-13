@@ -35,7 +35,7 @@ test('module page shows header, assignments, resources and quizzes slot', async 
   await expect(page.getByText('Opened')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Assignments' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Resources' })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Quizzes' })).toContainText('Coming soon')
+  await expect(page.getByRole('region', { name: 'Quizzes' })).toContainText('No quizzes in this module yet.')
 })
 
 test('submit work with text and a file from the module page', async ({ page }) => {

@@ -67,7 +67,18 @@ describe('fetchModules', () => {
       ['41', 'assignment', '4'],
     ])
     expect(calls.every((c) => (c.init.headers as Record<string, string>).Authorization === 'Bearer acc')).toBe(true)
-    expect(calls).toHaveLength(3)
+    // modules, items, quizzes (this server has none: 404 = no quizzes), and the users list that tells who the lecturers are
+    expect(calls.filter((c) => c.path.includes('/submissions'))).toHaveLength(0)
+    expect(calls).toHaveLength(4)
+  })
+
+  it('a module whose quizzes the server will not list to this person (403) just has none; any other failure still fails the load', async () => {
+    const refused = () => ({ status: 403, body: { error: 'forbidden', message: 'not enrolled in this module', status: 403 } })
+    await backend({ ...MODULES, ...ITEMS, 'GET /modules/4/quizzes': refused })
+    const [m] = await fetchModules(false)
+    expect(m.items.some((i) => i.type === 'quiz')).toBe(false)
+    await backend({ ...MODULES, ...ITEMS, 'GET /modules/4/quizzes': () => ({ status: 500, body: { error: 'server_error', message: 'x', status: 500 } }) })
+    await expect(fetchModules(false)).rejects.toMatchObject({ status: 500 })
   })
 
   it("students also get their own work from the module's submissions/me; 404 means none", async () => {
@@ -208,11 +219,9 @@ describe('lecturer editing', () => {
     await backend({ ...reload, 'DELETE /modules/4': () => ({ status: 204 }) })
     await deleteModule('4')
     expect(find('DELETE', '/modules/4').init.headers).toMatchObject({ Authorization: 'Bearer acc' })
-    expect(calls.map((c) => `${c.method} ${c.path}`).slice(-3)).toEqual([
-      'GET /modules',
-      'GET /modules/4/content-items',
-      'GET /modules/4/quizzes',
-    ])
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(
+      expect.arrayContaining(['DELETE /modules/4', 'GET /modules', 'GET /modules/4/content-items', 'GET /modules/4/quizzes']),
+    )
   })
 
   it('a new task is POSTed to its own module with a due date and max_points 0', async () => {
