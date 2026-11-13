@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteEvent, fetchEvents, saveEvent } from '../api/events'
+import { useAutoRefresh } from './useAutoRefresh'
 import { useGoogle } from './useGoogle'
 import type { LoadStatus } from '../context/courses'
 import type { CalendarEvent } from '../types/calendar'
@@ -36,10 +37,25 @@ export function useCalendarEvents() {
     setAttempt((a) => a + 1)
   }, [])
 
+  // Quiet refresh: what a lecturer adds or changes reaches everyone who has the calendar open, without a reload. The list a save
+  // returns is newer than an answer that was still on its way when the save happened, so that older answer is dropped.
+  const version = useRef(0)
+  const refresh = useCallback(() => {
+    const started = version.current
+    fetchEvents().then(
+      (data) => {
+        if (version.current === started) setEvents(data)
+      },
+      () => undefined,
+    )
+  }, [])
+  useAutoRefresh(refresh, { enabled: status === 'ready' })
+
   /** Saves the event and says what happened to its Google copy (when one was asked for). */
   const save = useCallback(
     async (event: CalendarEvent, options?: SaveOptions): Promise<{ google: GoogleOutcome; meetingLinkLost: boolean }> => {
       const result = await saveEvent(event, options)
+      version.current += 1
       setEvents(result.events)
       // the event is saved but Google did not take it: find out why (a revoked connection shows as "reconnect")
       if (result.google === 'failed') void reloadGoogle()
@@ -47,7 +63,11 @@ export function useCalendarEvents() {
     },
     [reloadGoogle],
   )
-  const remove = useCallback(async (id: string) => setEvents(await deleteEvent(id)), [])
+  const remove = useCallback(async (id: string) => {
+    const next = await deleteEvent(id)
+    version.current += 1
+    setEvents(next)
+  }, [])
 
   return { status, events, reload, save, remove }
 }
