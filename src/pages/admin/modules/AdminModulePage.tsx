@@ -14,7 +14,7 @@ import { newId } from '../../../mocks/contentEdits'
 import type { ContentItem, CourseModule } from '../../../types/course'
 import { contentsLine, ITEM_TYPE_LABEL, itemAuthor, itemSummary, keepMeta, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
 import { draftToMaterial, draftToQuiz, draftToTask } from '../../../utils/authoring'
-import { modulePhase, PHASE_LABEL } from '../../../utils/content'
+import { lecturersOf, modulePhase, PHASE_LABEL } from '../../../utils/content'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
 import { ItemDetails } from './ItemDetails'
@@ -130,8 +130,8 @@ export default function AdminModulePage() {
 
       <dl className="admin-facts">
         <div>
-          <dt>Lecturer</dt>
-          <dd>{nameOf(module.createdBy)}</dd>
+          <dt>{lecturersOf(module).length > 1 ? 'Lecturers' : 'Lecturer'}</dt>
+          <dd>{lecturersOf(module).length ? lecturersOf(module).map((id) => nameOf(id)).join(', ') : nameOf(undefined)}</dd>
         </div>
         <div>
           <dt>Dates</dt>

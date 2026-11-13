@@ -94,7 +94,9 @@ export interface CourseModule {
   /** When the module opens / closes (week range). Not in the backend schema yet. */
   opensAt?: string
   closesAt?: string
-  /** The lecturer who created the module (user id) and when (backend `created_by`, `created_at`). */
+  /** The lecturers the week is assigned to (user ids): a week can have several, a lecturer can teach several weeks. */
+  lecturerIds?: number[]
+  /** The first of `lecturerIds` (kept for places that need "the" lecturer, e.g. who wrote an item), and when the module was made. */
   createdBy?: number
   createdAt?: string
   items: ContentItem[]

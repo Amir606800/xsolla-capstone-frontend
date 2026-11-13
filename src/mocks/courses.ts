@@ -216,6 +216,7 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
       position: idx + 1,
       title,
       description: DESCRIPTIONS[idx],
+      lecturerIds: [createdBy],
       createdBy,
       // the course was written in the weeks before it started
       createdAt: dayAt(now, -currentIdx * 7 - 21 + idx, 10),

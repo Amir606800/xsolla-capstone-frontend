@@ -130,6 +130,12 @@ export function mapContentItems(
  * - Week dates (`opens_at` / `closes_at`) are read when the server sends them; it does not store them yet, so
  *   until then nothing is locked for students.
  */
+function lecturerFields(m: ApiModule): { lecturerIds?: number[]; createdBy?: number } {
+  const ids = m.lecturer_ids ?? (m.lecturer_id != null ? [m.lecturer_id] : [])
+  const lecturers = [...new Set(ids.map(Number))]
+  return lecturers.length ? { lecturerIds: lecturers, createdBy: lecturers[0] } : {}
+}
+
 export function mapModules(
   modules: ApiModule[],
   itemsByModule: Record<string, ApiContentItem[]>,
@@ -148,7 +154,7 @@ export function mapModules(
         // the lecturer of the week is the ASSIGNED one (`lecturer_id`). Who made the module (`created_by`) is always an
         // admin, so it says nothing about the lecturer and is not shown anywhere. (`createdBy` is the app's name for
         // "the week's lecturer": see utils/content isAssignedTo.)
-        ...(m.lecturer_id != null ? { createdBy: Number(m.lecturer_id) } : {}),
+        ...lecturerFields(m),
         ...(m.opens_at ? { opensAt: m.opens_at } : {}),
         ...(m.closes_at ? { closesAt: m.closes_at } : {}),
         createdAt: m.created_at,

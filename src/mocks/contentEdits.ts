@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '../types/calendar'
 import type { ContentItem, CourseModule } from '../types/course'
 import { buildMockEvents } from './events'
+import { lecturersOf } from '../utils/content'
 import { orderByOpening } from '../utils/progress'
 import { buildMockModules } from './courses'
 
@@ -11,8 +12,8 @@ import { buildMockModules } from './courses'
  * browser see each other's changes.
  */
 
-/** `createdBy: null` takes the lecturer off the week (stored as null: JSON drops undefined). */
-export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt'>> & { createdBy?: number | null }
+/** `lecturerIds` replaces the week's lecturers (a week can have several). */
+export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt' | 'lecturerIds'>>
 
 interface CourseEdits {
   modules: Record<string, ModulePatch>
@@ -91,9 +92,9 @@ export function applyCourseEdits(demo: CourseModule[], edits: CourseEdits): Cour
       if (original && original.moduleId === m.id) continue // already placed above
       items.push(merge(original, edited))
     }
-    const { createdBy, ...patch } = edits.modules[m.id] ?? {}
-    const lecturer = createdBy === undefined ? m.createdBy : (createdBy ?? undefined)
-    return { ...m, ...patch, createdBy: lecturer, items }
+    const { lecturerIds, ...patch } = edits.modules[m.id] ?? {}
+    const lecturers = lecturerIds ?? lecturersOf(m)
+    return { ...m, ...patch, lecturerIds: lecturers, createdBy: lecturers[0], items }
   })
 }
 
@@ -116,7 +117,7 @@ export function addModule(
 ): { id: string; modules: CourseModule[] } {
   const edits = loadCourseEdits()
   const id = newId('module')
-  const { createdBy: _ignored, ...fields } = patch
+  const { lecturerIds: _ignored, ...fields } = patch
   void _ignored
   edits.newModules = {
     ...edits.newModules,
@@ -132,6 +133,13 @@ export function putModule(id: string, patch: ModulePatch, now: Date = new Date()
   edits.modules[id] = { ...edits.modules[id], ...patch }
   write(COURSE_KEY, edits)
   return listModules(now)
+}
+
+/** Adds a lecturer to the week (or takes them off it); the other lecturers stay. */
+export function setLecturer(moduleId: string, lecturerId: number, assigned: boolean, now: Date = new Date()): CourseModule[] {
+  const current = lecturersOf(listModules(now).find((m) => m.id === moduleId))
+  const next = assigned ? [...new Set([...current, lecturerId])] : current.filter((id) => id !== lecturerId)
+  return putModule(moduleId, { lecturerIds: next }, now)
 }
 
 /** Creates or replaces an item. Students' submissions are never part of what the lecturer saves. */

@@ -212,47 +212,33 @@ place for it in git history.
 
 ---
 
-# Also needed: assign modules to lecturers
+# Assign modules to lecturers (uses the existing enrollments endpoints)
 
-An admin gives each module (week) to a **lecturer**, who prepares it (materials, tasks, quizzes, lectures). Today
-the server only knows `modules.created_by`, so "whose module is it" means "who created it" and an admin cannot hand a
-week to someone else. The front-end already shows each lecturer which modules are theirs (an "Assigned to you" mark,
-a filter "Assigned to me", and "what is missing" counted for their modules). It reads **only** `lecturer_id`:
-`created_by` is always the admin who made the module, so the front-end no longer shows it anywhere and never takes it
-for the lecturer. Until the server sends `lecturer_id`, every module shows "no lecturer" and no lecturer has modules
-marked as theirs.
+An admin gives each module (week) to one or more **lecturers**, who prepare it. A week can have several lecturers and a lecturer can teach several weeks. **No new backend work is needed for this:** the
+front-end uses the enrollment routes that already exist.
 
-## Data
+- **Assign:** `POST /modules/:id/enrollments { "user_id": <lecturer> }` (admin). A `409` (already enrolled) counts as done.
+- **Take off:** `DELETE /modules/:id/enrollments/:userId` (a `404` counts as done). Only that lecturer is removed; the
+  week's other lecturers stay.
+- **Who teaches a week:** the front-end reads `GET /users` (once) for who has the `lecturer` role, and
+  `GET /modules/:id/enrollments` per module; every enrolled user with the lecturer role is a lecturer of the week.
+  Students and admins enrolled in the module are ignored. If those calls fail (403, old server) modules just show
+  "no lecturer".
+- `created_by` is always the admin who made the module; the front-end does not show it or treat it as the lecturer.
+- If the server later sends `lecturer_id` on a module it is used when no lecturer is enrolled.
 
-```sql
-ALTER TABLE modules ADD COLUMN lecturer_id bigint NULL REFERENCES users(id) ON DELETE SET NULL;
-CREATE INDEX idx_modules_lecturer ON modules (lecturer_id);
--- modules that exist: the creator is the lecturer when they have that role
-UPDATE modules m SET lecturer_id = m.created_by
- WHERE EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = m.created_by AND r.role = 'lecturer');
-```
+## Nice to have (not required)
 
-`created_by` stays as the audit field (who made the row). One lecturer per module; one lecturer may have many
-modules. `NULL` = nobody yet (the admin Overview already warns about those weeks).
-
-## Endpoints
-
-- **Every module response** (`GET /modules`, `GET /modules/:id`, and the `POST` / `PATCH` answers) gets
-  `"lecturer_id": 902` (or `null`).
-- **`PATCH /modules/:id`** accepts `"lecturer_id": 902` or `null` (take the lecturer off). **Admin only.** `422`
-  when the user does not exist, is inactive, or does not have the `lecturer` role. The front-end sends exactly this
-  from the admin's "Assign weeks" screen and checks the answer: **the response body must include `lecturer_id`**
-  (`null` when nobody) with the value that was asked for. A server that ignores the field answers 200 without that key,
-  and the front-end then says "The server cannot change the lecturer of a week yet" instead of pretending.
-- **`POST /modules`** accepts an optional `"lecturer_id"` (admin). Without it: the creator if they are a lecturer,
-  otherwise `null`.
-- *(Optional)* `GET /modules?lecturer_id=me` so a lecturer can ask for only theirs; the front-end filters
-  locally for now.
+- Add `role` (and `name`) to the objects of `GET /modules/:id/enrollments` (the store already has them) so the
+  front-end need not call `GET /users` as well, and a lecturer-role `GET /users` for non-admins.
+- `GET /modules` for a lecturer returns every module today; a "my modules" filter (`?lecturer=me`) is optional, the
+  front-end filters locally.
 
 ## Permissions: "teacher of the module" becomes "the assigned lecturer"
 
-Everywhere the server asks `IsUserTeacherOfModule` (creator check), use `lecturer_id = caller` instead (admins pass as
-before):
+Everywhere the server asks `IsUserTeacherOfModule` (today: `modules.created_by = caller`), accept a lecturer who is
+**enrolled in the module** instead (or `lecturer_id`/a lecturers list if one is added); admins pass as before. Without
+this an assigned lecturer is enrolled but still cannot edit the module:
 
 - `PATCH` / `DELETE /modules/:id` (title, description, dates).
 - `POST /modules/:id/content-items`, `PATCH` / `DELETE /content-items/:id`.

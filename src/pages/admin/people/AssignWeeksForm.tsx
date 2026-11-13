@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import type { CourseModule } from '../../../types/course'
+import { lecturersOf } from '../../../utils/content'
 
 export interface WeekChanges {
-  /** Weeks to give to the lecturer (they leave their current lecturer). */
+  /** Weeks to give to the lecturer (the week's other lecturers stay). */
   assign: string[]
-  /** Weeks to take off the lecturer; they have no lecturer until someone is given them. */
+  /** Weeks to take off the lecturer; the week's other lecturers stay. */
   unassign: string[]
 }
 
 /**
  * Admin: the weeks (modules) a lecturer teaches. Their own weeks start ticked: untick one to take the
- * lecturer off it, tick another week to give it to them.
+ * lecturer off it, tick another week to add them to it. A week can have several lecturers.
  */
 export function AssignWeeksForm({
   lecturerId,
@@ -27,7 +28,7 @@ export function AssignWeeksForm({
   onCancel: () => void
 }) {
   const sorted = [...modules].sort((a, b) => a.position - b.position)
-  const own = sorted.filter((m) => m.createdBy === lecturerId).map((m) => m.id)
+  const own = sorted.filter((m) => lecturersOf(m).includes(lecturerId)).map((m) => m.id)
   const [ticked, setTicked] = useState<string[]>(own)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -60,7 +61,7 @@ export function AssignWeeksForm({
       <fieldset className="admin-roles admin-weeks">
         <legend className="admin-field__label">Weeks</legend>
         {sorted.map((m) => {
-          const mine = m.createdBy === lecturerId
+          const others = lecturersOf(m).filter((id) => id !== lecturerId)
           return (
             <label key={m.id} className="admin-check">
               <input
@@ -70,7 +71,7 @@ export function AssignWeeksForm({
               />
               <span>
                 Week {m.position} · {m.title}
-                <span className="admin-hint">{mine ? 'Theirs now' : m.createdBy === undefined ? 'No lecturer' : `Now: ${nameOf(m.createdBy)}`}</span>
+                <span className="admin-hint">{others.length ? `Also: ${others.map((id) => nameOf(id)).join(', ')}` : lecturersOf(m).length ? 'Only them' : 'No lecturer'}</span>
               </span>
             </label>
           )

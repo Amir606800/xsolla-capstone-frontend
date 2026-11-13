@@ -17,6 +17,7 @@ import { addMonths, dateKey, deadlineEvents, groupByDay, monthLabel, startOfMont
 import { myNextBooking, slotEvents, slotsOnDay } from '../utils/slots'
 import { draftToEvent, isEditableEvent } from '../utils/authoring'
 import type { EventDraft } from '../utils/authoring'
+import { isAssignedTo } from '../utils/content'
 import { savedNotice } from '../utils/googleSync'
 import { newId } from '../mocks/contentEdits'
 import type { CalendarEvent, EventKind } from '../types/calendar'
@@ -133,7 +134,7 @@ export default function CalendarPage() {
   const { save: saveEvent, remove: removeEvent } = calendar
   // the server lets a lecturer link an event only to a week they lead (an admin to any)
   const eventModules = useMemo(
-    () => (hasBackend() && user && !isAdmin(user) ? courses.modules.filter((m) => m.createdBy === user.id) : courses.modules),
+    () => (hasBackend() && user && !isAdmin(user) ? courses.modules.filter((m) => isAssignedTo(m, user.id)) : courses.modules),
     [courses.modules, user],
   )
 

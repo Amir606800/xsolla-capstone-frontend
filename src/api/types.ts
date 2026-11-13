@@ -17,6 +17,8 @@ export interface ApiModule {
   created_by?: ApiId
   /** Proposed (BACKEND_REQUIREMENTS.md): the lecturer the week is assigned to. `created_by` is the admin who made it and is not used. */
   lecturer_id?: ApiId | null
+  /** Filled by the front-end from the module's enrollments: every lecturer enrolled in the week. */
+  lecturer_ids?: ApiId[]
   created_at: string
   /** Proposed (BACKEND_REQUIREMENTS.md 3.2): the week's dates. The server does not store them yet. */
   opens_at?: string | null

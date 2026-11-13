@@ -1,4 +1,5 @@
 import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission, SubmissionFile } from '../types/course'
+import { type UserDto, mapUser } from './auth.http'
 import { authedRequest } from './authed'
 import { ApiError } from './http'
 import { isServerId, joinDescription, mapModules, mapSubmission, taskToApi } from './mappers'
@@ -32,6 +33,34 @@ async function mySubmission(moduleId: string, assignmentId: string): Promise<Api
   }
 }
 
+interface EnrollmentDto {
+  user_id: number | string
+}
+
+/**
+ * Who teaches each week. The backend has no "lecturer of a module" field: a lecturer is ENROLLED in the module
+ * (POST /modules/:id/enrollments { user_id }), so the lecturers of a week are the enrolled users who have the lecturer role.
+ * Best effort: when the lists cannot be read (a role without access, an older server) no week has a lecturer.
+ */
+async function lecturersByModule(moduleIds: number[]): Promise<Record<string, number[]>> {
+  try {
+    const users = await authedRequest<UserDto[] | null>('/users?search=')
+    const lecturers = new Set((users ?? []).map(mapUser).filter((u) => u.roles.includes('lecturer')).map((u) => u.id))
+    if (lecturers.size === 0) return {}
+    const lists = await Promise.all(
+      moduleIds.map((id) => authedRequest<EnrollmentDto[] | null>(`/modules/${id}/enrollments`).then((r) => r ?? [], () => [] as EnrollmentDto[])),
+    )
+    const out: Record<string, number[]> = {}
+    moduleIds.forEach((id, i) => {
+      const found = lists[i].map((e) => Number(e.user_id)).filter((u) => lecturers.has(u))
+      if (found.length) out[String(id)] = found
+    })
+    return out
+  } catch {
+    return {}
+  }
+}
+
 /** `withSubmissions`: students also get their own hand-ins (one request per task; staff have none). */
 export async function fetchModules(withSubmissions: boolean): Promise<CourseModule[]> {
   const modules = await authedRequest<ApiModule[] | null>('/modules')
@@ -52,8 +81,11 @@ export async function fetchModules(withSubmissions: boolean): Promise<CourseModu
       mine[aid] = found[i]
     })
   }
+  // staff also learn which lecturer teaches each week (students have no use for it)
+  const teaching = withSubmissions ? {} : await lecturersByModule(list.map((m) => Number(m.id)))
+  const withLecturer = list.map((m) => (teaching[String(m.id)] !== undefined ? { ...m, lecturer_ids: teaching[String(m.id)] } : m))
   // only admins are sent hidden items (the backend filters them for everyone else); students never get them
-  return mapModules(list, itemsByModule, mine, { includeHidden: !withSubmissions })
+  return mapModules(withLecturer, itemsByModule, mine, { includeHidden: !withSubmissions })
 }
 
 /** Uploads one file and returns its id as the NUMBER the backend expects in `file_ids` / `file_id`. */
@@ -181,20 +213,17 @@ export async function writeItem(item: ContentItem): Promise<void> {
 }
 
 /**
- * Makes `lecturerId` the lecturer of the week (module), or takes the lecturer off it (null). The backend has no field for this yet; the call
- * uses the proposed one (PATCH /modules/:id { lecturer_id }) and checks the answer, because a server
- * that does not know the field would accept the request and change nothing.
+ * Adds `lecturerId` to the lecturers of the week (module), or takes them off it (`assigned: false`). A week can have
+ * several lecturers and a lecturer several weeks: each is an enrollment (POST /modules/:id/enrollments { user_id },
+ * DELETE /modules/:id/enrollments/:userId).
  */
-export async function assignLecturer(moduleId: string, lecturerId: number | null): Promise<CourseModule[]> {
-  const saved = await authedRequest<{ lecturer_id?: number | string | null } | null>(`/modules/${moduleId}`, {
-    method: 'PATCH',
-    body: { lecturer_id: lecturerId },
-  })
-  // a server that knows the field answers with the module including `lecturer_id` (null when nobody); one that does not
-  // leaves the key out, whatever was asked, so "no lecturer" cannot be mistaken for "not supported"
-  const answered = saved !== null && typeof saved === 'object' && 'lecturer_id' in saved
-  if (!answered || (saved.lecturer_id == null ? null : Number(saved.lecturer_id)) !== lecturerId) {
-    throw new NotSupportedError('The server cannot change the lecturer of a week yet.')
+export async function assignLecturer(moduleId: string, lecturerId: number, assigned = true): Promise<CourseModule[]> {
+  try {
+    if (assigned) await authedRequest(`/modules/${moduleId}/enrollments`, { method: 'POST', body: { user_id: lecturerId } })
+    else await authedRequest(`/modules/${moduleId}/enrollments/${lecturerId}`, { method: 'DELETE' })
+  } catch (e) {
+    // already enrolled / already not enrolled: nothing to change
+    if (!(e instanceof ApiError && e.status === (assigned ? 409 : 404))) throw e
   }
   return fetchModules(false)
 }

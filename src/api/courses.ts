@@ -1,4 +1,4 @@
-import { addModule, listModules, type ModulePatch, putItem, putModule, removeItem, removeModule } from '../mocks/contentEdits'
+import { addModule, listModules, type ModulePatch, putItem, putModule, removeItem, removeModule, setLecturer } from '../mocks/contentEdits'
 import { handIn, submissionsOf } from '../mocks/submissions'
 import type { ContentItem, CourseModule, Submission, SubmissionFile } from '../types/course'
 import * as http from './courses.http'
@@ -102,11 +102,11 @@ export async function writeItemQuiet(item: ContentItem): Promise<void> {
   putItem(item)
 }
 
-/** Makes someone the lecturer of a week (module), or takes the lecturer off it (null). Returns the whole course. */
-export async function assignLecturer(moduleId: string, lecturerId: number | null): Promise<CourseModule[]> {
-  if (hasBackend()) return http.assignLecturer(moduleId, lecturerId)
+/** Adds a lecturer to a week (module), or takes them off it (`assigned: false`); the others stay. Returns the whole course. */
+export async function assignLecturer(moduleId: string, lecturerId: number, assigned = true): Promise<CourseModule[]> {
+  if (hasBackend()) return http.assignLecturer(moduleId, lecturerId, assigned)
   await wait()
-  return putModule(moduleId, { createdBy: lecturerId })
+  return setLecturer(moduleId, lecturerId, assigned)
 }
 
 /** Admins (and the module's creator): the module and everything in it. */

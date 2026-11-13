@@ -130,14 +130,14 @@ describe('Admin: lecturers', () => {
     expect(within(rowOf('Elvin Huseynov')).getByText('Weeks 2, 4, 6, 8, 10, 12')).toBeInTheDocument()
   })
 
-  it('assigns weeks to a lecturer: they leave the old lecturer, who keeps the rest', async () => {
+  it('assigns weeks to a lecturer: the week keeps its other lecturer, who keeps the rest', async () => {
     renderWithProviders(<App />, { route: '/admin/lecturers' })
     const user = userEvent.setup()
     await within(await table()).findAllByText('6 modules')
     await user.click(screen.getByRole('button', { name: 'Assign weeks to Nargiz Abbasova' }))
     const form = within(await dialog())
     expect(form.getByRole('checkbox', { name: /^Week 1 · Onboarding & Git/ })).not.toBeChecked()
-    expect(form.getAllByText('Now: Rashad Aliyev').length).toBeGreaterThan(0)
+    expect(form.getAllByText('Also: Rashad Aliyev').length).toBeGreaterThan(0)
     expect(form.getByRole('button', { name: 'Save weeks' })).toBeDisabled()
     await user.click(form.getByRole('checkbox', { name: /^Week 1 · / }))
     await user.click(form.getByRole('checkbox', { name: /^Week 2 · / }))
@@ -146,9 +146,11 @@ describe('Admin: lecturers', () => {
 
     expect(await screen.findByText('Nargiz Abbasova now teaches weeks 1, 2.')).toBeInTheDocument()
     expect(within(rowOf('Nargiz Abbasova')).getByText('2 modules')).toBeInTheDocument()
-    expect(within(rowOf('Rashad Aliyev')).getByText('5 modules')).toBeInTheDocument()
-    expect(within(rowOf('Elvin Huseynov')).getByText('5 modules')).toBeInTheDocument()
-    expect(listModules().find((m) => m.id === 'm1')!.createdBy).toBe(listUsers().find((u) => u.name === 'Nargiz Abbasova')!.id)
+    // several lecturers on one week: nobody loses theirs
+    expect(within(rowOf('Rashad Aliyev')).getByText('6 modules')).toBeInTheDocument()
+    expect(within(rowOf('Elvin Huseynov')).getByText('6 modules')).toBeInTheDocument()
+    const nargiz = listUsers().find((u) => u.name === 'Nargiz Abbasova')!.id
+    expect(listModules().find((m) => m.id === 'm1')!.lecturerIds).toEqual([900, nargiz])
   })
 
   it('a lecturer’s own weeks start ticked, and unticking one takes the lecturer off that week', async () => {
@@ -160,7 +162,7 @@ describe('Admin: lecturers', () => {
     const own = form.getByRole('checkbox', { name: /^Week 1 · / })
     expect(own).toBeChecked()
     expect(own).toBeEnabled()
-    expect(form.getAllByText('Theirs now')).toHaveLength(6)
+    expect(form.getAllByText('Only them')).toHaveLength(6)
     await user.click(own)
     await user.click(form.getByRole('checkbox', { name: /^Week 3 · / }))
     expect(form.getByText('Will take off 2 weeks.')).toBeInTheDocument()
@@ -168,7 +170,7 @@ describe('Admin: lecturers', () => {
 
     expect(await screen.findByText('Rashad Aliyev is off weeks 1, 3.')).toBeInTheDocument()
     expect(within(rowOf('Rashad Aliyev')).getByText('4 modules')).toBeInTheDocument()
-    expect(listModules().find((m) => m.id === 'm1')!.createdBy).toBeUndefined()
+    expect(listModules().find((m) => m.id === 'm1')!.lecturerIds).toEqual([])
     // the weeks have no lecturer until someone is given them
     await user.click(screen.getByRole('button', { name: 'Assign weeks to Nargiz Abbasova' }))
     const other = within(await dialog())
@@ -185,8 +187,8 @@ describe('Admin: lecturers', () => {
     await user.click(form.getByRole('checkbox', { name: /^Week 1 · / }))
     await user.click(form.getByRole('button', { name: 'Save weeks' }))
     expect(await screen.findByText('Elvin Huseynov now teaches week 1 and is off week 2.')).toBeInTheDocument()
-    expect(listModules().find((m) => m.id === 'm1')!.createdBy).toBe(902)
-    expect(listModules().find((m) => m.id === 'm2')!.createdBy).toBeUndefined()
+    expect(listModules().find((m) => m.id === 'm1')!.lecturerIds).toEqual([900, 902])
+    expect(listModules().find((m) => m.id === 'm2')!.lecturerIds).toEqual([])
   })
 
   it('the new lecturer shows on the Modules page for that week', async () => {
@@ -201,7 +203,13 @@ describe('Admin: lecturers', () => {
     await user.click(within(screen.getByRole('navigation', { name: 'Admin sections' })).getByRole('link', { name: 'Modules' }))
     const modulesTable = await screen.findByRole('table', { name: 'Modules' })
     const row = (await within(modulesTable).findByRole('link', { name: 'JavaScript' })).closest('tr')!
-    expect(await within(row).findByText('Nargiz Abbasova')).toBeInTheDocument()
+    // two lecturers: a chip with the count, and the names in a card on click
+    await user.click(await within(row).findByRole('button', { name: '2 lecturers' }))
+    const card = within(await screen.findByRole('dialog', { name: 'Lecturers of this week' }))
+    expect(await card.findByText('Rashad Aliyev')).toBeInTheDocument()
+    expect(await card.findByText('Nargiz Abbasova')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Lecturers of this week' })).not.toBeInTheDocument()
   })
 
   it('deletes a lecturer after confirming, saying their modules stay', async () => {

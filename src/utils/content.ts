@@ -12,9 +12,11 @@ export function modulePhase(m: CourseModule, now: Date): ModulePhase {
 
 /**
  * Is this module the signed-in lecturer's to prepare? A module belongs to the lecturer it is assigned to by an admin
- * (`createdBy` carries the assigned lecturer, see api/mappers). Admins are not assigned to modules.
+ * (`lecturerIds`, see api/mappers; a week can have several lecturers). Admins are not assigned to modules.
  */
-export const isAssignedTo = (m: CourseModule, userId: number | undefined): boolean => userId !== undefined && m.createdBy === userId
+export const lecturersOf = (m: CourseModule | undefined): number[] => m?.lecturerIds ?? (m?.createdBy !== undefined ? [m.createdBy] : [])
+
+export const isAssignedTo = (m: CourseModule, userId: number | undefined): boolean => userId !== undefined && lecturersOf(m).includes(userId)
 
 export const PHASE_LABEL: Record<ModulePhase, string> = { done: 'Finished', running: 'Running now', upcoming: 'Upcoming' }
 

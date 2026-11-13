@@ -28,7 +28,7 @@ describe('Admin: notifications', () => {
   })
 
   it('lists what is wrong, each with the page that fixes it; the sidebar counts them', async () => {
-    putModule('m6', { createdBy: null }) // this week has no lecturer
+    putModule('m6', { lecturerIds: [] }) // this week has no lecturer
     clearTeams() // and there are no teams
     renderWithProviders(<App />, { route: '/admin/notifications' })
     const list = await needs()
@@ -43,21 +43,21 @@ describe('Admin: notifications', () => {
   })
 
   it('an item goes away once it is fixed: Refresh looks again', async () => {
-    putModule('m6', { createdBy: null })
+    putModule('m6', { lecturerIds: [] })
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/admin/notifications' })
     expect(await screen.findByText('Week 6 (Go Basics) has no lecturer')).toBeInTheDocument()
-    putModule('m6', { createdBy: 902 })
+    putModule('m6', { lecturerIds: [902] })
     await user.click(screen.getByRole('button', { name: 'Refresh' }))
     expect(await screen.findByText('Nothing needs your attention.')).toBeInTheDocument()
   })
 
   it('moving to another page looks again, so the count follows what was done there', async () => {
-    putModule('m6', { createdBy: null })
+    putModule('m6', { lecturerIds: [] })
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/admin' })
     expect(await screen.findByLabelText('1 need attention')).toBeInTheDocument()
-    putModule('m6', { createdBy: 902 })
+    putModule('m6', { lecturerIds: [902] })
     await user.click((await nav()).getByRole('link', { name: 'Students' }))
     await screen.findByRole('table', { name: 'Students' })
     expect(screen.queryByLabelText(/need attention/)).toBeNull()

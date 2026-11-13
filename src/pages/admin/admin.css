@@ -1631,3 +1631,85 @@ a.admin-cell {
   color: var(--text-muted);
   font-size: var(--fs-label);
 }
+
+/* ---------- lecturers of a week (Modules table) ---------- */
+.lecturer-chip {
+  --tone: var(--xs-cyan);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.lecturer-chip--1 {
+  --tone: var(--xs-cyan);
+}
+.lecturer-chip--2 {
+  --tone: #9b7bff;
+}
+.lecturer-chip--3 {
+  --tone: #ffb020;
+}
+.lecturer-chip--none {
+  border-style: dashed;
+  border-color: var(--field-border);
+  background: transparent;
+  color: var(--muted, var(--text));
+  opacity: 0.8;
+}
+.lecturer-chip--button {
+  cursor: pointer;
+}
+.lecturer-chip--button:hover,
+.lecturer-chip--button[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--tone) 28%, transparent);
+}
+.lecturer-chip--button:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.lecturer-chip__count {
+  margin-left: 2px;
+  font-weight: 600;
+}
+.lecturer-card {
+  --tone: var(--xs-cyan);
+  position: fixed;
+  z-index: 60;
+  min-width: 180px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--tone) 60%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--tone) 12%, var(--card));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 14px;
+}
+.lecturer-card--2 {
+  --tone: #9b7bff;
+}
+.lecturer-card--3 {
+  --tone: #ffb020;
+}
+.lecturer-card__title {
+  margin: 0 0 6px;
+  color: var(--tone);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.lecturer-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lecturer-card li {
+  padding: 2px 0;
+}

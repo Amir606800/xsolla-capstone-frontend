@@ -56,7 +56,8 @@ describe('fetchModules', () => {
       ['41', 'assignment', '4'],
     ])
     expect(calls.every((c) => (c.init.headers as Record<string, string>).Authorization === 'Bearer acc')).toBe(true)
-    expect(calls).toHaveLength(2) // staff: no per-task requests
+    expect(calls.filter((c) => c.path.includes('/submissions'))).toHaveLength(0) // staff: no per-task requests
+    expect(calls).toHaveLength(3) // modules, items, and the users list that tells who the lecturers are
   })
 
   it("students also get their own work from the module's submissions/me; 404 means none", async () => {
@@ -132,38 +133,72 @@ describe('lecturer editing', () => {
     expect(modules.map((m) => m.id)).toEqual(['4'])
   })
 
-  it('assigning a lecturer to a week sends lecturer_id and checks the server really changed it', async () => {
-    await backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }) })
-    // the server accepts the request but leaves lecturer_id out of its answer: it does not know the field yet
-    await expect(assignLecturer('4', 12)).rejects.toThrow('The server cannot change the lecturer of a week yet.')
-    expect(json(find('PATCH', '/modules/4'))).toEqual({ lecturer_id: 12 })
-    // once the server applies it, lecturer_id comes back (and who made the module, created_by, is not the lecturer)
-    await backend({
-      'PATCH /modules/4': () => ({ status: 200, body: { id: 4, lecturer_id: 12 } }),
-      'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', description: 'Go', created_by: 9, lecturer_id: 12, created_at: '2026-11-01T00:00:00Z' }] }),
-      ...ITEMS,
-    })
-    expect((await assignLecturer('4', 12))[0].createdBy).toBe(12)
-  })
+  describe('the lecturer of a week is the lecturer enrolled in it', () => {
+    const USERS = {
+      'GET /users': () => ({
+        status: 200,
+        body: [
+          { id: 9, name: 'Admin', email: 'a@x.az', roles: ['admin'] },
+          { id: 12, name: 'Lena', email: 'l@x.az', roles: ['lecturer'] },
+          { id: 13, name: 'Leo', email: 'o@x.az', roles: ['lecturer'] },
+          { id: 20, name: 'Sam', email: 's@x.az', roles: ['student'] },
+        ],
+      }),
+    }
+    const enrolled = (...ids: number[]) => ({ 'GET /modules/4/enrollments': () => ({ status: 200, body: ids.map((u) => ({ id: u, module_id: 4, user_id: u })) }) })
 
-  it('taking the lecturer off a week sends null; the server must then report no lecturer', async () => {
-    await backend({ ...reload, 'PATCH /modules/4': () => ({ status: 200, body: { id: 4 } }) })
-    // a server without the field: "no lecturer" must not look like success
-    await expect(assignLecturer('4', null)).rejects.toThrow('cannot change the lecturer of a week yet')
-    expect(json(find('PATCH', '/modules/4'))).toEqual({ lecturer_id: null })
-    await backend({
-      'PATCH /modules/4': () => ({ status: 200, body: { id: 4, lecturer_id: null } }),
-      'GET /modules': () => ({ status: 200, body: [{ id: 4, title: 'Go Basics', created_at: '2026-11-01T00:00:00Z' }] }),
-      ...ITEMS,
+    it('is read from the enrollments: every enrolled user with the lecturer role, never a student or the admin', async () => {
+      await backend({ ...reload, ...USERS, ...enrolled(9, 20, 12, 13) })
+      expect((await fetchModules(false))[0]).toMatchObject({ lecturerIds: [12, 13], createdBy: 12 })
+      await backend({ ...reload, ...USERS, ...enrolled(9, 20) })
+      expect((await fetchModules(false))[0].lecturerIds).toBeUndefined()
     })
-    expect((await assignLecturer('4', null))[0].createdBy).toBeUndefined()
+
+    it('students never ask for it', async () => {
+      await backend({ ...reload, ...USERS, ...enrolled(12) })
+      await fetchModules(true)
+      expect(calls.some((c) => c.path.endsWith('/enrollments') || c.path === '/users')).toBe(false)
+    })
+
+    it('a server that refuses the lists simply shows no lecturer', async () => {
+      await backend(reload)
+      expect((await fetchModules(false))[0].createdBy).toBeUndefined()
+    })
+
+    it('assigning enrols the lecturer and leaves the other lecturers of the week alone', async () => {
+      let list = [9, 13]
+      await backend({
+        ...reload,
+        ...USERS,
+        'GET /modules/4/enrollments': () => ({ status: 200, body: list.map((u) => ({ user_id: u })) }),
+        'POST /modules/4/enrollments': (init) => {
+          list = [...list, JSON.parse(init.body as string).user_id]
+          return { status: 201, body: {} }
+        },
+      })
+      expect((await assignLecturer('4', 12))[0].lecturerIds).toEqual([13, 12])
+      expect(json(find('POST', '/modules/4/enrollments'))).toEqual({ user_id: 12 })
+      expect(calls.some((c) => c.method === 'DELETE')).toBe(false)
+    })
+
+    it('an enrolment that already exists (409) is fine', async () => {
+      await backend({ ...reload, ...USERS, ...enrolled(9), 'POST /modules/4/enrollments': () => ({ status: 409, body: { error: 'conflict', message: 'already', status: 409 } }) })
+      await expect(assignLecturer('4', 12)).resolves.toBeDefined()
+    })
+
+    it('taking a lecturer off unenrols only them', async () => {
+      await backend({ ...reload, ...USERS, ...enrolled(12, 13), 'DELETE /modules/4/enrollments/12': () => ({ status: 204 }) })
+      await assignLecturer('4', 12, false)
+      expect(find('DELETE', '/modules/4/enrollments/12')).toBeDefined()
+      expect(calls.some((c) => c.method === 'POST' || c.path.endsWith('/13'))).toBe(false)
+    })
   })
 
   it('an admin deletes a whole module: DELETE /modules/:id, then the course is loaded again', async () => {
     await backend({ ...reload, 'DELETE /modules/4': () => ({ status: 204 }) })
     await deleteModule('4')
     expect(find('DELETE', '/modules/4').init.headers).toMatchObject({ Authorization: 'Bearer acc' })
-    expect(calls.map((c) => `${c.method} ${c.path}`).slice(-2)).toEqual(['GET /modules', 'GET /modules/4/content-items'])
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(expect.arrayContaining(['DELETE /modules/4', 'GET /modules', 'GET /modules/4/content-items']))
   })
 
   it('a new task is POSTed to its own module with a due date and max_points 0', async () => {

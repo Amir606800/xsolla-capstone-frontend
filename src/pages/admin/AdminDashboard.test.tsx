@@ -106,7 +106,7 @@ describe('Admin overview: the current week', () => {
 
   it('says so, with a way to fix it, when the week has no lecturer', async () => {
     const { putModule } = await import('../../mocks/contentEdits')
-    putModule('m6', { createdBy: null })
+    putModule('m6', { lecturerIds: [] })
     renderWithProviders(<App />, { route: '/admin' })
     const card = within(await screen.findByRole('region', { name: 'Current week' }))
     expect(card.getByText('No lecturer yet')).toBeInTheDocument()

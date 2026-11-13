@@ -8,8 +8,9 @@ import { useCourses } from '../../../hooks/useCourses'
 import { usePeopleNames } from '../../../hooks/usePeopleNames'
 import { useSort } from '../../../hooks/useSort'
 import type { CourseModule } from '../../../types/course'
+import { LecturerChip } from './LecturerChip'
 import { contentsLine, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
-import { modulePhase, PHASE_LABEL } from '../../../utils/content'
+import { lecturersOf, modulePhase, PHASE_LABEL } from '../../../utils/content'
 import { buildTemplate, templateFileName } from '../../../utils/moduleTemplate'
 import { ImportTemplate } from './ImportTemplate'
 import { ConfirmDialog } from '../ConfirmDialog'
@@ -34,7 +35,7 @@ export default function AdminModulesPage() {
     {
       position: (m) => m.position,
       title: (m) => m.title,
-      lecturer: (m) => (m.createdBy !== undefined ? nameOf(m.createdBy) : undefined),
+      lecturer: (m) => (lecturersOf(m).length ? lecturersOf(m).map((id) => nameOf(id)).join(', ') : undefined),
       contents: (m) => m.items.length,
       dates: (m) => m.opensAt,
       // running first, then the ones to come, then the finished ones
@@ -143,7 +144,9 @@ export default function AdminModulesPage() {
                         {m.title}
                       </Link>
                     </td>
-                    <td>{nameOf(m.createdBy)}</td>
+                    <td>
+                      <LecturerChip names={lecturersOf(m).map((id) => nameOf(id))} />
+                    </td>
                     <td className="admin-table__muted">{contentsLine(m)}</td>
                     <td className="admin-table__muted">{moduleDates(m)}</td>
                     <td>
