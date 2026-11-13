@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubHttp } from '../test/stubHttp'
-import { connectUrl, fetchCalendarEvents, fetchStatus } from './google.http'
+import { connectUrl, disconnect, fetchCalendarEvents, fetchStatus } from './google.http'
 import { saveEvent } from './events.http'
 import { getTokens, saveTokens } from './session'
 
@@ -168,5 +168,20 @@ describe('the person’s own Google events (GET /google/calendar/events)', () =>
     await expect(fetchCalendarEvents(from, to)).rejects.toMatchObject({ status: 502 })
     await backend({ 'GET /google/calendar/events': err(500, 'server_error') })
     await expect(fetchCalendarEvents(from, to)).rejects.toMatchObject({ status: 500 })
+  })
+})
+
+describe('disconnecting Google (POST /auth/google/logout)', () => {
+  it('posts with the token and is done on 204', async () => {
+    await backend({ 'POST /auth/google/logout': () => ({ status: 204 }) })
+    await expect(disconnect()).resolves.toBeUndefined()
+    expect(find('POST', '/auth/google/logout').init.headers).toMatchObject({ Authorization: 'Bearer acc' })
+  })
+
+  it('a server without the route says so in words; a server error stays an error', async () => {
+    await backend({ 'POST /auth/google/logout': err(404, 'not_found') })
+    await expect(disconnect()).rejects.toThrow(/cannot disconnect Google yet/)
+    await backend({ 'POST /auth/google/logout': err(500, 'server_error', 'could not disconnect Google account') })
+    await expect(disconnect()).rejects.toMatchObject({ status: 500 })
   })
 })

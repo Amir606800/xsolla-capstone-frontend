@@ -24,8 +24,12 @@ test('a lecturer connects Google from Settings and sees the account', async ({ p
   // the connection is remembered
   await page.reload()
   await expect(page.getByText('rashad@gmail.com')).toBeVisible()
-  // the server has no disconnect, so the card does not pretend to
-  await expect(page.getByRole('button', { name: /disconnect/i })).toHaveCount(0)
+  // and can be taken away again: the server forgets it
+  await page.getByRole('button', { name: 'Disconnect' }).click()
+  await page.getByRole('button', { name: 'Yes, disconnect' }).click()
+  await expect(page.getByText('Not connected')).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('Not connected')).toBeVisible()
 })
 
 test('Google’s way back to /settings shows the answer once and tidies the address', async ({ page }) => {

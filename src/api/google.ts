@@ -1,4 +1,4 @@
-import { mockGoogleCalendar, mockGoogleConnect, mockGoogleStatus } from '../mocks/google'
+import { mockGoogleCalendar, mockGoogleConnect, mockGoogleDisconnect, mockGoogleStatus } from '../mocks/google'
 import type { GoogleStatus } from '../types/google'
 import * as http from './google.http'
 import type { GoogleEventsResult } from './google.http'
@@ -16,6 +16,16 @@ export async function fetchGoogleStatus(): Promise<GoogleStatus> {
   if (hasBackend()) return http.fetchStatus()
   await wait()
   return mockGoogleStatus()
+}
+
+/** Takes the Google connection away (the server forgets the token). Resolves with the new status. */
+export async function disconnectGoogle(): Promise<GoogleStatus> {
+  if (hasBackend()) {
+    await http.disconnect()
+    return { connection: 'disconnected' }
+  }
+  await wait()
+  return mockGoogleDisconnect()
 }
 
 /**

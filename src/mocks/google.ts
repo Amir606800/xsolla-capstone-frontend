@@ -42,6 +42,12 @@ export function mockGoogleConnect(user: { name: string; email: string }): Google
   return mockGoogleStatus()
 }
 
+/** "Disconnect": the demo forgets the account. */
+export function mockGoogleDisconnect(): GoogleStatus {
+  write({ connection: 'disconnected' })
+  return mockGoogleStatus()
+}
+
 /** Events saved now can reach the person's Google Calendar. */
 export const mockGoogleIsReady = () => read().connection === 'connected'
 

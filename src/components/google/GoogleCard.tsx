@@ -9,7 +9,7 @@ import { Loading } from '../loading/Loading'
 import { Spinner } from '../loading/Spinner'
 import './google.css'
 
-/** Where a person takes back the access they gave: the server has no "disconnect" route yet. */
+/** Where a person also takes back the access in their own Google account (the school's server only forgets its copy). */
 export const GOOGLE_PERMISSIONS_URL = 'https://myaccount.google.com/permissions'
 
 const PILL: Record<GoogleConnection, { text: string; tone: 'ok' | 'warn' | 'off' }> = {
@@ -39,7 +39,7 @@ function Avatar({ account }: { account: GoogleAccount }) {
  * back here with `?google=connected` or `?google=error`; that is read once, shown, and removed.
  */
 export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
-  const { status, loading, connecting, reload, connect } = useGoogle()
+  const { status, loading, connecting, reload, connect, disconnect } = useGoogle()
   const { user } = useAuth()
   const student = isStudent(user)
   const [params, setParams] = useSearchParams()
@@ -49,6 +49,8 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
     return back === 'connected' || back === 'error' ? back : null
   })
   const [problem, setProblem] = useState('')
+  const [confirming, setConfirming] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
 
   const back = params.get('google')
   useEffect(() => {
@@ -77,6 +79,38 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
       setProblem(e instanceof Error ? e.message : 'Could not start the connection.')
     }
   }
+
+  async function stop() {
+    setProblem('')
+    setDisconnecting(true)
+    try {
+      await disconnect()
+      setConfirming(false)
+      setCame(null)
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : 'Could not disconnect. Try again in a moment.')
+    } finally {
+      setDisconnecting(false)
+    }
+  }
+
+  const disconnectControls = confirming ? (
+    <div className="google-card__confirm" role="group" aria-label="Disconnect Google Calendar?">
+      <span>
+        Disconnect? {student ? 'Your Google events will no longer show on the school calendar.' : 'Your Google events stop showing here, and new events will not be added to your Google Calendar.'}
+      </span>
+      <button type="button" className={variant === 'admin' ? 'admin-btn admin-btn--danger-outline' : 'btn btn--danger'} onClick={stop} disabled={disconnecting}>
+        {disconnecting ? 'Disconnecting…' : 'Yes, disconnect'}
+      </button>
+      <button type="button" className={btnQuiet} onClick={() => setConfirming(false)} disabled={disconnecting}>
+        Keep
+      </button>
+    </div>
+  ) : (
+    <button type="button" className={btnQuiet} onClick={() => setConfirming(true)}>
+      Disconnect
+    </button>
+  )
 
   const pill = status ? PILL[status.connection] : undefined
   const connectButton = (label: string, primary = true) => (
@@ -148,8 +182,9 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
           </ul>
           <div className="google-card__actions">
             {connectButton('Use a different Google account', false)}
+            {disconnectControls}
             <a className="google-card__link" href={GOOGLE_PERMISSIONS_URL} target="_blank" rel="noopener noreferrer">
-              Remove access in your Google account <span className="sr-only">(opens in a new tab)</span>
+              Also remove access in your Google account <span className="sr-only">(opens in a new tab)</span>
             </a>
           </div>
         </>
@@ -171,7 +206,10 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
             {status.account ? `${status.account.email} is` : 'Your Google account is'} no longer connected: the access was removed or has expired.
             Events you add will not reach Google until you connect again.
           </p>
-          <div className="google-card__actions">{connectButton('Reconnect Google Calendar')}</div>
+          <div className="google-card__actions">
+            {connectButton('Reconnect Google Calendar')}
+            {disconnectControls}
+          </div>
         </>
       )}
 

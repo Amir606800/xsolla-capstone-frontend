@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { connectGoogle, fetchGoogleStatus } from '../api/google'
+import { connectGoogle, disconnectGoogle, fetchGoogleStatus } from '../api/google'
 import { useAuth } from '../hooks/useAuth'
 import type { GoogleStatus } from '../types/google'
 import { GoogleContext } from './google'
@@ -55,6 +55,12 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     setKnown((k) => (k && k.userId === userId && k.status.connection === 'connected' ? { userId, status: { ...k.status, connection: 'reconnect' } } : k))
   }, [userId])
 
+  const disconnect = useCallback(async () => {
+    if (!user) return
+    const next = await disconnectGoogle()
+    if (current.current === user.id) setKnown({ userId: user.id, status: next })
+  }, [user])
+
   const connect = useCallback(async () => {
     if (!user) return
     setConnecting(true)
@@ -72,8 +78,8 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   const value = useMemo(
-    () => ({ status, loading: pending > 0, connecting, load, reload, markReconnect, connect }),
-    [status, pending, connecting, load, reload, markReconnect, connect],
+    () => ({ status, loading: pending > 0, connecting, load, reload, markReconnect, disconnect, connect }),
+    [status, pending, connecting, load, reload, markReconnect, disconnect, connect],
   )
   return <GoogleContext.Provider value={value}>{children}</GoogleContext.Provider>
 }

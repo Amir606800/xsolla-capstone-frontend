@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { renderWithProviders } from '../../test/renderWithProviders'
@@ -24,14 +24,31 @@ describe('the Google Calendar card', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Checking your Google connection…')
   })
 
-  it('connecting shows the account, and there is no disconnect button, only a way to remove access at Google', async () => {
+  it('connecting shows the account, a Disconnect button, and the way to also remove access at Google', async () => {
     const user = userEvent.setup()
     show()
     await user.click(await screen.findByRole('button', { name: 'Connect Google Calendar' }))
     expect(await screen.findByText('rashad@gmail.com')).toBeInTheDocument()
     expect(screen.getByText('Connected')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /disconnect/i })).toBeNull()
-    expect(screen.getByRole('link', { name: /Remove access in your Google account/ })).toHaveAttribute('href', 'https://myaccount.google.com/permissions')
+    expect(screen.getByRole('button', { name: 'Disconnect' })).toBeEnabled()
+    expect(screen.getByRole('link', { name: /Also remove access in your Google account/ })).toHaveAttribute('href', 'https://myaccount.google.com/permissions')
+  })
+
+  it('Disconnect asks once, then the account is not connected any more; Keep changes nothing', async () => {
+    mock({ connection: 'connected', account: { email: 'sam@gmail.com', name: 'Sam T' } })
+    const user = userEvent.setup()
+    show()
+    await user.click(await screen.findByRole('button', { name: 'Disconnect' }))
+    const ask = screen.getByRole('group', { name: 'Disconnect Google Calendar?' })
+    await user.click(within(ask).getByRole('button', { name: 'Keep' }))
+    expect(screen.getByText('Connected')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Disconnect' }))
+    await user.click(within(screen.getByRole('group', { name: 'Disconnect Google Calendar?' })).getByRole('button', { name: 'Yes, disconnect' }))
+    expect(await screen.findByText('Not connected')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Connect Google Calendar' })).toBeEnabled()
+    expect(JSON.parse(localStorage.getItem('google_mock')!).connection).toBe('disconnected')
   })
 
   it('shows the connected account straight away when it already is', async () => {

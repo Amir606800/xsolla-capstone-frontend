@@ -76,3 +76,18 @@ export async function fetchCalendarEvents(from: Date, to: Date): Promise<GoogleE
     throw e
   }
 }
+
+/**
+ * POST /auth/google/logout (signed in): the server forgets the person's Google credentials (204). The app is still
+ * listed in their Google account until they remove it there, which is the person's own step.
+ */
+export async function disconnect(): Promise<void> {
+  try {
+    await authedRequest<void>('/auth/google/logout', { method: 'POST' })
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 404 || e.status === 405 || e.status === 501)) {
+      throw new Error('The school’s server cannot disconnect Google yet. Remove access in your Google account instead.', { cause: e })
+    }
+    throw e
+  }
+}
