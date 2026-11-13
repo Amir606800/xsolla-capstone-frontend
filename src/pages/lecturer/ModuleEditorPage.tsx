@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { EditorRow } from '../../components/authoring/EditorRow'
+import { Field } from '../../components/authoring/Field'
 import { MaterialForm } from '../../components/authoring/MaterialForm'
 import { ModuleForm } from '../../components/authoring/ModuleForm'
 import { QuizForm } from '../../components/authoring/QuizForm'
@@ -60,15 +61,22 @@ function Section({
           <Icon name={icon} size={20} />
         </span>
         <h2 id={id}>{title}</h2>
-        <div className="editor__actions">
+        {!extraActions && addLabel && onAdd && (
+          <button type="button" className="btn btn--ghost btn--small editor__add" onClick={onAdd}>
+            <Icon name="plus" size={16} /> {addLabel}
+          </button>
+        )}
+      </header>
+      {extraActions && (
+        <div className="editor__toolbar" role="group" aria-label={`${title} actions`}>
           {extraActions}
           {addLabel && onAdd && (
-            <button type="button" className="btn btn--ghost btn--small editor__add" onClick={onAdd}>
+            <button type="button" className="btn btn--ghost btn--small" onClick={onAdd}>
               <Icon name="plus" size={16} /> {addLabel}
             </button>
           )}
         </div>
-      </header>
+      )}
       {empty ? <p className="card__empty">{empty}</p> : <ul className="list">{children}</ul>}
     </section>
   )
@@ -253,12 +261,12 @@ export default function ModuleEditorPage() {
                     {canQuiz && (
                       <button
                         type="button"
-                        className="btn btn--ghost btn--small"
+                        className="icon-btn"
                         onClick={() => openAiQuiz(r.id)}
                         aria-label={`AI Quiz from ${r.title}`}
-                        title="Generate 10-question AI quiz from this material"
+                        title="Make a 10-question AI quiz from this material"
                       >
-                        <Icon name="sparkle" size={14} /> AI Quiz
+                        <Icon name="sparkle" size={18} />
                       </button>
                     )}
                     {r.kind !== 'link' && (
@@ -416,41 +424,49 @@ function AiQuizForm({
 
   return (
     <form className="form" onSubmit={handleSubmit}>
-      <p className="ai-quiz__hint">
-        AI will generate <strong>10 multiple-choice questions</strong> in <strong>English</strong> in the background based on the selected lesson material.
-      </p>
-
-      <div className="field">
-        <label htmlFor="ai-quiz-material">Lesson material</label>
-        <select
-          id="ai-quiz-material"
-          value={materialId}
-          onChange={(e) => setMaterialId(e.target.value)}
-          disabled={busy || materials.length === 0}
-        >
-          {materials.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.title}
-              {m.file?.name ? ` (${m.file.name})` : ''}
-            </option>
-          ))}
-        </select>
+      <div className="ai-quiz__hint">
+        <Icon name="sparkle" size={20} />
+        <p>
+          AI will write <strong>10 multiple-choice questions</strong> in <strong>English</strong>, in the background, from the lesson
+          material you pick. You can edit the questions afterwards.
+        </p>
       </div>
 
-      <div className="field">
-        <label htmlFor="ai-quiz-title">Quiz title (optional)</label>
-        <input
-          id="ai-quiz-title"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Auto-generated from material if left blank"
-          disabled={busy}
-        />
-      </div>
+      <Field label="Lesson material">
+        {(p) => (
+          <select
+            {...p}
+            className="field__input form__input"
+            value={materialId}
+            onChange={(e) => setMaterialId(e.target.value)}
+            disabled={busy || materials.length === 0}
+          >
+            {materials.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title}
+                {m.file?.name ? ` (${m.file.name})` : ''}
+              </option>
+            ))}
+          </select>
+        )}
+      </Field>
+
+      <Field label="Quiz title" optional hint="Left blank, the title is made from the material.">
+        {(p) => (
+          <input
+            {...p}
+            type="text"
+            className="field__input form__input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Week 3 check"
+            disabled={busy}
+          />
+        )}
+      </Field>
 
       {error && (
-        <p className="field__error" role="alert">
+        <p className="field__error form__save-error" role="alert">
           {error}
         </p>
       )}
@@ -460,7 +476,7 @@ function AiQuizForm({
           Cancel
         </button>
         <button type="submit" className="btn" disabled={busy || !materialId}>
-          <Icon name="sparkle" size={16} /> {busy ? 'Starting...' : 'Generate AI Quiz'}
+          <Icon name="sparkle" size={16} /> {busy ? 'Starting…' : 'Generate AI Quiz'}
         </button>
       </div>
     </form>

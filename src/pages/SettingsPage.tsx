@@ -7,8 +7,10 @@ export default function SettingsPage() {
   return (
     <section className="settings">
       <h1 className="page-title">Settings</h1>
-      <GoogleCard variant="lms" />
-      <ChangePasswordCard variant="lms" />
+      <div className="settings-grid">
+        <GoogleCard variant="lms" />
+        <ChangePasswordCard variant="lms" />
+      </div>
     </section>
   )
 }

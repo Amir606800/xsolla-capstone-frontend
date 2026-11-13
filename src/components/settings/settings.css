@@ -4,6 +4,18 @@
   flex-direction: column;
   gap: 16px;
 }
+.settings-grid {
+  display: grid;
+  /* one column on a narrow screen, the two cards side by side as soon as there is room; no empty space on the right */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 16px;
+  align-items: start;
+  max-width: 1280px;
+}
+.settings-grid > .google-card,
+.settings-grid > .pw-card {
+  max-width: none;
+}
 .pw-card {
   max-width: 640px;
   padding: 20px 22px;

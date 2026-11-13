@@ -184,6 +184,8 @@ select.form__input {
 /* ---------- editable list rows ---------- */
 .editor-row {
   align-items: center;
+  /* in a narrow card the tools drop under the title instead of squeezing it to a letter per line */
+  flex-wrap: wrap;
 }
 .editor-row__icon {
   display: inline-grid;
@@ -196,7 +198,7 @@ select.form__input {
   color: var(--text-muted);
 }
 .editor-row__text {
-  flex: 1;
+  flex: 1 1 140px;
   min-width: 0;
   overflow-wrap: anywhere;
 }

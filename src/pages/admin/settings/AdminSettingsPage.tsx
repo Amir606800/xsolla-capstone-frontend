@@ -9,8 +9,10 @@ export default function AdminSettingsPage() {
         <h1 className="page-title">Settings</h1>
         <p className="page-subtitle">Your own account: the Google connection and your password.</p>
       </header>
-      <GoogleCard variant="admin" />
-      <ChangePasswordCard variant="admin" />
+      <div className="settings-grid">
+        <GoogleCard variant="admin" />
+        <ChangePasswordCard variant="admin" />
+      </div>
     </section>
   )
 }

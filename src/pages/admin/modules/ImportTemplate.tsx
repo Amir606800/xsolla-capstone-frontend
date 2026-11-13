@@ -8,6 +8,7 @@ import type { ImportResult } from '../../../utils/moduleImport'
 import { countTemplate, MAX_TEMPLATE_BYTES, parseTemplate, planImport } from '../../../utils/moduleTemplate'
 import type { ModuleTemplate } from '../../../utils/moduleTemplate'
 import { formatShortDate } from '../../../utils/date'
+import { FileDropzone, PickedFiles } from '../../../components/FileDropzone'
 import { Icon } from '../../../components/Icon'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
@@ -30,6 +31,7 @@ export function ImportTemplate({ onClose, onDone }: { onClose: () => void; onDon
   const { user } = useAuth()
   const id = useId()
   const [fileName, setFileName] = useState('')
+  const [fileSize, setFileSize] = useState(0)
   const [template, setTemplate] = useState<ModuleTemplate | null>(null)
   const [problem, setProblem] = useState('')
   const [start, setStart] = useState(nextMonday)
@@ -48,12 +50,13 @@ export function ImportTemplate({ onClose, onDone }: { onClose: () => void; onDon
     return modules.some((m) => m.opensAt && m.closesAt && m.opensAt <= last.closesAt && m.closesAt >= first.opensAt)
   }, [modules, first, last])
 
-  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  async function pick(files: File[]) {
+    const file = files[0]
     setTemplate(null)
     setProblem('')
     setResult(null)
     setFileName(file?.name ?? '')
+    setFileSize(file?.size ?? 0)
     if (!file) return
     if (file.size > MAX_TEMPLATE_BYTES) {
       setProblem('This file is too big for a module template.')
@@ -122,19 +125,18 @@ export function ImportTemplate({ onClose, onDone }: { onClose: () => void; onDon
       </p>
 
       <div className="import-template__field">
-        <span className="field__label" id={`${id}-file-label`}>
+        <label className="field__label" htmlFor={`${id}-file`}>
           Template file
-        </span>
-        <div className="import-pick">
-          <input id={`${id}-file`} className="sr-only" type="file" accept=".json,application/json" aria-labelledby={`${id}-file-label`} onChange={pick} disabled={busy} />
-          <label className={`import-pick__box${template ? ' is-chosen' : ''}`} htmlFor={`${id}-file`}>
-            <Icon name={template ? 'check' : 'upload'} size={22} />
-            <span className="import-pick__text">
-              <strong>{fileName || 'Choose a template file'}</strong>
-              <span>{fileName ? 'Click to choose another one' : 'A .json file made with "Export template"'}</span>
-            </span>
-          </label>
-        </div>
+        </label>
+        <FileDropzone
+          inputId={`${id}-file`}
+          accept=".json,application/json"
+          disabled={busy}
+          onFiles={pick}
+          idleText={fileName ? 'Drop another template here, or click to choose one' : 'Drag & drop a template file here, or click to choose one'}
+          hint={'A .json file made with "Export template"'}
+        />
+        <PickedFiles label="Chosen template" files={fileName ? [{ key: fileName, name: fileName, sizeBytes: fileSize, tag: template ? 'ready' : undefined }] : []} />
         {problem && (
           <p className="field__error" role="alert">
             {problem}

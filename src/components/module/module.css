@@ -190,83 +190,6 @@
   resize: vertical;
   line-height: 1.4;
 }
-.dropzone {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 20px 16px;
-  border: 2px dashed var(--field-border);
-  border-radius: 8px;
-  background: var(--field);
-  color: var(--text-muted);
-  text-align: center;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-.dropzone:hover {
-  border-color: var(--xs-cyan);
-}
-.dropzone:focus-within {
-  border-color: var(--xs-cyan);
-  box-shadow: 0 0 0 2px rgba(0, 200, 240, 0.25);
-}
-.dropzone.is-dragging {
-  border-color: var(--xs-cyan);
-  border-style: solid;
-  background: color-mix(in srgb, var(--xs-cyan) 14%, var(--field));
-  color: var(--text);
-}
-.dropzone__text {
-  font-size: var(--fs-label);
-  pointer-events: none;
-}
-.dropzone__input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-.submission__files {
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.submission__files li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-  font-size: 14px;
-  overflow-wrap: anywhere;
-}
-.submission__files li span {
-  color: var(--text-muted);
-}
-.submission__remove {
-  margin-left: auto;
-  padding: 4px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.submission__remove:hover {
-  background: var(--active-bg);
-  color: var(--text);
-}
-.submission__errors {
-  margin: 8px 0 0;
-  padding-left: 18px;
-  color: var(--danger);
-  font-size: 14px;
-}
 .submission__done {
   margin: 8px 0 0;
   color: var(--ok);
@@ -560,14 +483,6 @@
 
 /* ---------- submissions: versions until the deadline ---------- */
 .submission__version-tag,
-.submission__kept-tag {
-  margin-left: 4px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--main-bg);
-  color: var(--text-muted);
-  font-size: 12px;
-}
 .submission__history {
   margin-top: 12px;
 }
@@ -604,11 +519,16 @@
 .submission__version .submission__files {
   margin-bottom: 0;
 }
-.editor__actions {
+/* actions of a card (e.g. the quizzes') in a row of their own under its heading: they never squeeze or wrap */
+.editor__toolbar {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-left: auto;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--divider);
+}
+.editor__toolbar .btn {
+  white-space: nowrap;
 }
 .quiz-badge {
   margin-left: 8px;
@@ -630,10 +550,24 @@
   color: var(--ok);
 }
 .ai-quiz__hint {
-  margin: 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 0 0 6px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--xs-cyan) 45%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--xs-cyan) 8%, var(--card));
   font-size: 14px;
   line-height: 1.5;
-  color: var(--text-muted);
+}
+.ai-quiz__hint svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--xs-cyan);
+}
+.ai-quiz__hint p {
+  margin: 0;
 }
 .quiz-modal {
   display: flex;

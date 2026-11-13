@@ -1,10 +1,11 @@
-import { useId, useRef, useState } from 'react'
-import type { ChangeEvent, DragEvent, FormEvent } from 'react'
+import { useId, useState } from 'react'
+import type { FormEvent } from 'react'
 import type { SubmitPayload } from '../../api/courses'
 import type { AssignmentItem, SubmissionFile } from '../../types/course'
 import { formatDateTime } from '../../utils/date'
 import { ALLOWED_EXTENSIONS, formatBytes, MAX_FILE_BYTES, validateFile } from '../../utils/files'
 import { DEADLINE_PASSED, isPastDue } from '../../utils/progress'
+import { FileDropzone, PickedFiles } from '../FileDropzone'
 import { GradedPill } from '../GradedPill'
 import { Icon } from '../Icon'
 import { EarlierVersions, FileList } from './SubmissionVersions'
@@ -41,8 +42,6 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [dragging, setDragging] = useState(false)
-  const dragDepth = useRef(0)
 
   // a new version came in: the files to carry over are now that version's files
   if (keepFor !== submission?.submittedAt) {
@@ -57,41 +56,6 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
   const history = submission?.history ?? []
   const versions = submission ? history.length + 1 : 0
   const canSubmit = (text.trim().length > 0 || files.length > 0 || keep.length > 0) && !busy && !graded && !closed
-
-  function handleFiles(e: ChangeEvent<HTMLInputElement>) {
-    const picked = Array.from(e.target.files ?? [])
-    e.target.value = '' // allow picking the same file again after removing it
-    addFiles(picked)
-  }
-
-  // Drag & drop. dragenter/dragleave also fire for child elements, so count
-  // the depth instead of toggling on every event (avoids flicker).
-  function hasFiles(e: DragEvent) {
-    return Array.from(e.dataTransfer?.types ?? []).includes('Files')
-  }
-  function handleDragEnter(e: DragEvent) {
-    if (!hasFiles(e)) return
-    e.preventDefault()
-    dragDepth.current += 1
-    setDragging(true)
-  }
-  function handleDragOver(e: DragEvent) {
-    if (!hasFiles(e)) return
-    e.preventDefault() // required to allow dropping
-    e.dataTransfer.dropEffect = 'copy'
-  }
-  function handleDragLeave(e: DragEvent) {
-    if (!hasFiles(e)) return
-    dragDepth.current = Math.max(0, dragDepth.current - 1)
-    if (dragDepth.current === 0) setDragging(false)
-  }
-  function handleDrop(e: DragEvent) {
-    if (!hasFiles(e)) return
-    e.preventDefault() // stops the browser from opening the file
-    dragDepth.current = 0
-    setDragging(false)
-    addFiles(Array.from(e.dataTransfer.files))
-  }
 
   function addFiles(picked: File[]) {
     const errors: string[] = []
@@ -210,48 +174,20 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
             </span>
           </label>
 
-          {keep.length > 0 && (
-            <ul className="submission__files submission__files--kept" aria-label="Kept from the current version">
-              {keep.map((f) => (
-                <li key={f.id ?? fileKey(f)}>
-                  <Icon name="file" size={16} /> {f.name} <span>{formatBytes(f.sizeBytes)}</span>
-                  <span className="submission__kept-tag">kept</span>
-                  <button
-                    type="button"
-                    className="submission__remove"
-                    onClick={() => setKeep((prev) => prev.filter((x) => x !== f))}
-                    aria-label={`Leave out ${f.name}`}
-                  >
-                    <Icon name="close" size={14} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <PickedFiles
+            kept
+            label="Kept from the current version"
+            files={keep.map((f) => ({
+              key: f.id ?? fileKey(f),
+              name: f.name,
+              sizeBytes: f.sizeBytes,
+              tag: 'kept',
+              removeLabel: `Leave out ${f.name}`,
+              onRemove: () => setKeep((prev) => prev.filter((x) => x !== f)),
+            }))}
+          />
 
-          <div
-            className={`dropzone${dragging ? ' is-dragging' : ''}`}
-            role="group"
-            aria-label="File drop area"
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <Icon name="upload" size={24} />
-            <span className="dropzone__text">
-              {dragging ? 'Drop to add the files' : 'Drag & drop files here, or click to browse'}
-            </span>
-            {/* The real input covers the zone, so clicking and keyboard use still work. */}
-            <input
-              id={`${uid}-files`}
-              className="dropzone__input"
-              type="file"
-              multiple
-              accept={ACCEPT}
-              onChange={handleFiles}
-            />
-          </div>
+          <FileDropzone inputId={`${uid}-files`} accept={ACCEPT} multiple onFiles={addFiles} />
 
           {fileErrors.length > 0 && (
             <ul className="submission__errors" role="alert">
@@ -261,23 +197,15 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
             </ul>
           )}
 
-          {files.length > 0 && (
-            <ul className="submission__files" aria-label="Files to upload">
-              {files.map((f) => (
-                <li key={fileKey(f)}>
-                  <Icon name="file" size={16} /> {f.name} <span>{formatBytes(f.size)}</span>
-                  <button
-                    type="button"
-                    className="submission__remove"
-                    onClick={() => setFiles((prev) => prev.filter((x) => x !== f))}
-                    aria-label={`Remove ${f.name}`}
-                  >
-                    <Icon name="close" size={14} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <PickedFiles
+            label="Files to upload"
+            files={files.map((f) => ({
+              key: fileKey(f),
+              name: f.name,
+              sizeBytes: f.size,
+              onRemove: () => setFiles((prev) => prev.filter((x) => x !== f)),
+            }))}
+          />
 
           {error && (
             <p className="field__error" role="alert">

@@ -1598,40 +1598,6 @@ a.admin-cell {
   gap: 10px;
   margin-top: 4px;
 }
-/* the file picker: a clear box instead of the browser's own button */
-.import-pick__box {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  border: 1px dashed var(--field-border);
-  border-radius: 10px;
-  cursor: pointer;
-}
-.import-pick__box:hover {
-  background: var(--active-bg);
-}
-.import-pick__box.is-chosen {
-  border-style: solid;
-  border-color: var(--xs-cyan);
-}
-.import-pick:focus-within .import-pick__box {
-  outline: 2px solid var(--xs-cyan);
-  outline-offset: 2px;
-}
-.import-pick__text {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.import-pick__text strong {
-  overflow-wrap: anywhere;
-}
-.import-pick__text span {
-  color: var(--text-muted);
-  font-size: var(--fs-label);
-}
-
 /* ---------- lecturers of a week (Modules table) ---------- */
 .lecturer-chip {
   --tone: var(--xs-cyan);

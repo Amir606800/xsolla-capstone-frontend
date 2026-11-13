@@ -2,7 +2,8 @@ import { useState } from 'react'
 import type { ResourceItem } from '../../types/course'
 import { MATERIAL_KINDS, hasErrors, materialToDraft, validateMaterial } from '../../utils/authoring'
 import type { MaterialDraft } from '../../utils/authoring'
-import { formatBytes } from '../../utils/files'
+import { ALLOWED_EXTENSIONS, formatBytes, MAX_FILE_BYTES, validateFile } from '../../utils/files'
+import { FileDropzone, PickedFiles } from '../FileDropzone'
 import { Field, FormActions } from './Field'
 import { useSave } from './useSave'
 
@@ -20,6 +21,16 @@ export function MaterialForm({
   const errors = validateMaterial(d)
   const set = (patch: Partial<MaterialDraft>) => setD((prev) => ({ ...prev, ...patch }))
   const isLink = d.kind === 'link'
+  // the file this material had before it was edited (kept when a newly picked one is taken back out)
+  const original = item?.file
+  const [pickProblem, setPickProblem] = useState('')
+
+  function pick(files: File[]) {
+    const f = files[0]
+    const problem = validateFile(f)
+    setPickProblem(problem ?? '')
+    if (!problem) set({ file: { name: f.name, sizeBytes: f.size }, upload: f })
+  }
 
   return (
     <form
@@ -62,19 +73,43 @@ export function MaterialForm({
       ) : (
         <Field
           label="File"
-          error={touched ? errors.file : undefined}
-          hint={d.file ? `Current file: ${d.file.name} (${formatBytes(d.file.sizeBytes)})` : 'Slides, notes or an archive.'}
+          error={pickProblem || (touched ? errors.file : undefined)}
+          hint={`Slides, notes or an archive: ${ALLOWED_EXTENSIONS.join(', ')}, up to ${formatBytes(MAX_FILE_BYTES).replace('.0 ', ' ')}.`}
         >
           {(p) => (
-            <input
-              {...p}
-              type="file"
-              className="form__file"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) set({ file: { name: f.name, sizeBytes: f.size }, upload: f })
-              }}
-            />
+            <>
+              <FileDropzone
+                inputId={p.id}
+                accept={ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')}
+                onFiles={pick}
+                idleText={d.file ? 'Drop a file here to replace it, or click to browse' : 'Drag & drop a file here, or click to browse'}
+              />
+              <PickedFiles
+                label="Chosen file"
+                files={
+                  d.file
+                    ? [
+                        {
+                          key: d.file.name,
+                          name: d.file.name,
+                          sizeBytes: d.file.sizeBytes,
+                          tag: d.upload ? 'new' : 'current',
+                          // taking a new file back out brings the earlier one back
+                          ...(d.upload
+                            ? {
+                                removeLabel: `Leave out ${d.file.name}`,
+                                onRemove: () => {
+                                  setPickProblem('')
+                                  set({ upload: undefined, file: original })
+                                },
+                              }
+                            : {}),
+                        },
+                      ]
+                    : []
+                }
+              />
+            </>
           )}
         </Field>
       )}
