@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { removeItem } from '../../mocks/contentEdits'
+import { removeItem, setLecturer } from '../../mocks/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 // "Today" is Wed 4 Nov 2026: module 6 (Go Basics) is running, module 7 opens next week.
@@ -72,6 +72,7 @@ describe('Lecturer dashboard', () => {
   })
 
   it('has shortcuts to the things students depend on', async () => {
+    setLecturer('m6', 900, true)
     renderAs(LECTURER, '/dashboard')
     const nav = await screen.findByRole('navigation', { name: 'Quick actions' })
     expect(within(nav).getByRole('link', { name: 'New task' })).toHaveAttribute('href', '/courses/m6?add=task')
@@ -157,7 +158,42 @@ describe('Course content', () => {
   })
 })
 
+describe('Module editor: a module that is not yours', () => {
+  it('can be read, with its materials, tasks and quizzes, but nothing can be added, changed or deleted', async () => {
+    // week 6 belongs to Elvin (902) in the demo, Rashad (900) is not on it
+    renderAs(LECTURER, '/courses/m6')
+    expect(await screen.findByRole('heading', { name: /./, level: 1 })).toBeInTheDocument()
+    expect(await screen.findByText(/only the lecturers assigned to it can change it/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Tasks' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /New task|New quiz|^Add$|Edit details/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Edit |^Delete / })).toBeNull()
+    expect(screen.queryByText('Assigned to you')).toBeNull()
+  })
+
+  it('the form of a shortcut link does not open on it either', async () => {
+    renderAs(LECTURER, '/courses/m6?add=task')
+    await screen.findByText(/only the lecturers assigned to it can change it/)
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('the dashboard offers no add shortcuts for the week it shows when that week is not yours', async () => {
+    renderAs(LECTURER, '/dashboard')
+    const nav = await screen.findByRole('navigation', { name: 'Quick actions' })
+    expect(within(nav).queryByRole('link', { name: 'New task' })).toBeNull()
+    expect(within(nav).getByRole('link', { name: 'Schedule a lecture' })).toBeInTheDocument()
+  })
+
+  it('an admin can still change any module', async () => {
+    localStorage.setItem('auth_user', JSON.stringify({ id: 1000, name: 'School Admin', email: 'a@x.az', roles: ['admin'] }))
+    renderWithProviders(<App />, { route: '/admin/modules/m6' })
+    expect((await screen.findAllByRole('button', { name: /^Edit/ })).length).toBeGreaterThan(0)
+  })
+})
+
 describe('Module editor: tasks', () => {
+  // Rashad is assigned to the running week (6) for these: a lecturer changes only the modules assigned to them
+  beforeEach(() => void setLecturer('m6', 900, true))
+
   it('adds a task that students then see in the module', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAs(LECTURER, '/courses/m6')
@@ -237,6 +273,9 @@ describe('Module editor: tasks', () => {
 })
 
 describe('Module editor: materials', () => {
+  // Rashad is assigned to the running week (6) for these: a lecturer changes only the modules assigned to them
+  beforeEach(() => void setLecturer('m6', 900, true))
+
   it('adds a link, checking that it is a real web address', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAs(LECTURER, '/courses/m6')
@@ -273,6 +312,9 @@ describe('Module editor: materials', () => {
 })
 
 describe('Module editor: quizzes (optional)', () => {
+  // Rashad is assigned to the running week (6) for these: a lecturer changes only the modules assigned to them
+  beforeEach(() => void setLecturer('m6', 900, true))
+
   it('builds a quiz; students see it exists, but never the answers', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAs(LECTURER, '/courses/m6')
@@ -316,6 +358,9 @@ describe('Module editor: quizzes (optional)', () => {
 })
 
 describe('Module editor: module details', () => {
+  // Rashad is assigned to the running week (6) for these: a lecturer changes only the modules assigned to them
+  beforeEach(() => void setLecturer('m6', 900, true))
+
   it('renames a module and moves its dates; students see the change', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAs(LECTURER, '/courses/m6')

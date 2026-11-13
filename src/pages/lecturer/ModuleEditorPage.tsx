@@ -46,7 +46,8 @@ function Section({
   icon: IconName
   title: string
   addLabel: string
-  onAdd: () => void
+  /** Left out when the person may only read the module. */
+  onAdd?: () => void
   empty: string | null
   children: React.ReactNode
 }) {
@@ -57,9 +58,11 @@ function Section({
           <Icon name={icon} size={20} />
         </span>
         <h2 id={id}>{title}</h2>
-        <button type="button" className="btn btn--ghost btn--small editor__add" onClick={onAdd}>
-          <Icon name="plus" size={16} /> {addLabel}
-        </button>
+        {onAdd && (
+          <button type="button" className="btn btn--ghost btn--small editor__add" onClick={onAdd}>
+            <Icon name="plus" size={16} /> {addLabel}
+          </button>
+        )}
       </header>
       {empty ? <p className="card__empty">{empty}</p> : <ul className="list">{children}</ul>}
     </section>
@@ -114,6 +117,9 @@ export default function ModuleEditorPage() {
   const gaps = contentGaps([module], now)
   const phase = modulePhase(module, now)
   const mine = !isAdmin(user) && isAssignedTo(module, user?.id)
+  // admins change any module; a lecturer only the ones they are assigned to (the others they can read, not change)
+  const canEdit = isAdmin(user) || isAssignedTo(module, user?.id)
+  const readOnly = !canEdit
   const current = editing?.id ? module.items.find((i) => i.id === editing.id) : undefined
 
   function close() {
@@ -154,9 +160,11 @@ export default function ModuleEditorPage() {
               <Icon name="check" size={14} /> Assigned to you
             </span>
           )}
-          <button type="button" className="btn btn--ghost btn--small" onClick={() => open('module')}>
-            <Icon name="edit" size={16} /> Edit details
-          </button>
+          {canEdit && (
+            <button type="button" className="btn btn--ghost btn--small" onClick={() => open('module')}>
+              <Icon name="edit" size={16} /> Edit details
+            </button>
+          )}
         </div>
         {module.description && <p className="page-subtitle">{module.description}</p>}
         <dl className="module-head__meta">
@@ -171,11 +179,17 @@ export default function ModuleEditorPage() {
         </dl>
       </header>
 
+      {readOnly && (
+        <p className="editor__readonly" role="note">
+          <Icon name="eye" size={16} /> You can read everything in this module, but only the lecturers assigned to it can change it.
+        </p>
+      )}
+
       <p className="editor__status" role="status">
         {message}
       </p>
 
-      {gaps.length > 0 && (
+      {canEdit && gaps.length > 0 && (
         <ul className="editor__gaps" aria-label="Still missing">
           {gaps.map((g) => (
             <li key={g.id}>
@@ -191,8 +205,8 @@ export default function ModuleEditorPage() {
           icon="tasks"
           title="Tasks"
           addLabel="New task"
-          onAdd={() => open('task')}
-          empty={tasks.length ? null : 'No tasks yet. Students see what to hand in and by when.'}
+          onAdd={canEdit ? () => open('task') : undefined}
+          empty={tasks.length ? null : canEdit ? 'No tasks yet. Students see what to hand in and by when.' : 'No tasks yet.'}
         >
           {tasks.map((t: AssignmentItem) => (
             <EditorRow
@@ -201,6 +215,7 @@ export default function ModuleEditorPage() {
               title={t.title}
               meta={`Due ${formatDateTime(t.dueAt)}${t.requirements?.length ? ` · ${t.requirements.length} ${t.requirements.length === 1 ? 'requirement' : 'requirements'}` : ''}`}
               warning={t.submission ? "Students' work for it will be hidden too." : undefined}
+              readOnly={readOnly}
               onEdit={() => open('task', t.id)}
               onDelete={removed('task', t.id)}
             />
@@ -213,8 +228,8 @@ export default function ModuleEditorPage() {
             icon="file"
             title="Materials"
             addLabel="Add"
-            onAdd={() => open('material')}
-            empty={materials.length ? null : 'No materials yet: add the lecture slides or useful links.'}
+            onAdd={canEdit ? () => open('material') : undefined}
+            empty={materials.length ? null : canEdit ? 'No materials yet: add the lecture slides or useful links.' : 'No materials yet.'}
           >
             {materials.map((r) => (
               <EditorRow
@@ -222,6 +237,7 @@ export default function ModuleEditorPage() {
                 icon={<Icon name={r.kind === 'link' ? 'link' : 'file'} size={18} />}
                 title={r.title}
                 meta={[kindLabel(r.kind), r.file?.name, r.description].filter(Boolean).join(' · ')}
+                readOnly={readOnly}
                 onEdit={() => open('material', r.id)}
                 onDelete={removed('material', r.id)}
                 extra={
@@ -238,8 +254,8 @@ export default function ModuleEditorPage() {
             icon="sparkle"
             title="Quizzes"
             addLabel="New quiz"
-            onAdd={() => open('quiz')}
-            empty={quizzes.length ? null : 'Optional: a short multiple-choice check for the week.'}
+            onAdd={canEdit ? () => open('quiz') : undefined}
+            empty={quizzes.length ? null : canEdit ? 'Optional: a short multiple-choice check for the week.' : 'No quizzes yet.'}
           >
             {quizzes.map((q: QuizItem) => (
               <EditorRow
@@ -247,6 +263,7 @@ export default function ModuleEditorPage() {
                 icon={<Icon name="sparkle" size={18} />}
                 title={q.title}
                 meta={`${q.questions?.length ?? 0} ${q.questions?.length === 1 ? 'question' : 'questions'}${q.dueAt ? ` · due ${formatShortDate(q.dueAt)}` : ''}`}
+                readOnly={readOnly}
                 onEdit={() => open('quiz', q.id)}
                 onDelete={removed('quiz', q.id)}
               />
@@ -255,8 +272,8 @@ export default function ModuleEditorPage() {
         </div>
       </div>
 
-      <Modal open={editing !== null} onClose={close} title={title} initialFocus=".form input, .form select">
-        {editing && <EditorForm editing={editing} module={module} now={now} current={current} done={done} actions={{ saveModule, saveItem }} onCancel={close} />}
+      <Modal open={canEdit && editing !== null} onClose={close} title={title} initialFocus=".form input, .form select">
+        {canEdit && editing && <EditorForm editing={editing} module={module} now={now} current={current} done={done} actions={{ saveModule, saveItem }} onCancel={close} />}
       </Modal>
     </div>
   )

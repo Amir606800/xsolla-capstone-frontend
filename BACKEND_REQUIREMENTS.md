@@ -236,6 +236,13 @@ front-end uses the enrollment routes that already exist.
 
 ## Permissions: "teacher of the module" becomes "the assigned lecturer"
 
+**A lecturer may only change the modules assigned to them; every other module they can only read.** The front-end now
+hides all add / edit / delete tools on modules that are not theirs, but the server must enforce it too. Today it does
+not: `PatchModule`, creating a content item and updating or deleting one (`module_service.go`, `content_service.go`)
+let ANY user with the `lecturer` role through (`HasRole(roles, "lecturer")` before the module is even checked). Change
+those checks to: admin, or a lecturer who is assigned to (enrolled in as lecturer, or `lecturer_id`) THAT module; anyone
+else gets `403`. Reading modules and content stays open to every lecturer.
+
 Everywhere the server asks `IsUserTeacherOfModule` (today: `modules.created_by = caller`), accept a lecturer who is
 **enrolled in the module** instead (or `lecturer_id`/a lecturers list if one is added); admins pass as before. Without
 this an assigned lecturer is enrolled but still cannot edit the module:

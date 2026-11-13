@@ -239,3 +239,16 @@ select.form__input {
   gap: 8px;
   text-decoration: none;
 }
+
+/* a module the lecturer may read but not change */
+.editor__readonly {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--xs-cyan) 8%, var(--card));
+  font-size: var(--fs-label);
+}

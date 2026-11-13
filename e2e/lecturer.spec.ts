@@ -9,6 +9,12 @@ const STUDENT = { id: 1, name: 'Sam Student', email: 'student@xsolla.school', ro
 async function tabAs(context: BrowserContext, user: typeof LECTURER | typeof STUDENT, path: string): Promise<Page> {
   const page = await context.newPage()
   await page.addInitScript((u) => localStorage.setItem('auth_user', JSON.stringify(u)), user)
+  // a lecturer changes only the modules assigned to them: week 6 (Elvin's in the demo) is given to Rashad too
+  await page.addInitScript(() => {
+    const edits = JSON.parse(localStorage.getItem('course_edits') ?? '{"modules":{},"items":{}}')
+    edits.modules = { ...edits.modules, m6: { ...edits.modules?.m6, lecturerIds: [900, 902] } }
+    localStorage.setItem('course_edits', JSON.stringify(edits))
+  })
   await page.goto(path)
   return page
 }

@@ -68,12 +68,14 @@ export default function StaffDashboard() {
   }, [calendar.events, meetings.slots, user, mentor, now])
 
   const editor = focus ? `/courses/${focus.id}` : '/courses'
-  const teaching: Shortcut[] = [
+  // a lecturer can add content only to a module they are assigned to (the others they can only read)
+  const mayAdd = !focus || isAdmin(user) || isAssignedTo(focus, user?.id)
+  const adding: Shortcut[] = [
     { to: `${editor}?add=task`, icon: 'tasks', label: 'New task' },
     { to: `${editor}?add=material`, icon: 'file', label: 'Add material' },
     { to: `${editor}?add=quiz`, icon: 'sparkle', label: 'New quiz' },
-    { to: '/calendar', icon: 'calendar', label: 'Schedule a lecture' },
   ]
+  const teaching: Shortcut[] = [...(mayAdd ? adding : []), { to: '/calendar', icon: 'calendar', label: 'Schedule a lecture' }]
   const mentoring: Shortcut[] = [
     { to: '/grading', icon: 'grades', label: 'Grade the week' },
     { to: '/calendar', icon: 'clock', label: 'Set 1:1 times' },

@@ -15,6 +15,7 @@ export function EditorRow({
   onEdit,
   onDelete,
   extra,
+  readOnly = false,
 }: {
   icon: ReactNode
   title: string
@@ -25,6 +26,8 @@ export function EditorRow({
   onDelete: () => Promise<void>
   /** More tools before Edit, e.g. a download button. */
   extra?: ReactNode
+  /** Read only: the person may look at it (and download) but not change or delete it. */
+  readOnly?: boolean
 }) {
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -53,7 +56,9 @@ export function EditorRow({
           </p>
         )}
       </div>
-      {confirming ? (
+      {readOnly ? (
+        extra && <div className="editor-row__tools">{extra}</div>
+      ) : confirming ? (
         <div className="editor-row__confirm" role="group" aria-label={`Delete ${title}?`}>
           <span>
             Delete?{warning ? ` ${warning}` : ''}

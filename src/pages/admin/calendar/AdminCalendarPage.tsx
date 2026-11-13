@@ -135,9 +135,7 @@ export default function AdminCalendarPage() {
           <h1 className="page-title">Calendar</h1>
           <p className="page-subtitle">Lectures, meetings and off-campus days for everyone. 1:1 times are not shown here.</p>
         </div>
-        <button type="button" className="admin-btn admin-btn--primary" onClick={() => open({ kind: 'new' })} disabled={calendar.status !== 'ready'}>
-          <Icon name="plus" size={16} /> New event
-        </button>
+        
       </header>
 
       <p className={`admin-status${warn ? ' admin-status--warn' : ''}`} role={warn ? 'alert' : 'status'}>
