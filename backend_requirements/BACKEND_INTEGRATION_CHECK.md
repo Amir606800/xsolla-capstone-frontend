@@ -40,7 +40,7 @@ Result on `5ffcd5f`: **3 bugs** (section 1), **8 missing pieces** (section 2), e
 
 ## 1. Bugs: please fix first
 
-A patch for all three is in the front-end repo: **`backend-fixes.patch`** (`git apply backend-fixes.patch` in the
+A patch for all three is in the front-end repo: **`backend_requirements/backend-fixes.patch`** (`git apply backend-fixes.patch` in the
 backend repo; 21 lines in 3 files). With it applied, every part of the suite that does not need a new feature passes.
 
 ### 1.1 New tasks lose their deadline, so they disappear (regression in `740b786` / `154ab02`)

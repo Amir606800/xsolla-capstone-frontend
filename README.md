@@ -80,8 +80,8 @@ server; the demo accounts above only work without one.
 - The back-end must allow the browser to call it (CORS). If you see "Failed to fetch" in the browser, check this first.
   Behind an ngrok tunnel the free plan shows a warning page that also blocks the calls.
 - Some screens have no back-end routes yet and keep showing demo data: 1:1 slots, notifications and announcements,
-  quizzes. `BACKEND_INTEGRATION_CHECK.md` lists what works today and what is missing.
-- The weekly mentor review (`BACKEND_REQUIREMENTS.md`) switches itself off until the server has its routes.
+  quizzes. `backend_requirements/BACKEND_INTEGRATION_CHECK.md` lists what works today and what is missing.
+- The weekly mentor review (`backend_requirements/BACKEND_REQUIREMENTS.md`) switches itself off until the server has its routes.
 
 ## 4. The weekly mentor review (try it in demo mode)
 
@@ -139,11 +139,14 @@ Admins have their own layout under `/admin`.
 
 ## 7. Documents for the back-end team
 
+All of them are in the [`backend_requirements/`](backend_requirements/) folder.
+
 | File | What it is |
 |---|---|
-| `BACKEND_REQUIREMENTS.md` | What the back-end must add for the weekly mentor review |
-| `BACKEND_INTEGRATION_CHECK.md` | Result of testing the front-end against the real server: bugs and gaps |
-| `BACKEND_REQ_FOR_TEMP_MENTOR.md` | Proposal for temporary (cover) mentors of a team |
+| `backend_requirements/BACKEND_REQUIREMENTS.md` | What the back-end must add: weekly mentor review, set own password, assigning lecturers to modules, quizzes, bulk module import, and more |
+| `backend_requirements/BACKEND_REQ_GOOGLE_DISCONNECT.md` | "Disconnect Google" must also revoke the permission at Google |
+| `backend_requirements/BACKEND_INTEGRATION_CHECK.md` | Result of testing the front-end against the real server: bugs and gaps |
+| `backend_requirements/backend-fixes.patch` | A small patch for three back-end bugs found in that test |
 
 ## 8. Troubleshooting
 
