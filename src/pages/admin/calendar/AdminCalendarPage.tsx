@@ -198,6 +198,12 @@ export default function AdminCalendarPage() {
               )}
             </div>
 
+            {listed.length > 0 && (
+              <button type="button" className="admin-btn admin-btn--primary" onClick={() => open({ kind: 'new' })}>
+                <Icon name="plus" size={16} /> Add an event{oneDay ? ' on this day' : ''}
+              </button>
+            )}
+
             <div className="admin-range" role="group" aria-label="Time range">
               <div className="admin-segmented">
                 <button type="button" aria-pressed={preset === 'week'} onClick={() => show(weekRange(today), 'week', today)}>
