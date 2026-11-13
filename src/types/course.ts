@@ -69,19 +69,30 @@ export interface QuizQuestion {
   id: string
   prompt: string
   options: string[]
-  /** Only ever sent to lecturers: the backend must strip it from what students receive. */
   correct?: number
 }
 
-/**
- * A short multiple-choice quiz written by the lecturer (optional; AI-generated quizzes may come later).
- * Taking a quiz is not built yet: students only see that it exists.
- */
+export interface QuizAttempt {
+  id: string
+  quizId: string
+  answers: number[]
+  score: number
+  total: number
+  submittedAt: string
+}
+
+export type QuizStatus = 'generating' | 'ready' | 'failed'
+
 export interface QuizItem extends BaseItem {
   type: 'quiz'
   description?: string
-  dueAt?: string // ISO
+  dueAt?: string
+  status?: QuizStatus
+  errorMessage?: string
+  isAiGenerated?: boolean
+  sourceContentItemId?: string
   questions?: QuizQuestion[]
+  attempt?: QuizAttempt
 }
 
 export type ContentItem = ResourceItem | AssignmentItem | QuizItem

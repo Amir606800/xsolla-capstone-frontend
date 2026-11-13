@@ -53,6 +53,40 @@ export interface ApiLinkItem extends ApiContentItemBase {
 /** GET /modules/:moduleId/content-items (dto.ContentTreeNode) */
 export type ApiContentItem = ApiFileItem | ApiAssignmentItem | ApiLinkItem
 
+export interface ApiQuizQuestion {
+  id: ApiId
+  position: number
+  prompt: string
+  options: string[]
+  correct?: number
+}
+
+export interface ApiQuizAttempt {
+  id: ApiId
+  quiz_id: ApiId
+  student_id: ApiId
+  answers: number[]
+  score: number
+  total: number
+  submitted_at: string
+}
+
+export interface ApiQuiz {
+  id: ApiId
+  module_id: ApiId
+  source_content_item_id?: ApiId | null
+  title: string
+  description?: string
+  due_at?: string | null
+  status: 'generating' | 'ready' | 'failed'
+  error_message?: string
+  is_ai_generated: boolean
+  created_by: ApiId
+  created_at: string
+  questions: ApiQuizQuestion[]
+  attempt?: ApiQuizAttempt | null
+}
+
 /** POST /files, GET /files/:id (dto.FileResponse) */
 export interface ApiFile {
   id: ApiId

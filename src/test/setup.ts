@@ -39,7 +39,15 @@ vi.mock('../api/auth', async () => {
 vi.mock('../api/courses', async () => {
   const store = await import('../mocks/contentEdits')
   return {
-    fetchModules: vi.fn(async () => store.listModules(new Date())),
+    fetchModules: vi.fn(async (opts?: { student?: boolean; userId?: number }) => {
+      const modules = store.listModules(new Date())
+      if (opts?.userId === undefined) return modules
+      const attempts = store.quizAttemptsOf(opts.userId)
+      return modules.map((m) => ({
+        ...m,
+        items: m.items.map((i) => (i.type === 'quiz' && attempts[i.id] ? { ...i, attempt: attempts[i.id] } : i)),
+      }))
+    }),
     submitWork: vi.fn(async (_id: string, p: import('../api/courses').SubmitPayload) => ({
       submittedAt: new Date().toISOString(),
       textBody: p.textBody || undefined,
@@ -51,6 +59,40 @@ vi.mock('../api/courses', async () => {
     deleteModule: vi.fn(async (id: string) => store.removeModule(id)),
     assignLecturer: vi.fn(async (id: string, lecturerId: number | null) => store.putModule(id, { createdBy: lecturerId })),
     createModule: vi.fn(async (patch: Parameters<typeof store.addModule>[0], ctx?: { createdBy?: number }) => store.addModule(patch, ctx?.createdBy)),
+    generateAiQuiz: vi.fn(
+      async (
+        input: { moduleId: string; contentItemId: string; title?: string; dueAt?: string },
+        ctx?: { createdBy?: number },
+      ) => {
+        const mod = store.listModules().find((m) => m.id === input.moduleId)
+        const mat = mod?.items.find((i) => i.type === 'resource' && i.id === input.contentItemId)
+        if (!mat) throw new Error('Lesson material not found')
+        const quizId = `ai-quiz-${Date.now()}`
+        const modules = store.putItem({
+          id: quizId,
+          moduleId: input.moduleId,
+          type: 'quiz',
+          title: input.title?.trim() || `AI Quiz: ${mat.title}`,
+          description: 'Generating 10 multiple-choice questions from lesson material...',
+          dueAt: input.dueAt,
+          status: 'generating',
+          isAiGenerated: true,
+          sourceContentItemId: mat.id,
+          createdBy: ctx?.createdBy,
+          questions: [],
+        })
+        return { quizId, modules }
+      },
+    ),
+    submitQuizAttempt: vi.fn(async (quizId: string, answers: number[], ctx?: { studentId?: number }) => {
+      const userId = ctx?.studentId ?? 0
+      store.saveQuizAttempt(userId, quizId, answers)
+      const attempts = store.quizAttemptsOf(userId)
+      return store.listModules(new Date()).map((m) => ({
+        ...m,
+        items: m.items.map((i) => (i.type === 'quiz' && attempts[i.id] ? { ...i, attempt: attempts[i.id] } : i)),
+      }))
+    }),
   }
 })
 

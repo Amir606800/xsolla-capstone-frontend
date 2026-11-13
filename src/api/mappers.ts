@@ -1,8 +1,8 @@
 import type { CalendarEvent, EventKind } from '../types/calendar'
-import type { AssignmentItem, ContentItem, CourseModule, ResourceItem, Submission, SubmissionVersion } from '../types/course'
+import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission, SubmissionVersion } from '../types/course'
 import type { WeeklyStanding } from '../types/standing'
 import { parseStandingLevel } from '../utils/standing'
-import type { ApiContentItem, ApiEvent, ApiModule, ApiSubmission, ApiWeeklyStanding } from './types'
+import type { ApiContentItem, ApiEvent, ApiModule, ApiQuiz, ApiSubmission, ApiWeeklyStanding } from './types'
 
 // ---------- content ----------
 
@@ -129,16 +129,58 @@ export function mapContentItems(
  * - Week dates (`opens_at` / `closes_at`) are read when the server sends them; it does not store them yet, so
  *   until then nothing is locked for students.
  */
+export const toQuizDomainId = (id: number | string) => `quiz:${id}`
+
+export const parseQuizServerId = (id: string): string | null => /^quiz:(\d+)$/.exec(id)?.[1] ?? null
+
+export function mapQuiz(q: ApiQuiz): QuizItem {
+  const quizId = toQuizDomainId(q.id)
+  return {
+    id: quizId,
+    moduleId: String(q.module_id),
+    type: 'quiz',
+    title: q.title,
+    ...(q.description ? { description: q.description } : {}),
+    ...(q.due_at ? { dueAt: q.due_at } : {}),
+    status: q.status,
+    ...(q.error_message ? { errorMessage: q.error_message } : {}),
+    isAiGenerated: q.is_ai_generated,
+    ...(q.source_content_item_id != null ? { sourceContentItemId: String(q.source_content_item_id) } : {}),
+    createdBy: Number(q.created_by),
+    questions: (q.questions ?? []).map((qq) => ({
+      id: String(qq.id),
+      prompt: qq.prompt,
+      options: qq.options,
+      ...(qq.correct !== undefined ? { correct: qq.correct } : {}),
+    })),
+    ...(q.attempt
+      ? {
+          attempt: {
+            id: String(q.attempt.id),
+            quizId,
+            answers: q.attempt.answers,
+            score: q.attempt.score,
+            total: q.attempt.total,
+            submittedAt: q.attempt.submitted_at,
+          },
+        }
+      : {}),
+  }
+}
+
 export function mapModules(
   modules: ApiModule[],
   itemsByModule: Record<string, ApiContentItem[]>,
   submissions: Record<string, ApiSubmission | undefined> = {},
   opts: { includeHidden?: boolean } = {},
+  quizzesByModule: Record<string, ApiQuiz[]> = {},
 ): CourseModule[] {
   return [...modules]
     .sort((a, b) => a.created_at.localeCompare(b.created_at) || Number(a.id) - Number(b.id))
     .map((m, i) => {
       const id = String(m.id)
+      const contentItems = mapContentItems(itemsByModule[id] ?? [], id, submissions, opts)
+      const quizItems = (quizzesByModule[id] ?? []).map(mapQuiz)
       return {
         id,
         position: i + 1,
@@ -148,9 +190,22 @@ export function mapModules(
         ...(m.opens_at ? { opensAt: m.opens_at } : {}),
         ...(m.closes_at ? { closesAt: m.closes_at } : {}),
         createdAt: m.created_at,
-        items: mapContentItems(itemsByModule[id] ?? [], id, submissions, opts),
+        items: [...contentItems, ...quizItems],
       }
     })
+}
+
+export function quizToApi(q: QuizItem) {
+  return {
+    title: q.title,
+    description: q.description ?? '',
+    due_at: q.dueAt ?? null,
+    questions: (q.questions ?? []).map((qq) => ({
+      prompt: qq.prompt,
+      options: qq.options,
+      correct: qq.correct ?? 0,
+    })),
+  }
 }
 
 /** A task as the backend stores it (POST /modules/:id/content-items). Requirements go into the description. */

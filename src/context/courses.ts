@@ -23,6 +23,8 @@ export interface CoursesContextValue {
   deleteModule: (moduleId: string) => Promise<void>
   /** A new module after the last one; resolves with its id, and a warning when part was not kept. */
   createModule: (patch: ModulePatch & { title: string }) => Promise<{ id: string; warning?: string }>
+  generateAiQuiz: (input: { moduleId: string; contentItemId: string; title?: string; dueAt?: string }) => Promise<{ quizId: string }>
+  submitQuizAttempt: (quizId: string, answers: number[]) => Promise<void>
 }
 
 export const CoursesContext = createContext<CoursesContextValue | null>(null)

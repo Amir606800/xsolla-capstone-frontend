@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '../types/calendar'
-import type { ContentItem, CourseModule } from '../types/course'
+import type { ContentItem, CourseModule, QuizAttempt, QuizItem } from '../types/course'
 import { buildMockEvents } from './events'
 import { buildMockModules } from './courses'
 
@@ -28,6 +28,7 @@ type NewModule = Omit<CourseModule, 'position' | 'items'> & { createdAt: string 
 
 const COURSE_KEY = 'course_edits'
 const EVENTS_KEY = 'event_edits'
+const QUIZ_ATTEMPTS_KEY = 'quiz_attempts'
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -156,6 +157,39 @@ export function removeItem(id: string, now: Date = new Date()): CourseModule[] {
   edits.items[id] = null
   write(COURSE_KEY, edits)
   return listModules(now)
+}
+
+export function quizAttemptsOf(userId: number): Record<string, QuizAttempt> {
+  const all = read<Record<string, Record<string, QuizAttempt>>>(QUIZ_ATTEMPTS_KEY, {})
+  return all[String(userId)] ?? {}
+}
+
+export function saveQuizAttempt(userId: number, quizId: string, answers: number[], now: Date = new Date()): QuizAttempt {
+  const quiz = listModules(now)
+    .flatMap((m) => m.items)
+    .find((i): i is QuizItem => i.type === 'quiz' && i.id === quizId)
+  if (!quiz || !quiz.questions?.length) {
+    throw new Error('Quiz is not ready yet')
+  }
+  if (answers.length !== quiz.questions.length) {
+    throw new Error(`Please answer all ${quiz.questions.length} questions`)
+  }
+  let score = 0
+  for (let i = 0; i < quiz.questions.length; i++) {
+    if (answers[i] === quiz.questions[i].correct) score++
+  }
+  const attempt: QuizAttempt = {
+    id: `attempt-${Date.now()}`,
+    quizId,
+    answers,
+    score,
+    total: quiz.questions.length,
+    submittedAt: new Date().toISOString(),
+  }
+  const all = read<Record<string, Record<string, QuizAttempt>>>(QUIZ_ATTEMPTS_KEY, {})
+  all[String(userId)] = { ...(all[String(userId)] ?? {}), [quizId]: attempt }
+  write(QUIZ_ATTEMPTS_KEY, all)
+  return attempt
 }
 
 // ---------- calendar events ----------
