@@ -29,6 +29,7 @@ export function WeekGradeItem({
   onToggle,
   onSave,
   details = true,
+  alwaysOpen = false,
 }: {
   student: Person
   week: number
@@ -42,6 +43,8 @@ export function WeekGradeItem({
   onSave: (level: StandingLevel, note: string) => Promise<void>
   /** The note and the "last saved" date; off where the server keeps only the colour. */
   details?: boolean
+  /** One student's page: the form is always shown, there is nothing to open. */
+  alwaysOpen?: boolean
 }) {
   const id = useId()
   const [level, setLevel] = useState<StandingLevel | null>(grade?.level ?? null)
@@ -69,6 +72,12 @@ export function WeekGradeItem({
 
   return (
     <li className={`review${open ? ' is-open' : ''}`}>
+      {alwaysOpen ? (
+        <p className="review__now">
+          <span className="list__meta">Now:</span>
+          {grade ? <StandingPill level={grade.level} /> : <span className="chip">Not graded</span>}
+        </p>
+      ) : (
       <div className="review__row">
         <Avatar name={student.name} small />
         <span className="person-row__main">
@@ -80,6 +89,7 @@ export function WeekGradeItem({
           )}
         </span>
         {grade ? <StandingPill level={grade.level} /> : <span className="chip">Not graded</span>}
+        {!alwaysOpen && (
         <button
           type="button"
           className="btn btn--ghost btn--small"
@@ -91,9 +101,11 @@ export function WeekGradeItem({
           {grade ? 'Change' : 'Grade'}
           <Icon name="chevron" size={16} />
         </button>
+        )}
       </div>
+      )}
 
-      {open && (
+      {(open || alwaysOpen) && (
         <form className="review__panel review__form" id={`${id}-panel`} onSubmit={save} noValidate>
           <fieldset className="grade-pick">
             <legend className="field__label">

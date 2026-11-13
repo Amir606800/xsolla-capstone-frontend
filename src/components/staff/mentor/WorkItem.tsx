@@ -25,11 +25,14 @@ export function WorkItem({
   open,
   onToggle,
   onComment,
+  by = 'student',
 }: {
   row: WorkRow
   open: boolean
   onToggle: () => void
   onComment: (text: string) => Promise<void>
+  /** What the row is titled by: the student (a task's list of students) or the task (one student's page). */
+  by?: 'student' | 'task'
 }) {
   const { student, submission, status, late } = row
   const id = rowId(row.task.id, student.id)
@@ -61,14 +64,22 @@ export function WorkItem({
   return (
     <li className={`review${open ? ' is-open' : ''}`} id={id}>
       <div className="review__row">
-        <Avatar name={student.name} small />
+        {by === 'task' ? (
+          <span className="card__icon review__task-icon" aria-hidden="true">
+            <Icon name="tasks" size={18} />
+          </span>
+        ) : (
+          <Avatar name={student.name} small />
+        )}
         <span className="person-row__main">
-          <span className="person-row__name">{student.name}</span>
-          {submission && (
+          <span className="person-row__name">{by === 'task' ? row.task.title : student.name}</span>
+          {submission ? (
             <span className="list__meta">
               Handed in {formatDateTime(submission.submittedAt)}
               {late && <span className="review__late"> · late</span>}
             </span>
+          ) : (
+            by === 'task' && <span className="list__meta">Due {formatDateTime(row.task.dueAt)}</span>
           )}
         </span>
         <span className={STATUS[status].className}>{STATUS[status].label}</span>

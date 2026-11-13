@@ -1,28 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { gradeNotesKept, mentorSeesTeamWork } from '../../api/capabilities'
 import { hasBackend } from '../../api/http'
-import { Icon } from '../../components/Icon'
-import { WeekGradeItem } from '../../components/staff/mentor/WeekGradeItem'
-import { WorkItem } from '../../components/staff/mentor/WorkItem'
+import { fetchTeamQuizResults } from '../../api/quizResults'
+import type { TeamQuizResults } from '../../api/quizResults'
 import { useCourses } from '../../hooks/useCourses'
 import { useMyTeam } from '../../hooks/useMyTeam'
 import { useTeamStandings } from '../../hooks/useTeamStandings'
 import { useTeamSubmissions } from '../../hooks/useTeamSubmissions'
-import { formatDateTime, formatShortDate } from '../../utils/date'
-import {
-  defaultWeek,
-  handedIn,
-  indexStandings,
-  indexSubmissions,
-  rowId,
-  taskRows,
-  tasksOf,
-  ungradedCount,
-  weekGradeOf,
-  weekPhase,
-} from '../../utils/review'
+import { formatShortDate } from '../../utils/date'
+import { defaultWeek, indexStandings, indexSubmissions, studentWeek, ungradedCount, weekPhase } from '../../utils/review'
 import { STANDING_LABEL } from '../../utils/standing'
+import { StudentCard, StudentWeekView } from './GradingStudents'
 import '../../styles/ui.css'
 import '../../components/module/module.css'
 import '../../components/authoring/authoring.css'
@@ -31,10 +20,11 @@ import './mentor.css'
 import { Loading } from '../../components/loading/Loading'
 
 /**
- * MENTOR: grading. Each week every student gets ONE grade - green, yellow or red - for the week as
- * a whole; the week's tasks are not graded, the mentor reads the work and may comment on it.
- * The week, the open grade and the open piece of work live in the URL
- * (`?week=m5&grade=101`, `?week=m5&open=m5-a1~101`), so the dashboard can link straight to them.
+ * MENTOR: grading, student by student. Pick a week: every student of the team is a card (their week grade, every week as a
+ * dot, the work handed in, what is new or missing, the quizzes). Open a card for that student's week: their tasks with
+ * what they handed in and the comment, the week grade and the quizzes, with arrows to the next student.
+ * Everything lives in the URL (`?week=m5&student=101&open=m5-a1~101`) so the dashboard can link straight to it; the older
+ * links `?grade=101` and `?open=m5-a1~101` (without `student`) open that student too.
  */
 export default function GradingPage() {
   const courses = useCourses()
@@ -43,6 +33,7 @@ export default function GradingPage() {
   const grades = useTeamStandings()
   const [params, setParams] = useSearchParams()
   const [saved, setSaved] = useState('')
+  const [quizResults, setQuizResults] = useState<TeamQuizResults | null>(null)
 
   const students = useMemo(() => myTeam.team?.members ?? [], [myTeam.team])
   const modules = useMemo(() => [...courses.modules].sort((a, b) => a.position - b.position), [courses.modules])
@@ -50,10 +41,25 @@ export default function GradingPage() {
   const gradeIndex = useMemo(() => indexStandings(grades.standings), [grades.standings])
   const now = courses.now
 
+  // how the students did on the quizzes (not available from the real server yet: then nothing is shown)
+  const ids = students.map((s) => s.id).join(',')
+  useEffect(() => {
+    let cancelled = false
+    fetchTeamQuizResults(ids ? ids.split(',').map(Number) : []).then(
+      (r) => !cancelled && setQuizResults(r),
+      () => !cancelled && setQuizResults(null),
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [ids, courses.modules])
+
   const fallback = useMemo(() => defaultWeek(modules, students, gradeIndex, now), [modules, students, gradeIndex, now])
   const week = modules.find((m) => m.id === params.get('week')) ?? fallback
   const openWork = params.get('open')
-  const openGrade = params.get('grade')
+  // the student whose page is open: `student`, or the older links that open a grade or a piece of work
+  const studentParam = params.get('student') ?? params.get('grade') ?? openWork?.split('~')[1] ?? null
+  const student = students.find((s) => String(s.id) === studentParam)
 
   const setParam = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)
@@ -63,31 +69,40 @@ export default function GradingPage() {
     }
     setParams(next, { replace: true })
   }
+  const openStudent = (id: number | null) => {
+    setSaved('')
+    setParam({ student: id === null ? null : String(id), grade: null, open: null })
+    window.scrollTo?.({ top: 0 })
+  }
 
   const parts = [courses, myTeam, work, grades]
   const loading = parts.some((p) => p.status === 'loading')
   const failed = parts.some((p) => p.status === 'error')
   const phase = week ? weekPhase(week, now) : 'upcoming'
   const seesWork = mentorSeesTeamWork()
-  const theirWeeks = (studentId: number) =>
-    grades.standings.filter((s) => s.studentId === studentId).sort((a, b) => a.week - b.week)
+  const theirWeeks = (studentId: number) => grades.standings.filter((s) => s.studentId === studentId).sort((a, b) => a.week - b.week)
+
+  const graded = week ? students.length - ungradedCount(week, students, gradeIndex, now) : 0
+  const freshTotal = week && seesWork ? students.reduce((n, s) => n + studentWeek(week, s, workIndex, now).fresh, 0) : 0
 
   return (
     <section className="module grading">
       <div>
         <h1 className="page-title">Grading</h1>
-        <p className="page-subtitle">Give each student a grade for the week, and comment on their work</p>
+        <p className="page-subtitle">Pick a week, then a student: grade their week and comment on their work</p>
       </div>
 
-      {loading && (
-        <Loading className="module__state">Loading your team&apos;s weeks…</Loading>
-      )}
+      {loading && <Loading className="module__state">Loading your team&apos;s weeks…</Loading>}
       {!loading && failed && (
         <div className="module__state" role="alert">
           <p>We couldn&apos;t load your team&apos;s weeks.</p>
-          <button type="button" className="btn" onClick={() => {
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
               for (const p of parts) if (p.status === 'error') p.reload()
-            }}>
+            }}
+          >
             Try again
           </button>
         </div>
@@ -150,93 +165,69 @@ export default function GradingPage() {
             </p>
           )}
 
-          {phase === 'upcoming' ? (
+          {student ? (
+            <StudentWeekView
+              student={student}
+              students={students}
+              week={week}
+              modules={modules}
+              grades={gradeIndex}
+              theirWeeks={theirWeeks(student.id)}
+              workIndex={workIndex}
+              seesWork={seesWork}
+              gradeDetails={gradeNotesKept()}
+              quizResults={quizResults}
+              now={now}
+              openWork={openWork}
+              onBack={() => openStudent(null)}
+              onStudent={openStudent}
+              onWeek={(id) => {
+                setSaved('')
+                setParam({ week: id, open: null, grade: null })
+              }}
+              onToggleWork={(id) => setParam({ open: openWork === id ? null : id })}
+              onComment={async (taskId, title, text) => {
+                await work.comment(student.id, taskId, text)
+                setSaved(`Comment saved on ${student.name}'s ${title}.`)
+              }}
+              onGrade={async (level, note) => {
+                await grades.gradeWeek(student.id, week.position, level, note)
+                setSaved(`${student.name}: week ${week.position} graded ${STANDING_LABEL[level].toLowerCase()}.`)
+              }}
+            />
+          ) : phase === 'upcoming' ? (
             <p className="card card__empty">This week has not started yet. Its grades and work show up here once it opens.</p>
           ) : (
             <>
-              <section className="card" aria-labelledby="week-grades-title">
-                <header className="card__head">
-                  <span className="card__icon card__icon--accent">
-                    <Icon name="grades" size={20} />
-                  </span>
-                  <h3 id="week-grades-title" className="grading__task">
-                    Week grades
-                  </h3>
-                  <span className="pill">
-                    {students.length - ungradedCount(week, students, gradeIndex, now)} of {students.length} graded
-                  </span>
-                </header>
-                <p className="grading__hint">
-                  One grade per student for the whole week: green when on track, yellow when falling behind,
-                  red when there was no real progress or no report.
-                  {phase === 'running' && ' The week is still running; grades are usually given at its end.'}
-                </p>
-                <ul className="list" aria-label={`Week ${week.position} grades`}>
-                  {students.map((s) => (
-                    <WeekGradeItem
-                      key={`${week.id}-${s.id}`}
-                      student={s}
-                      week={week.position}
-                      grade={weekGradeOf(gradeIndex, s.id, week.position)}
-                      theirWeeks={theirWeeks(s.id)}
-                      work={seesWork ? handedIn(week, s, workIndex) : undefined}
-                      details={gradeNotesKept()}
-                      open={openGrade === String(s.id)}
-                      onToggle={() => setParam({ grade: openGrade === String(s.id) ? null : String(s.id) })}
-                      onSave={async (level, note) => {
-                        await grades.gradeWeek(s.id, week.position, level, note)
-                        setSaved(`${s.name}: week ${week.position} graded ${STANDING_LABEL[level].toLowerCase()}.`)
-                        setParam({ grade: null })
-                      }}
-                    />
-                  ))}
-                </ul>
-              </section>
-
-              <h3 className="grading__section">Tasks this week</h3>
-              {seesWork && (
-                <p className="grading__hint grading__hint--plain">
-                  Tasks are not graded. Read what each student handed in and leave a comment if it helps them.
-                </p>
-              )}
-              {!seesWork ? (
-                <p className="card card__empty">
-                  The server does not show your students&apos; hand-ins to mentors yet, so they cannot be read or commented on here.
-                </p>
-              ) : tasksOf(week).length === 0 ? (
-                <p className="card card__empty">This week has no tasks.</p>
-              ) : (
-                tasksOf(week).map((task) => (
-                  <section key={task.id} className="card" aria-labelledby={`task-${task.id}`}>
-                    <header className="card__head">
-                      <span className="card__icon">
-                        <Icon name="tasks" size={20} />
-                      </span>
-                      <h4 id={`task-${task.id}`} className="grading__task">
-                        {task.title}
-                      </h4>
-                      <span className="pill">Due {formatDateTime(task.dueAt)}</span>
-                    </header>
-                    <ul className="list" aria-label={`${task.title}: students`}>
-                      {taskRows(task, students, workIndex, now).map((row) => {
-                        const id = rowId(task.id, row.student.id)
-                        return (
-                          <WorkItem
-                            key={id}
-                            row={row}
-                            open={openWork === id}
-                            onToggle={() => setParam({ open: openWork === id ? null : id })}
-                            onComment={async (text) => {
-                              await work.comment(row.student.id, task.id, text)
-                              setSaved(`Comment saved on ${row.student.name}'s ${task.title}.`)
-                            }}
-                          />
-                        )
-                      })}
-                    </ul>
-                  </section>
-                ))
-              )}
+              <p className="grading__summary-line">
+                <strong>
+                  {graded} of {students.length}
+                </strong>{' '}
+                graded
+                {seesWork && (
+                  <>
+                    {' · '}
+                    <strong>{freshTotal}</strong> new {freshTotal === 1 ? 'hand-in' : 'hand-ins'} without a comment
+                  </>
+                )}
+                {phase === 'running' && ' · the week is still running'}
+              </p>
+              <ul className="gcards" aria-label={`Week ${week.position} students`}>
+                {students.map((s) => (
+                  <StudentCard
+                    key={s.id}
+                    student={s}
+                    week={week}
+                    modules={modules}
+                    grades={gradeIndex}
+                    workIndex={workIndex}
+                    seesWork={seesWork}
+                    quizResults={quizResults}
+                    now={now}
+                    onOpen={() => openStudent(s.id)}
+                  />
+                ))}
+              </ul>
             </>
           )}
         </>

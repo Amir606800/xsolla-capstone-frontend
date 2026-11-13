@@ -17,7 +17,7 @@ test("the mentor's week grade and note reach the student's My grades", async ({ 
   await page.goto('/login')
   await signInAs(page, RASHAD)
   await page.goto('/grading?week=m5')
-  await page.getByRole('button', { name: "Change Sam Student's week 5" }).click()
+  await page.getByRole('button', { name: "Open Sam Student's week 5" }).click()
   await page.getByRole('radio', { name: /On track/ }).check({ force: true })
   await page.getByLabel('Note for Sam Student (optional)').fill('Strong finish to the React week.')
   await page.getByRole('button', { name: 'Save week grade' }).click()
@@ -39,6 +39,7 @@ test('a student hands in work, the mentor comments, the student reads it and can
 
   await signInAs(page, RASHAD)
   await page.goto('/grading?week=m6')
+  await page.getByRole('button', { name: "Open Sam Student's week 6" }).click()
   await page.getByRole('button', { name: "Open Sam Student's HTTP server" }).click()
   await expect(page.getByText('https://github.com/sam/http-server')).toBeVisible()
   await page.getByLabel('Comment for Sam Student').fill('Add a test for the 404 route.')

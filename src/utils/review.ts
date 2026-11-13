@@ -1,4 +1,4 @@
-import type { AssignmentItem, CourseModule } from '../types/course'
+import type { AssignmentItem, CourseModule, QuizItem } from '../types/course'
 import type { TeamSubmission } from '../types/review'
 import type { StandingLevel, WeeklyStanding } from '../types/standing'
 import type { Person } from '../types/team'
@@ -69,6 +69,20 @@ export function newWork(modules: CourseModule[], students: Person[], list: TeamS
         if (row.status === 'new') out.push({ ...row, module })
       }
   return out
+}
+
+/** The week's quizzes a student can take (ones still being written by the AI, or that failed, are not shown). */
+export const quizzesOf = (m: CourseModule) => m.items.filter((i): i is QuizItem => i.type === 'quiz' && (!i.status || i.status === 'ready'))
+
+/** One student's week in numbers, for the card. */
+export function studentWeek(module: CourseModule, student: Person, workIndex: Map<string, TeamSubmission>, now: Date) {
+  const rows = tasksOf(module).map((t) => workRow(t, student, workIndex, now))
+  return {
+    total: rows.length,
+    done: rows.filter((r) => r.submission).length,
+    fresh: rows.filter((r) => r.status === 'new').length,
+    missing: rows.filter((r) => r.status === 'missing').length,
+  }
 }
 
 // ---------- the week grade ----------
