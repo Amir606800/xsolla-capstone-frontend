@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect, useId, useRef, useState } from 'react'
 import type { TeamQuizResults } from '../../api/quizResults'
 import { Icon } from '../../components/Icon'
 import { StandingPill } from '../../components/StandingPill'
@@ -12,7 +12,63 @@ import type { Person } from '../../types/team'
 import { formatDateTime } from '../../utils/date'
 import { quizzesOf, rowId, studentWeek, tasksOf, weekGradeOf, weekPhase, workRow } from '../../utils/review'
 import type { StandingIndex } from '../../utils/review'
-import { STANDING_LABEL } from '../../utils/standing'
+import { STANDING_LABEL, STANDING_LEVELS } from '../../utils/standing'
+
+/** What each grade means, in a few words (the student's own page explains it at length). */
+const MEANING: Record<StandingLevel, string> = {
+  green: 'On track or exceeding expectations.',
+  yellow: 'Falling behind, but working to catch up.',
+  red: 'No real progress, or no report without notice.',
+}
+
+/** An "i" button in the grade card's header: a small box with the meaning of the three grades; closes on Escape or an outside click. */
+function GradeHelp() {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLSpanElement>(null)
+  const id = useId()
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <span className="ghelp" ref={box}>
+      <button
+        type="button"
+        className="icon-btn ghelp__btn"
+        aria-label="What the grades mean"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Icon name="info" size={18} />
+      </button>
+      {open && (
+        <div className="ghelp__box" id={id} role="region" aria-label="What the grades mean">
+          <ul className="ghelp__list">
+            {STANDING_LEVELS.map((l) => (
+              <li key={l}>
+                <StandingPill level={l} />
+                <span>{MEANING[l]}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="ghelp__note">One grade for the whole week. 4 yellow weeks in a row count as red; 2 red weeks in a row mean removal.</p>
+        </div>
+      )}
+    </span>
+  )
+}
 
 /** Every week of the course as a small dot, coloured by the student's grade; the open week is ringed. */
 function WeekDots({
@@ -298,11 +354,8 @@ export function StudentWeekView({
                 <h3 id="gview-grade" className="grading__task">
                   Week {week.position} grade
                 </h3>
+                <GradeHelp />
               </header>
-              <p className="grading__hint">
-                One grade for the whole week: green when on track, yellow when falling behind, red when there was no real progress.
-                {phase === 'running' && ' The week is still running; grades are usually given at its end.'}
-              </p>
               <ul className="list" aria-label={`Week ${week.position} grade`}>
                 <WeekGradeItem
                   key={`${week.id}-${student.id}`}

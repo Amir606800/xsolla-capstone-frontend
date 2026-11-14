@@ -55,10 +55,16 @@ const ModuleCard = memo(function ModuleCard({
           {module.description && <span className="module-card__desc">{module.description}</span>}
         </span>
         <span className="module-card__progress">
-          <StatBar label="Tasks" value={progress.submitted} max={progress.total} />
+          {progress.noTasks ? (
+            <span className="list__meta">No tasks this week</span>
+          ) : (
+            <StatBar label="Tasks" value={progress.submitted} max={progress.total} />
+          )}
         </span>
         <span className="module-card__foot">
-          {deadline ? (
+          {progress.noTasks ? (
+            <span className="pill pill--ok">Done: nothing to hand in</span>
+          ) : deadline ? (
             <span className={`pill${deadline.urgent ? ' pill--danger' : ''}`}>
               Next due {formatShortDate(deadline.dueAt)}
             </span>

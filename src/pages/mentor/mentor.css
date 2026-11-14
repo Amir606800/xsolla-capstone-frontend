@@ -225,17 +225,32 @@
   margin-bottom: 8px;
   padding: 0;
 }
+/* each level is a quiet button: neutral until it is picked, then a thin coloured edge and a tick */
 .grade-pick__option {
   --c: var(--ok);
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
   border: 1px solid var(--field-border);
   border-radius: 8px;
   background: var(--card);
   cursor: pointer;
+}
+.grade-pick__option:hover {
+  background: var(--active-bg);
+}
+.grade-pick__mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--field-border);
+  border-radius: 50%;
+  color: transparent;
 }
 .grade-pick__option--yellow {
   --c: var(--warn);
@@ -249,8 +264,12 @@
 }
 .grade-pick__option:has(input:checked) {
   border-color: var(--c);
-  box-shadow: inset 0 0 0 1px var(--c);
-  background: color-mix(in srgb, var(--c) 10%, var(--card));
+  background: color-mix(in srgb, var(--c) 8%, var(--card));
+}
+.grade-pick__option:has(input:checked) .grade-pick__mark {
+  border-color: var(--c);
+  background: var(--c);
+  color: var(--on-fill);
 }
 .grade-pick__option:has(input:focus-visible) {
   outline: 2px solid var(--xs-cyan);
@@ -259,14 +278,53 @@
 .grade-pick__head {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: var(--c);
-  font-weight: 600;
+  gap: 8px;
+  color: var(--text);
+  font-weight: var(--fw-medium);
 }
-.grade-pick__meaning {
-  color: var(--text-muted);
+.grade-pick__head svg {
+  color: var(--c);
+}
+/* the "i" help box in the grade card's header */
+.ghelp {
+  position: relative;
+  margin-left: auto;
+}
+.ghelp__box {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  width: min(300px, 80vw);
+  padding: 12px 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  background: var(--card);
   font-size: 13px;
   line-height: 18px;
+}
+.ghelp__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ghelp__list li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.ghelp__list .pill {
+  margin-left: 0; /* the header's pills sit on the right; these do not */
+}
+.ghelp__note {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider);
+  color: var(--text-muted);
 }
 .grade-pick__warning {
   display: flex;

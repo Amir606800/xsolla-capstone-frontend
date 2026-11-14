@@ -8,13 +8,6 @@ import { Icon } from '../../Icon'
 import { StandingPill } from '../../StandingPill'
 import { Avatar } from '../../team/People'
 
-/** The levels in the mentor's words (the student pages explain them to the student). */
-const FOR_MENTOR: Record<StandingLevel, string> = {
-  green: 'On track or exceeding expectations.',
-  yellow: 'Falling behind, but putting in effort to catch up.',
-  red: 'No meaningful progress, or no progress report without notice.',
-}
-
 /**
  * MENTOR: one student's grade for one week - green (on track), yellow (falling behind) or red
  * (no progress) - with an optional note. The grade can be changed later; the last one counts.
@@ -118,7 +111,9 @@ export function WeekGradeItem({
                   <Icon name={STANDING_ICON[l]} size={16} />
                   {STANDING_LABEL[l]}
                 </span>
-                <span className="grade-pick__meaning">{FOR_MENTOR[l]}</span>
+                <span className="grade-pick__mark" aria-hidden="true">
+                  <Icon name="check" size={14} />
+                </span>
               </label>
             ))}
           </fieldset>

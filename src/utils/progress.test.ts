@@ -30,9 +30,14 @@ const graded = (gradedAt = hours(-1)): Submission => ({
 })
 
 describe('moduleProgress', () => {
-  it('module without assignments is not started with 0%', () => {
+  it('an open module without assignments (a lecture week) counts as done by itself', () => {
     const p = moduleProgress(mod([{ id: 'r', moduleId: 'm', type: 'resource', title: 'x', kind: 'pdf' }]), NOW)
-    expect(p).toMatchObject({ total: 0, percent: 0, status: 'not-started' })
+    expect(p).toMatchObject({ total: 0, percent: 100, status: 'completed', noTasks: true })
+  })
+
+  it('a module without assignments that has not opened yet is not done', () => {
+    const later = { ...mod([]), opensAt: hours(24), closesAt: hours(200) }
+    expect(moduleProgress(later, NOW)).toMatchObject({ percent: 0, status: 'not-started', noTasks: false })
   })
 
   it('ignores quizzes and resources in the counts', () => {
@@ -101,7 +106,7 @@ describe('overallStats', () => {
 
   it('counts modules and tasks', () => {
     expect(overallStats(modules, NOW)).toEqual({
-      modulesDone: 1,
+      modulesDone: 2, // m1, and m3 with nothing to hand in
       modulesTotal: 3,
       tasksSubmitted: 3,
       tasksTotal: 4,

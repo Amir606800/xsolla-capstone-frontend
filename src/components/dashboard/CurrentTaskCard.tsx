@@ -29,21 +29,27 @@ function CurrentTaskCardBase() {
             Module {current.position} · {current.title}
           </p>
 
-          <div
-            className="current__bar"
-            role="progressbar"
-            aria-label="Module task progress"
-            aria-valuemin={0}
-            aria-valuemax={progress.total}
-            aria-valuenow={progress.submitted}
-          >
-            <span style={{ width: `${progress.percent}%` }} />
-          </div>
-          <p className="current__count">
-            {progress.submitted} of {progress.total} tasks submitted
-          </p>
+          {!progress.noTasks && (
+            <>
+              <div
+                className="current__bar"
+                role="progressbar"
+                aria-label="Module task progress"
+                aria-valuemin={0}
+                aria-valuemax={progress.total}
+                aria-valuenow={progress.submitted}
+              >
+                <span style={{ width: `${progress.percent}%` }} />
+              </div>
+              <p className="current__count">
+                {progress.submitted} of {progress.total} tasks submitted
+              </p>
+            </>
+          )}
 
-          {next ? (
+          {progress.noTasks ? (
+            <p className="current__done">Nothing to hand in this week: the module counts as done.</p>
+          ) : next ? (
             <div className="current__next">
               <p className="current__label">Next task</p>
               <p className="list__title">{next.title}</p>

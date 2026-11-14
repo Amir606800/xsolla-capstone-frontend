@@ -34,7 +34,13 @@ function ModuleHeaderBase({ module, now }: { module: CourseModule; now: Date }) 
           </div>
         )}
         <div className="module-head__progress">
-          <StatBar label="Tasks submitted" value={progress.submitted} max={progress.total} />
+          {progress.noTasks ? (
+            <span className="pill pill--ok">
+              <Icon name="check" size={14} /> Nothing to hand in: this module counts as done
+            </span>
+          ) : (
+            <StatBar label="Tasks submitted" value={progress.submitted} max={progress.total} />
+          )}
         </div>
       </dl>
     </header>

@@ -11,6 +11,8 @@ export interface ModuleProgress {
   graded: number
   percent: number
   status: ModuleStatus
+  /** An open module with nothing to hand in (a lecture week): it counts as done by itself. */
+  noTasks: boolean
 }
 
 export interface NextDeadline {
@@ -113,6 +115,12 @@ export function moduleWindow(module: CourseModule): { opensAt?: string; dueAt?: 
 export function moduleProgress(module: CourseModule, now: Date): ModuleProgress {
   const assignments = assignmentsOf(module)
   const total = assignments.length
+
+  // a lecture week has nothing to hand in, so once it has opened it counts as done (and a quiz is not a hand-in)
+  if (total === 0 && !isModuleLocked(module, now)) {
+    return { total, submitted: 0, graded: 0, percent: 100, status: 'completed', noTasks: true }
+  }
+
   const submitted = assignments.filter((a) => a.submission).length
   const graded = assignments.filter((a) => a.submission?.gradedAt !== undefined).length
   const percent = total === 0 ? 0 : Math.round((submitted / total) * 100)
@@ -125,7 +133,7 @@ export function moduleProgress(module: CourseModule, now: Date): ModuleProgress 
   else if (graded === total) status = 'completed'
   else status = 'submitted'
 
-  return { total, submitted, graded, percent, status }
+  return { total, submitted, graded, percent, status, noTasks: false }
 }
 
 /** Earliest unsubmitted deadline in the module (an overdue one counts and wins). */
@@ -147,7 +155,7 @@ export function overallStats(modules: CourseModule[], now: Date): OverallStats {
     const p = moduleProgress(m, now)
     tasksTotal += p.total
     tasksSubmitted += p.submitted
-    if (p.total > 0 && p.submitted === p.total) modulesDone += 1
+    if (p.noTasks || (p.total > 0 && p.submitted === p.total)) modulesDone += 1
   }
 
   return {
