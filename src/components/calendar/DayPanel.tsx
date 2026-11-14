@@ -6,6 +6,7 @@ import { formatTimeLeft } from '../../utils/date'
 import { useAuth } from '../../hooks/useAuth'
 import { isStudent } from '../../utils/roles'
 import { Icon } from '../Icon'
+import { Avatar } from '../profile/Avatar'
 import { GoogleBadge } from './GoogleBadge'
 import { JoinMeeting } from './JoinMeeting'
 import '../authoring/authoring.css'
@@ -110,7 +111,10 @@ function Attendees({ event }: { event: CalendarEvent }) {
       <summary>Attendees ({list.length})</summary>
       <ul>
         {list.map((a) => (
-          <li key={a.id}>{a.name}</li>
+          <li key={a.id}>
+            <Avatar name={a.name} url={a.avatarUrl} size={22} />
+            {a.name}
+          </li>
         ))}
       </ul>
     </details>

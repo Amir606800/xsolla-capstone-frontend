@@ -2,8 +2,12 @@
 
 **For:** the backend developer (`xsolla-capstone-backend`).
 
+**Status:** built on both sides. The back-end answered in branch `feat/user-profile` (merged into `dev`; its section 11 in
+`FRONTEND_REQUIREMENTS.md`) and the front-end Profile page uses those routes. Sections 1 and 2 are done; section 3
+(last sign-in, sessions) is not built. This file stays as the agreed contract.
+
 The Settings page is now a **Profile** page for every role (student, mentor, lecturer, admin), **built in the
-front-end** and waiting for these routes. It keeps what Settings had (Google Calendar, change password: nothing new
+front-end**. It keeps what Settings had (Google Calendar, change password: nothing new
 needed for those) and adds two small things:
 
 1. **About me**: a profile picture, a short bio and two contact handles. Other people can see these.
@@ -140,8 +144,10 @@ backend's redirect.
   small. `PUT /users/me/avatar` as multipart with one `file` field; `DELETE /users/me/avatar` to remove.
 - The new `avatar_url` from the answer is shown at once in the top bar and on the profile. A picture that fails to load
   falls back to the initials.
-- The page does not show other people's pictures yet (team page, attendees, etc.). That comes after `avatar_url` is on
-  `GET /users`, `/teams/me`, `/mentors/me/team` and the attendees, as in section 1 above.
+- Other people's pictures (`avatar_url` on `/teams/me`, `/mentors/me/team` and the event attendees) show on the team
+  pages, the grading and mentor-review lists, and in the "Attendees" list of an event. A person without a picture, or
+  who hides it from the viewer (`null`), shows their initials. `GET /users` (the admin's people lists) is not used for
+  pictures yet.
 
 **Look and accessibility.**
 - Loads `GET /users/me/preferences`; every click saves one key with `PATCH /users/me/preferences` (only that key).

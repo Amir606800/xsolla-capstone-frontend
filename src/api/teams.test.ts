@@ -78,4 +78,19 @@ describe('mapTeamDetail', () => {
     expect(team).toMatchObject({ cohortSize: 1, teamCount: 1 })
     expect(mapTeamDetail({ id: 5, name: 'Empty', mentor: null, members: null }).members).toEqual([])
   })
+
+  it('the mentor and the members keep the picture address the server sends', () => {
+    const team = mapTeamDetail({
+      id: 4,
+      name: 'Team 4',
+      mentor: { id: 9, name: 'M', email: 'm@x.co', avatar_url: 'http://api.test/avatars/m.webp' },
+      members: [
+        { id: 2, name: 'A', email: 'a@x.co', avatar_url: 'http://api.test/avatars/a.png' },
+        { id: 3, name: 'B', email: 'b@x.co', avatar_url: null },
+      ],
+    })
+    expect(team.mentor?.avatarUrl).toBe('http://api.test/avatars/m.webp')
+    expect(team.members[0].avatarUrl).toBe('http://api.test/avatars/a.png')
+    expect(team.members[1]).not.toHaveProperty('avatarUrl')
+  })
 })

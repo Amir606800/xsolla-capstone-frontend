@@ -655,8 +655,16 @@
 }
 .event-card__attendees ul {
   margin: 6px 0 0;
-  padding-left: 18px;
+  padding: 0;
+  list-style: none;
   columns: 2 160px;
+}
+.event-card__attendees li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  break-inside: avoid;
 }
 .event-card__link-out {
   display: inline-block;

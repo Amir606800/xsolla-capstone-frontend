@@ -255,6 +255,17 @@ describe('attendees', () => {
       { id: 5, name: 'User user', email: 'u@x.az' },
     ])
   })
+  it('a picture address comes along as avatarUrl; none (or null) leaves it out', () => {
+    const e = mapEvent({
+      ...base,
+      attendees: [
+        { id: 1, name: 'A', email: 'a@x.az', avatar_url: 'http://api.test/avatars/ab.webp' },
+        { id: 2, name: 'B', email: 'b@x.az', avatar_url: null },
+      ],
+    })
+    expect(e.attendees?.[0]).toMatchObject({ avatarUrl: 'http://api.test/avatars/ab.webp' })
+    expect(e.attendees?.[1]).not.toHaveProperty('avatarUrl')
+  })
   it.each([[undefined], [null], [[]]])('no attendees (%j) leaves the field out', (attendees) => {
     expect(mapEvent({ ...base, attendees })).not.toHaveProperty('attendees')
   })
