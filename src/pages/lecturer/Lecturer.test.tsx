@@ -398,14 +398,14 @@ describe('Calendar: lectures and events', () => {
     const { unmount } = renderAs(LECTURER, '/calendar')
     await screen.findByRole('group', { name: 'Month view' })
     await user.click(day(/^Tuesday, November 10/))
-    await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture or event' }))
-    const form = within(dialog()).getByRole('form', { name: 'New event' })
+    await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture' }))
+    const form = within(dialog()).getByRole('form', { name: 'New lecture' })
     await user.type(within(form).getByLabelText('Title'), 'Go concurrency')
     fireEvent.change(within(form).getByLabelText('Starts'), { target: { value: '14:00' } })
     fireEvent.change(within(form).getByLabelText('Ends'), { target: { value: '16:00' } })
     await user.type(within(form).getByLabelText(/Where/), 'Main hall')
     await user.selectOptions(within(form).getByLabelText(/Module/), 'm6')
-    await user.click(within(form).getByRole('button', { name: 'Add event' }))
+    await user.click(within(form).getByRole('button', { name: 'Add lecture' }))
 
     expect(await within(dialog()).findByText('Event added. Students can see it now.')).toBeInTheDocument()
     const card = within(within(dialog()).getByRole('list', { name: 'Events' })).getByRole('listitem')
@@ -427,31 +427,43 @@ describe('Calendar: lectures and events', () => {
     renderAs(LECTURER, '/calendar')
     await screen.findByRole('group', { name: 'Month view' })
     await user.click(day(/^Tuesday, November 10/))
-    await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture or event' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture' }))
     await user.type(within(dialog()).getByLabelText('Title'), 'Late')
     fireEvent.change(within(dialog()).getByLabelText('Ends'), { target: { value: '09:00' } })
-    await user.click(within(dialog()).getByRole('button', { name: 'Add event' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Add lecture' }))
     expect(within(dialog()).getByText('The end time must be after the start time.')).toBeInTheDocument()
   })
 
-  it('edits and deletes an existing event, but not deadlines', async () => {
+  it('edits and deletes a lecture, but not deadlines', async () => {
     const user = userEvent.setup()
     renderAs(LECTURER, '/calendar')
     await screen.findByRole('group', { name: 'Month view' })
-    await user.click(day(/^Friday, November 6/)) // team sync + a deadline
-    expect(within(dialog()).queryByRole('button', { name: 'Edit Due: CLI tool' })).not.toBeInTheDocument()
-
-    await user.click(within(dialog()).getByRole('button', { name: 'Edit Team sync' }))
+    await user.click(day(/^Monday, November 9/)) // the weekly lecture
+    await user.click(within(dialog()).getByRole('button', { name: 'Edit Lecture' }))
     const where = within(dialog()).getByLabelText(/Where/)
     await user.clear(where)
     await user.type(where, 'Room 2')
-    await user.click(within(dialog()).getByRole('button', { name: 'Save event' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Save lecture' }))
     expect(await within(dialog()).findByText('Event saved.')).toBeInTheDocument()
     expect(within(dialog()).getByRole('list', { name: 'Events' })).toHaveTextContent('Room 2')
 
-    await user.click(within(dialog()).getByRole('button', { name: 'Delete Team sync' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Delete Lecture' }))
     await user.click(within(dialog()).getByRole('button', { name: 'Yes, delete' }))
     expect(await within(dialog()).findByText('Event deleted.')).toBeInTheDocument()
-    expect(within(dialog()).getByRole('list', { name: 'Events' })).not.toHaveTextContent('Team sync')
+  })
+
+  it('a lecturer writes lectures only: no choice of type, and other kinds of event cannot be changed', async () => {
+    const user = userEvent.setup()
+    renderAs(LECTURER, '/calendar')
+    await screen.findByRole('group', { name: 'Month view' })
+    await user.click(day(/^Friday, November 6/)) // a team sync (a meeting) and a deadline
+    expect(within(dialog()).queryByRole('button', { name: 'Edit Team sync' })).not.toBeInTheDocument()
+    expect(within(dialog()).queryByRole('button', { name: 'Delete Team sync' })).not.toBeInTheDocument()
+    expect(within(dialog()).queryByRole('button', { name: 'Edit Due: CLI tool' })).not.toBeInTheDocument()
+
+    expect(within(dialog()).queryByRole('button', { name: 'Add a lecture or event' })).not.toBeInTheDocument()
+    await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture' }))
+    expect(within(dialog()).getByRole('form', { name: 'New lecture' })).toBeInTheDocument()
+    expect(within(dialog()).queryByLabelText('Type')).not.toBeInTheDocument()
   })
 })

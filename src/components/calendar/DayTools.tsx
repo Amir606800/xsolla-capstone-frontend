@@ -17,12 +17,15 @@ export type Tool = { kind: 'event'; event?: CalendarEvent } | { kind: 'slots' }
  */
 export function DayActions({
   canAddEvents,
+  lectureOnly = false,
   canAddSlots,
   tool,
   onTool,
   onNotice,
 }: {
   canAddEvents: boolean
+  /** A lecturer adds lectures only; an admin adds any kind of event. */
+  lectureOnly?: boolean
   canAddSlots: boolean
   tool: Tool | null
   onTool: (tool: Tool | null) => void
@@ -39,12 +42,16 @@ export function DayActions({
         <button
           type="button"
           className="btn btn--small day-actions__btn"
-          aria-label="Add a lecture or event"
+          aria-label={lectureOnly ? 'Add a lecture' : 'Add a lecture or event'}
           aria-pressed={tool?.kind === 'event' && !tool.event}
-          title="A lecture, meeting or off-campus day. Students see it on their calendar."
+          title={
+            lectureOnly
+              ? 'A lecture. Students see it on their calendar.'
+              : 'A lecture, meeting or off-campus day. Students see it on their calendar.'
+          }
           onClick={() => open({ kind: 'event' })}
         >
-          <Icon name="plus" size={16} /> Lecture or event
+          <Icon name="plus" size={16} /> {lectureOnly ? 'Lecture' : 'Lecture or event'}
         </button>
       )}
       {canAddSlots && (
@@ -63,13 +70,15 @@ export function DayActions({
   )
 }
 
-function titleOf(tool: Tool): string {
+function titleOf(tool: Tool, lectureOnly: boolean): string {
   if (tool.kind === 'slots') return 'Add 1:1 times'
+  if (lectureOnly) return tool.event ? 'Edit lecture' : 'New lecture'
   return tool.event ? 'Edit event' : 'New lecture or event'
 }
 
 /** The form of the open tool, right under the panel's header (also when "Edit" was pressed on an event far below). */
 export function DayForm({
+  lectureOnly = false,
   dayKey,
   now,
   tool,
@@ -79,6 +88,7 @@ export function DayForm({
   onSaveEvent,
   onNotice,
 }: {
+  lectureOnly?: boolean
   /** The day, as YYYY-MM-DD. */
   dayKey: string
   now: Date
@@ -101,13 +111,14 @@ export function DayForm({
   return (
     <section ref={ref} className="day-panel__part day-form" aria-labelledby={`${id}-title`}>
       <h3 id={`${id}-title`} className="day-panel__heading">
-        {titleOf(tool)}
+        {titleOf(tool, lectureOnly)}
       </h3>
 
       {tool.kind === 'event' && (
         <EventForm
           key={tool.event?.id ?? 'new'}
           event={tool.event}
+          lectureOnly={lectureOnly}
           dayKey={dayKey}
           modules={modules}
           onCancel={() => onTool(null)}

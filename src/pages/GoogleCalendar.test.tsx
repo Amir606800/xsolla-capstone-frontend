@@ -23,8 +23,8 @@ async function addTalk({ tick }: { tick: boolean }) {
   renderWithProviders(<App />, { route: '/calendar' })
   const grid = await screen.findByRole('group', { name: 'Month view' })
   await user.click(within(grid).getByRole('button', { name: /^Tuesday, November 10/ }))
-  await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture or event' }))
-  const form = within(dialog()).getByRole('form', { name: 'New event' })
+  await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture' }))
+  const form = within(dialog()).getByRole('form', { name: 'New lecture' })
   await user.type(within(form).getByLabelText('Title'), 'Guest talk')
   fireEvent.change(within(form).getByLabelText('Starts'), { target: { value: '14:00' } })
   fireEvent.change(within(form).getByLabelText('Ends'), { target: { value: '16:00' } })
@@ -33,7 +33,7 @@ async function addTalk({ tick }: { tick: boolean }) {
     await screen.findByText(/It goes on rashad@gmail.com calendar only/)
     await user.click(box)
   }
-  await user.click(within(form).getByRole('button', { name: 'Add event' }))
+  await user.click(within(form).getByRole('button', { name: 'Add lecture' }))
   return user
 }
 
@@ -65,14 +65,14 @@ describe('the lecturer’s calendar and Google', () => {
     renderWithProviders(<App />, { route: '/calendar' })
     const grid = await screen.findByRole('group', { name: 'Month view' })
     await user.click(within(grid).getByRole('button', { name: /^Tuesday, November 10/ }))
-    await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture or event' }))
-    const form = within(dialog()).getByRole('form', { name: 'New event' })
+    await user.click(within(dialog()).getByRole('button', { name: 'Add a lecture' }))
+    const form = within(dialog()).getByRole('form', { name: 'New lecture' })
     await user.type(within(form).getByLabelText('Title'), 'Guest talk')
     await screen.findByText(/It goes on rashad@gmail.com calendar only/)
     await user.click(within(form).getByRole('checkbox', { name: 'Also add to my Google Calendar' }))
     // the connection is revoked at Google while the form is open
     connect({ connection: 'reconnect' })
-    await user.click(within(form).getByRole('button', { name: 'Add event' }))
+    await user.click(within(form).getByRole('button', { name: 'Add lecture' }))
     const warning = await within(dialog()).findByRole('alert')
     expect(warning).toHaveTextContent('Event added. Students can see it now. But it did not reach your Google Calendar')
     expect(listEvents().find((e) => e.title === 'Guest talk')).toBeDefined()

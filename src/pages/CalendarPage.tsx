@@ -58,6 +58,8 @@ export default function CalendarPage() {
   // mentor part: 1:1 times. lecturer part: lectures and events. students: book a 1:1.
   const mentor = canMentor(user)
   const author = canAuthor(user)
+  // a lecturer writes lectures only; any other kind of event (meeting, off-campus day) is the admin's
+  const lectureOnly = !isAdmin(user)
   const student = isStudent(user)
 
   const [today] = useState(() => new Date())
@@ -155,7 +157,9 @@ export default function CalendarPage() {
         ? {
             // the server lets a lecturer change only the events of a week they lead (events have no owner of their own)
             canEdit: (event) =>
-              isEditableEvent(event) && (!hasBackend() || isAdmin(user) || (!!event.moduleId && eventModules.some((m) => m.id === event.moduleId))),
+              isEditableEvent(event) &&
+              (!lectureOnly || event.kind === 'lecture') &&
+              (!hasBackend() || isAdmin(user) || (!!event.moduleId && eventModules.some((m) => m.id === event.moduleId))),
             onEdit: (event) => {
               setNotice(null)
               setTool({ kind: 'event', event })
@@ -167,16 +171,17 @@ export default function CalendarPage() {
             },
           }
         : undefined,
-    [author, removeEvent, user, eventModules],
+    [author, lectureOnly, removeEvent, user, eventModules],
   )
   const saveFromForm = useCallback(
     async (d: EventDraft, existing?: CalendarEvent) => {
-      const { google, meetingLinkLost } = await saveEvent(draftToEvent(d, existing?.id ?? newId('ev')), { syncToGoogle: d.syncToGoogle })
+      const draft: EventDraft = lectureOnly ? { ...d, kind: 'lecture' } : d
+      const { google, meetingLinkLost } = await saveEvent(draftToEvent(draft, existing?.id ?? newId('ev')), { syncToGoogle: d.syncToGoogle })
       const result = savedNotice(existing ? 'Event saved.' : 'Event added. Students can see it now.', google, { meetingLinkLost })
       setTool(null)
       setNotice({ tone: result.warn ? 'warn' : 'ok', text: result.text })
     },
-    [saveEvent],
+    [saveEvent, lectureOnly],
   )
 
   const loading = calendar.status === 'loading' || courses.status === 'loading'
@@ -294,10 +299,11 @@ export default function CalendarPage() {
                 )
               }
               actions={
-                <DayActions canAddEvents={author} canAddSlots={mentor && meetings.status === 'ready'} tool={tool} onTool={setTool} onNotice={setNotice} />
+                <DayActions canAddEvents={author} lectureOnly={lectureOnly} canAddSlots={mentor && meetings.status === 'ready'} tool={tool} onTool={setTool} onNotice={setNotice} />
               }
               form={
                 <DayForm
+                  lectureOnly={lectureOnly}
                   dayKey={selected}
                   now={today}
                   tool={tool}

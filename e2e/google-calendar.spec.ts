@@ -48,13 +48,13 @@ test('a ticked event is put on Google and marked; an unticked one is not', async
   const dialog = page.getByRole('region', { name: 'Day details' })
 
   async function add(title: string, tick: boolean) {
-    await dialog.getByRole('button', { name: 'Add a lecture or event' }).click()
-    const form = dialog.getByRole('form', { name: 'New event' })
+    await dialog.getByRole('button', { name: 'Add a lecture' }).click()
+    const form = dialog.getByRole('form', { name: 'New lecture' })
     await form.getByLabel('Title').fill(title)
     const box = form.getByRole('checkbox', { name: 'Also add to my Google Calendar' })
     await expect(box).toBeEnabled()
     if (tick) await box.check()
-    await form.getByRole('button', { name: 'Add event' }).click()
+    await form.getByRole('button', { name: 'Add lecture' }).click()
   }
 
   await add('On google', true)
@@ -76,8 +76,8 @@ test('with no Google connection the tick is off and Settings is one click away',
   await page.goto('/calendar')
   await page.locator('.cell.is-today + .cell').click()
   const dialog = page.getByRole('region', { name: 'Day details' })
-  await dialog.getByRole('button', { name: 'Add a lecture or event' }).click()
-  const form = dialog.getByRole('form', { name: 'New event' })
+  await dialog.getByRole('button', { name: 'Add a lecture' }).click()
+  const form = dialog.getByRole('form', { name: 'New lecture' })
   await expect(form.getByRole('checkbox', { name: 'Also add to my Google Calendar' })).toBeDisabled()
   await form.getByRole('link', { name: 'Open Settings' }).click()
   await expect(page).toHaveURL(/\/settings$/)

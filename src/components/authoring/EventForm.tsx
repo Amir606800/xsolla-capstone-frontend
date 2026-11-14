@@ -8,21 +8,24 @@ import { Field, FormActions } from './Field'
 import { GoogleSyncField } from './GoogleSyncField'
 import { useSave } from './useSave'
 
-/** Lecturer: add or change a lecture, meeting or off-campus day. */
+/** Add or change a lecture, meeting or off-campus day. A lecturer (`lectureOnly`) can only write lectures; an admin writes any. */
 export function EventForm({
   event,
   dayKey,
   modules,
   onSave,
   onCancel,
+  lectureOnly = false,
 }: {
   event?: CalendarEvent
   dayKey: string
   modules: CourseModule[]
   onSave: (draft: EventDraft) => Promise<void>
   onCancel: () => void
+  /** No choice of type: everything saved here is a lecture. */
+  lectureOnly?: boolean
 }) {
-  const [d, setD] = useState<EventDraft>(() => eventToDraft(event, dayKey))
+  const [d, setD] = useState<EventDraft>(() => ({ ...eventToDraft(event, dayKey), ...(lectureOnly ? { kind: 'lecture' as const } : {}) }))
   const { touched, busy, error, submit } = useSave()
   const errors = validateEvent(d)
   const set = (patch: Partial<EventDraft>) => setD((prev) => ({ ...prev, ...patch }))
@@ -31,7 +34,7 @@ export function EventForm({
     <form
       className="form form--inset"
       noValidate
-      aria-label={event ? 'Edit event' : 'New event'}
+      aria-label={`${event ? 'Edit' : 'New'} ${lectureOnly ? 'lecture' : 'event'}`}
       onSubmit={(e) => {
         e.preventDefault()
         submit(hasErrors(errors), () => onSave(d))
@@ -41,17 +44,19 @@ export function EventForm({
         <Field label="Title" error={touched ? errors.title : undefined}>
           {(p) => <input {...p} className="field__input form__input" value={d.title} onChange={(e) => set({ title: e.target.value })} />}
         </Field>
-        <Field label="Type">
-          {(p) => (
-            <select {...p} className="field__input form__input" value={d.kind} onChange={(e) => set({ kind: e.target.value as EditableKind })}>
-              {EVENT_KINDS.map((k) => (
-                <option key={k.value} value={k.value}>
-                  {k.label}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
+        {!lectureOnly && (
+          <Field label="Type">
+            {(p) => (
+              <select {...p} className="field__input form__input" value={d.kind} onChange={(e) => set({ kind: e.target.value as EditableKind })}>
+                {EVENT_KINDS.map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        )}
       </div>
 
       <div className="form__row">
@@ -116,7 +121,7 @@ export function EventForm({
         )}
       </Field>
       <GoogleSyncField event={event} checked={d.syncToGoogle} onChange={(on) => set({ syncToGoogle: on })} />
-      <FormActions submitLabel={event ? 'Save event' : 'Add event'} busy={busy} error={error} onCancel={onCancel} />
+      <FormActions submitLabel={`${event ? 'Save' : 'Add'} ${lectureOnly ? 'lecture' : 'event'}`} busy={busy} error={error} onCancel={onCancel} />
     </form>
   )
 }

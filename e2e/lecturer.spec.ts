@@ -92,13 +92,13 @@ test('a lecture scheduled on the calendar shows up for the student', async ({ co
   const lecturer = await tabAs(context, LECTURER, '/calendar')
   await lecturer.locator('.cell.is-today + .cell').click()
   const dialog = lecturer.getByRole('region', { name: 'Day details' })
-  await dialog.getByRole('button', { name: 'Add a lecture or event' }).click()
-  const form = dialog.getByRole('form', { name: 'New event' })
+  await dialog.getByRole('button', { name: 'Add a lecture' }).click()
+  const form = dialog.getByRole('form', { name: 'New lecture' })
   await form.getByLabel('Title').fill('Guest talk: Go at scale')
   await form.getByLabel('Starts').fill('07:00')
   await form.getByLabel('Ends').fill('08:00')
   await form.getByLabel(/Module/).selectOption('m6')
-  await form.getByRole('button', { name: 'Add event' }).click()
+  await form.getByRole('button', { name: 'Add lecture' }).click()
   await expect(dialog.getByText('Event added. Students can see it now.')).toBeVisible()
 
   const student = await tabAs(context, STUDENT, '/calendar')
@@ -157,8 +157,8 @@ test('the calendar day panel: events in one part, what the role can add in anoth
   const panel = page.getByRole('region', { name: 'Day details' })
   await expect(panel.getByRole('heading', { name: 'On this day' })).toBeVisible()
   await expect(panel.getByRole('group', { name: 'Add to this day' })).toBeVisible()
-  await panel.getByRole('button', { name: 'Add a lecture or event' }).click()
-  await expect(panel.getByRole('form', { name: 'New event' })).toBeVisible()
+  await panel.getByRole('button', { name: 'Add a lecture' }).click()
+  await expect(panel.getByRole('form', { name: 'New lecture' })).toBeVisible()
   expect(await overflow(page)).toBe(false)
 
   if (!isMobile) {
