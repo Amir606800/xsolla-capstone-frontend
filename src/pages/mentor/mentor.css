@@ -317,6 +317,25 @@
   align-items: flex-start;
   gap: 2px;
 }
+/* a closed week's grade: shown, not editable */
+.review__locked {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.review__locked p {
+  margin: 0;
+}
+.review__locked-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--fw-medium);
+}
+.review__locked-note {
+  padding-left: 10px;
+  border-left: 2px solid var(--divider);
+}
 .ghelp__list .pill {
   margin-left: 0; /* the header's pills sit on the right; these do not */
 }

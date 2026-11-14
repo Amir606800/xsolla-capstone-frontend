@@ -16,16 +16,26 @@ async function signInAs(page: Page, user: typeof RASHAD | typeof SAM) {
 test("the mentor's week grade and note reach the student's My grades", async ({ page }) => {
   await page.goto('/login')
   await signInAs(page, RASHAD)
-  await page.goto('/grading?week=m5')
-  await page.getByRole('button', { name: "Open Sam Student's week 5" }).click()
+  await page.goto('/grading?week=m6') // the running week: its grade can still be given and changed
+  await page.getByRole('button', { name: "Open Sam Student's week 6" }).click()
   await page.getByRole('radio', { name: /On track/ }).check({ force: true })
-  await page.getByLabel('Note for Sam Student (optional)').fill('Strong finish to the React week.')
+  await page.getByLabel('Note for Sam Student (optional)').fill('Strong start to the Go week.')
   await page.getByRole('button', { name: 'Save week grade' }).click()
-  await expect(page.getByRole('status')).toContainText('Sam Student: week 5 graded on track.')
+  await expect(page.getByRole('status')).toContainText('Sam Student: week 6 graded on track.')
 
   await signInAs(page, SAM)
   await page.goto('/grades')
-  await expect(page.getByText('Strong finish to the React week.')).toBeVisible()
+  await expect(page.getByText('Strong start to the Go week.')).toBeVisible()
+})
+
+test("a closed week's grade is locked: the mentor sees it but cannot change it", async ({ page }) => {
+  await page.goto('/login')
+  await signInAs(page, RASHAD)
+  await page.goto('/grading?week=m5') // closed, and Sam already has a grade for it
+  await page.getByRole('button', { name: "Open Sam Student's week 5" }).click()
+  await expect(page.getByText('Grade locked')).toBeVisible()
+  await expect(page.getByRole('radio')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Save week grade' })).toHaveCount(0)
 })
 
 test('a student hands in work, the mentor comments, the student reads it and can still hand in again', async ({ page }) => {

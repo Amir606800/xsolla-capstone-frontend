@@ -10,7 +10,7 @@ import type { TeamSubmission } from '../../types/review'
 import type { StandingLevel, WeeklyStanding } from '../../types/standing'
 import type { Person } from '../../types/team'
 import { formatDateTime } from '../../utils/date'
-import { quizzesOf, rowId, studentWeek, tasksOf, weekGradeOf, weekPhase, workRow } from '../../utils/review'
+import { gradeLocked, quizzesOf, rowId, studentWeek, tasksOf, weekGradeOf, weekPhase, workRow } from '../../utils/review'
 import type { StandingIndex } from '../../utils/review'
 import { STANDING_LABEL, STANDING_LEVELS } from '../../utils/standing'
 
@@ -367,6 +367,7 @@ export function StudentWeekView({
                   details={gradeDetails}
                   open
                   alwaysOpen
+                  locked={gradeLocked(week, weekGradeOf(grades, student.id, week.position), now)}
                   onToggle={() => undefined}
                   onSave={onGrade}
                 />

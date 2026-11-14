@@ -23,6 +23,7 @@ export function WeekGradeItem({
   onSave,
   details = true,
   alwaysOpen = false,
+  locked = false,
 }: {
   student: Person
   week: number
@@ -38,6 +39,8 @@ export function WeekGradeItem({
   details?: boolean
   /** One student's page: the form is always shown, there is nothing to open. */
   alwaysOpen?: boolean
+  /** The week has closed and it already has a grade: the grade is shown, not editable. */
+  locked?: boolean
 }) {
   const id = useId()
   const [level, setLevel] = useState<StandingLevel | null>(grade?.level ?? null)
@@ -98,7 +101,18 @@ export function WeekGradeItem({
       </div>
       )}
 
-      {(open || alwaysOpen) && (
+      {locked && grade && (
+        <div className="review__panel review__locked">
+          <p className="review__locked-title">
+            <Icon name="lock" size={16} /> Grade locked
+          </p>
+          <p className="list__meta">Week {week} is closed, so its grade can no longer be changed.</p>
+          {details && grade.note && <p className="review__locked-note">{grade.note}</p>}
+          {details && <p className="list__meta">Saved {formatDateTime(grade.assessedAt)}.</p>}
+        </div>
+      )}
+
+      {!locked && (open || alwaysOpen) && (
         <form className="review__panel review__form" id={`${id}-panel`} onSubmit={save} noValidate>
           <fieldset className="grade-pick">
             <legend className="field__label">

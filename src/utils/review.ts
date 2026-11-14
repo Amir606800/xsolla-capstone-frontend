@@ -95,7 +95,14 @@ export function weekPhase(m: CourseModule, now: Date): WeekPhase {
   return m.opensAt ? 'running' : 'finished'
 }
 
-export type StandingIndex = Map<string, WeeklyStanding>
+/**
+ * Once a week has closed, a grade that was given stays as it is. While the week runs the mentor can still change it,
+ * and a closed week that was never graded can still get its grade.
+ */
+export const gradeLocked = (m: CourseModule, grade: WeeklyStanding | undefined, now: Date) =>
+  grade !== undefined && weekPhase(m, now) === 'finished'
+
+export type StandingIndex =Map<string, WeeklyStanding>
 const gradeKey = (studentId: number, week: number) => `${studentId}:${week}`
 
 export function indexStandings(list: (WeeklyStanding & { studentId: number })[]): StandingIndex {

@@ -9,7 +9,16 @@ import { useMyTeam } from '../../hooks/useMyTeam'
 import { useTeamStandings } from '../../hooks/useTeamStandings'
 import { useTeamSubmissions } from '../../hooks/useTeamSubmissions'
 import { formatShortDate } from '../../utils/date'
-import { defaultWeek, indexStandings, indexSubmissions, studentWeek, ungradedCount, weekPhase } from '../../utils/review'
+import {
+  defaultWeek,
+  gradeLocked,
+  indexStandings,
+  indexSubmissions,
+  studentWeek,
+  ungradedCount,
+  weekGradeOf,
+  weekPhase,
+} from '../../utils/review'
 import { STANDING_LABEL } from '../../utils/standing'
 import { StudentCard, StudentWeekView } from './GradingStudents'
 import '../../styles/ui.css'
@@ -191,6 +200,9 @@ export default function GradingPage() {
                 setSaved(`Comment saved on ${student.name}'s ${title}.`)
               }}
               onGrade={async (level, note) => {
+                if (gradeLocked(week, weekGradeOf(gradeIndex, student.id, week.position), now)) {
+                  throw new Error(`Week ${week.position} is closed, so its grade can no longer be changed.`)
+                }
                 await grades.gradeWeek(student.id, week.position, level, note)
                 setSaved(`${student.name}: week ${week.position} graded ${STANDING_LABEL[level].toLowerCase()}.`)
               }}
