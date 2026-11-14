@@ -30,7 +30,7 @@ describe('AuthPage', () => {
     expect(screen.queryByText(/sign up/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Confirm password')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Name')).not.toBeInTheDocument()
-    expect(screen.getByText('Forgot password?')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Forgot password?' })).toHaveAttribute('href', '/forgot-password')
     expect(screen.getByText('SCHOOL BAKU')).toBeInTheDocument()
   })
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { DEMO_ACCOUNTS } from '../api/auth.mock'
 import { hasBackend } from '../api/http'
 import { roleLabel } from '../utils/roles'
@@ -182,9 +182,9 @@ export default function AuthPage() {
             </button>
           </form>
 
-          <a href="#" className="auth__link">
+          <Link to="/forgot-password" className="auth__link">
             Forgot password?
-          </a>
+          </Link>
 
           <p className="auth__support">
             Are you a gamer with a payment issue?

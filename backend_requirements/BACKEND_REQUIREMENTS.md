@@ -168,47 +168,13 @@ The admin dashboard will need these later; the exact shapes can be agreed then.
 
 ---
 
-# Also needed: set my own password
+# Done: change my own password
 
-There is no e-mail reset yet, so Settings has a "Change password" form for **every role**. It asks for the new
-password and its repeat only: **no current password and no e-mail confirmation**, so a person who forgot theirs can
-still get back in.
-
-| Who | Route |
-|---|---|
-| **Admin** | `PUT /users/:id/password` with their own id: **already on the server** |
-| Student, mentor, lecturer | **`PUT /users/me/password`: new, see below** |
-
-## Admin: nothing new, one thing to know
-
-`PUT /users/{id}/password` `{ "password": "..." }` (admin only) validates the rules, hashes, and **deletes all of that
-user's refresh tokens**. For an admin changing their own password that signs them out as soon as the access token
-expires, so the front-end signs the admin out right away and shows "Your password is changed. Sign in with the new
-one." If you would rather keep the current session, spare the refresh token the request came with when `id` is the
-caller's own (tell us and we will drop the sign-out).
-
-## Student, mentor, lecturer: PUT /users/me/password
-
-Auth: any signed-in user (the access token is the only proof, as there is no current password to check).
-
-```json
-{ "password": "Zebra-Quartz-7781" }
-```
-
-- **204** on success.
-- **422** `validation_failed` when the new password breaks the rules (10 to 72 characters, a lowercase letter, an
-  uppercase letter, a number, no spaces, not containing the user's name or e-mail). The front-end shows the `message`.
-- Store it hashed like any password and **end the user's other sessions** (delete their other `refresh_tokens`), but
-  keep the one the request came with, so the user stays signed in on this device.
-- Never return or log the password.
-- Register it so `/users/me/password` is not read as `/users/{id}/password` with id `me` (that route is admin only
-  and answers 403 / 400). Until this route exists, the form says "The server cannot change your own password yet.
-  Ask an admin to reset it for you."
-
-**Security note:** with no current password and no e-mail check, whoever has a signed-in browser can take the account.
-The access token should be short-lived (it is the only guard), and the front-end signs people out on request. If this
-becomes a concern, the cheapest step is to require the current password again for non-admins; the form already has a
-place for it in git history.
+Built by the back-end: `POST /auth/password-reset` (signed in, any role) with `{ "old_password", "new_password" }`.
+`204` on success, `401 invalid_credentials` when the current password is wrong, `400 bad_request` (with the rule in the
+`message`) when the new one breaks the password rules. The sessions stay open. Settings > "Change password" uses it
+for every role. Someone who forgot their password asks a mentor or the admin (the admin sets a new one with
+`PUT /users/:id/password`); there is no e-mail reset.
 
 ---
 

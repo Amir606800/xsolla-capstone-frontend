@@ -53,7 +53,8 @@ export async function authedRequest<T>(path: string, options: Omit<Options, 'tok
   try {
     return await apiRequest<T>(path, { ...options, token: tokens.accessToken })
   } catch (e) {
-    if (!(e instanceof ApiError) || e.status !== 401) throw e
+    // a 401 that says "wrong credentials" (e.g. a wrong current password) is not about the session: no refresh, no retry
+    if (!(e instanceof ApiError) || e.status !== 401 || e.code === 'invalid_credentials') throw e
     let token: string
     try {
       token = await refreshOnce()

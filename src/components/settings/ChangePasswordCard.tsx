@@ -1,20 +1,18 @@
 import { useId, useState } from 'react'
-import { hasBackend } from '../../api/http'
 import { changeOwnPassword } from '../../api/password'
 import { useAuth } from '../../hooks/useAuth'
 import { passwordError } from '../../utils/credentials'
-import { setLoginNotice } from '../../utils/loginNotice'
-import { isAdmin } from '../../utils/roles'
 import { Icon } from '../Icon'
 import './settings.css'
 
 /**
- * Everyone (student, mentor, lecturer, admin): set a new password for your own account. Neither the current password
- * nor an e-mail confirmation is needed (there is no e-mail reset yet), so a person who forgot it can still get in.
+ * Everyone (student, mentor, lecturer, admin): change the password of your own account. The current password is sent
+ * with the new one, so only the person who knows it can change it. (Someone who forgot it asks a mentor or an admin.)
  */
 export function ChangePasswordCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const id = useId()
+  const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [again, setAgain] = useState('')
   const [show, setShow] = useState(false)
@@ -24,7 +22,8 @@ export function ChangePasswordCard({ variant = 'lms' }: { variant?: 'lms' | 'adm
   const [done, setDone] = useState(false)
 
   const errors = {
-    next: next ? passwordError(next, user ?? {}) : 'Enter a new password.',
+    current: current ? '' : 'Enter your current password.',
+    next: !next ? 'Enter a new password.' : next === current ? 'The new password must be different from the current one.' : passwordError(next, user ?? {}),
     again: again === next ? '' : 'The two passwords are not the same.',
   }
   const invalid = Object.values(errors).some(Boolean)
@@ -38,14 +37,8 @@ export function ChangePasswordCard({ variant = 'lms' }: { variant?: 'lms' | 'adm
     setBusy(true)
     setFailed('')
     try {
-      const admin = isAdmin(user)
-      await changeOwnPassword(user.id, next, { admin })
-      // the server ends every session of an admin whose password changed: sign in again with the new one
-      if (admin && hasBackend()) {
-        setLoginNotice('Your password is changed. Sign in with the new one.')
-        await signOut() // the admin pages then send them to the admin sign-in, which shows the notice
-        return
-      }
+      await changeOwnPassword(user.id, current, next)
+      setCurrent('')
       setNext('')
       setAgain('')
       setTouched(false)
@@ -57,7 +50,7 @@ export function ChangePasswordCard({ variant = 'lms' }: { variant?: 'lms' | 'adm
     }
   }
 
-  const field = (key: 'next' | 'again', label: string, value: string, set: (v: string) => void) => (
+  const field = (key: 'current' | 'next' | 'again', label: string, value: string, set: (v: string) => void) => (
     <div className="pw-card__field">
       <label className="field__label" htmlFor={`${id}-${key}`}>
         {label}
@@ -67,7 +60,7 @@ export function ChangePasswordCard({ variant = 'lms' }: { variant?: 'lms' | 'adm
         className="field__input"
         type={type}
         value={value}
-        autoComplete="new-password"
+        autoComplete={key === 'current' ? 'current-password' : 'new-password'}
         aria-invalid={touched && !!errors[key]}
         aria-describedby={touched && errors[key] ? `${id}-${key}-error` : undefined}
         onChange={(e) => set(e.target.value)}
@@ -90,11 +83,12 @@ export function ChangePasswordCard({ variant = 'lms' }: { variant?: 'lms' | 'adm
           <h2 id={`${id}-title`} className="pw-card__title">
             Change password
           </h2>
-          <p className="pw-card__lead">Set a new password for your own account. You do not need the current one.</p>
+          <p className="pw-card__lead">Enter your current password, then choose a new one. Forgot the current one? Ask your mentor or the admin.</p>
         </div>
       </header>
 
       <form className="pw-card__form" onSubmit={save} noValidate>
+        {field('current', 'Current password', current, setCurrent)}
         {field('next', 'New password', next, setNext)}
         <p className="pw-card__hint">10 to 72 characters, with a lowercase letter, an uppercase letter and a number, and no spaces.</p>
         {field('again', 'New password again', again, setAgain)}

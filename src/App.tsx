@@ -9,6 +9,7 @@ import { PageLoader } from './components/loading/PageLoader'
 
 // Route-level code splitting: each screen is downloaded only when visited.
 const AuthPage = lazy(() => import('./pages/AuthPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const AppLayout = lazy(() => import('./components/layout/AppLayout'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const CalendarPage = lazy(() => import('./pages/CalendarPage'))
@@ -54,6 +55,7 @@ export default function App() {
     <Suspense fallback={<PageLoader fullscreen />}>
       <Routes>
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin" element={<AdminRoute />}>

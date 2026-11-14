@@ -160,6 +160,13 @@
   cursor: not-allowed;
 }
 
+.auth__note {
+  margin: 0 0 4px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-muted);
+}
+
 .auth__link {
   display: inline-block;
   margin-top: 12px;
