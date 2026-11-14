@@ -147,6 +147,18 @@ vi.mock('../api/mentorReviews', async () => {
   }
 })
 
+// lecture feedback: the demo store without the latency (the form is the built-in copy of the server's)
+vi.mock('../api/lectureFeedback', async () => {
+  const m = await import('../mocks/lectureFeedback')
+  const { LECTURE_FORM } = await import('../utils/lectureFeedback')
+  type Answers = import('../types/lectureFeedback').LectureAnswers
+  return {
+    fetchLectureForm: vi.fn(async () => LECTURE_FORM),
+    fetchPendingLectures: vi.fn(async (studentId: number) => m.pendingLectures(studentId)),
+    sendLectureFeedback: vi.fn(async (studentId: number, eventId: string, _form: unknown, answers: Answers) => m.addFeedback(studentId, eventId, answers)),
+  }
+})
+
 // the slot store lives in localStorage, which is cleared after each test
 type Actor = import('../mocks/slots').Actor
 type Win = import('../types/slots').AvailabilityWindow

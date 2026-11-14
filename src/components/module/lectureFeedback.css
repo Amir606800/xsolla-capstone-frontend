@@ -1,0 +1,102 @@
+/* "Rate your lecture": the first card of the module page's right-hand column, and the form that opens from it. */
+.lecture-feedback {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--xs-cyan) 55%, var(--field-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--xs-cyan) 7%, var(--card));
+}
+.lecture-feedback__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px 10px;
+}
+.lecture-feedback__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--xs-cyan);
+  color: #06232b;
+}
+.lecture-feedback__head h3 {
+  margin: 0;
+  font-size: var(--fs-p);
+  line-height: var(--lh-p);
+  font-weight: var(--fw-medium);
+}
+.lecture-feedback__head p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.lecture-feedback__list {
+  margin: 0;
+  padding: 0 16px 8px;
+  list-style: none;
+}
+.lecture-feedback__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--divider);
+}
+.lecture-feedback__what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lecture-feedback__row .btn {
+  white-space: nowrap;
+}
+.lecture-feedback__row--done {
+  justify-content: flex-start;
+  color: var(--ok);
+  font-size: 14px;
+}
+.lecture-feedback__row--done strong {
+  color: var(--text);
+}
+
+.lecture-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 20px 20px;
+  overflow-y: auto;
+}
+.lecture-form > p {
+  margin: 0;
+}
+.lecture-form__lecture {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  background: var(--sidebar-bg);
+}
+.lecture-form__q + .lecture-form__q {
+  padding-top: 18px;
+  border-top: 1px solid var(--divider);
+}
+.lecture-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+/* the column is narrow: the date line wraps instead of being cut off */
+.lecture-feedback__what .list__title,
+.lecture-feedback__what .list__meta {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}

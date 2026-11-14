@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router'
 import { Icon } from '../components/Icon'
 import { AssignmentCard } from '../components/module/AssignmentCard'
+import { LectureFeedback } from '../components/module/LectureFeedback'
 import { ModuleHeader } from '../components/module/ModuleHeader'
 import { QuizzesCard } from '../components/module/QuizzesCard'
 import { ResourceList } from '../components/module/ResourceList'
@@ -19,9 +20,7 @@ export default function ModulePage() {
   const isLocked = useModuleAccess()
 
   if (status === 'loading') {
-    return (
-      <Loading className="module__state">Loading module…</Loading>
-    )
+    return <Loading className="module__state">Loading module…</Loading>
   }
 
   if (status === 'error') {
@@ -55,8 +54,8 @@ export default function ModulePage() {
         <Icon name="lock" size={32} />
         <h1 className="page-title">{module.title}</h1>
         <p>
-          This module opens on <strong>{module.opensAt ? formatDateTime(module.opensAt) : 'a later date'}</strong>.
-          Its materials and tasks will appear here then.
+          This module opens on <strong>{module.opensAt ? formatDateTime(module.opensAt) : 'a later date'}</strong>. Its materials
+          and tasks will appear here then.
         </p>
         <Link to="/courses" className="btn">
           Back to my courses
@@ -92,6 +91,8 @@ export default function ModulePage() {
         </section>
 
         <div className="module__side">
+          {/* rating of this week's lectures, once they are over: first in the column, then Resources and Quizzes */}
+          <LectureFeedback module={module} />
           <ResourceList resources={resources} />
           <QuizzesCard quizzes={quizzesOf(module)} onSubmitAttempt={submitQuizAttempt} />
         </div>

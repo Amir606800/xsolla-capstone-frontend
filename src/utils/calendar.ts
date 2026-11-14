@@ -7,7 +7,7 @@ export const GRID_DAYS = 42 // 6 weeks: the grid keeps the same height in every 
 
 const monthFmt = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' })
 const fullDateFmt = new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' })
-const timeFmt = new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hour12: false })
+const timeFmt = new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
 const pad = (n: number) => String(n).padStart(2, '0')
 

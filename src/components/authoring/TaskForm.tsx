@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TimeInput } from '../TimeInput'
 import type { AssignmentItem, CourseModule } from '../../types/course'
 import { defaultDue, hasErrors, taskToDraft, taskWarnings, validateTask } from '../../utils/authoring'
 import type { TaskDraft } from '../../utils/authoring'
@@ -61,12 +62,12 @@ export function TaskForm({
             {(p) => <input {...p} type="date" className="field__input form__input" value={d.dueDate} onChange={(e) => set({ dueDate: e.target.value })} />}
           </Field>
           <Field label="Time">
-            {(p) => <input {...p} type="time" className="field__input form__input" value={d.dueTime} onChange={(e) => set({ dueTime: e.target.value })} />}
+            {(p) => <TimeInput {...p} className="field__input form__input" value={d.dueTime} onChange={(dueTime) => set({ dueTime })} />}
           </Field>
         </div>
         {!item && (
           <p className="form__hint">
-            Set by default to Friday 8:00 AM {defaultDue(now).nextWeek ? 'of next week' : 'of this week'}. Change it if the task is due another time.
+            Set by default to Friday 08:00 {defaultDue(now).nextWeek ? 'of next week' : 'of this week'}. Change it if the task is due another time.
           </p>
         )}
       </fieldset>

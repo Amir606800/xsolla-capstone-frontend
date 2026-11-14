@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TimeInput } from '../../../components/TimeInput'
 import type { FormEvent } from 'react'
 import type { CalendarEvent } from '../../../types/calendar'
 import { postpone, startInputs } from '../../../utils/adminCalendar'
@@ -53,7 +54,7 @@ export function PostponeForm({ event, onSave, onCancel }: { event: CalendarEvent
         {!event.allDay && (
           <label className="admin-field">
             <span className="admin-field__label">Starts at</span>
-            <input type="time" className="admin-field__input" value={start.time} onChange={(e) => setStart({ ...start, time: e.target.value })} />
+            <TimeInput className="admin-field__input" value={start.time} onChange={(time) => setStart({ ...start, time })} />
           </label>
         )}
       </div>

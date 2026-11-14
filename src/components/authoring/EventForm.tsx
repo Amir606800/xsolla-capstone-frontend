@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TimeInput } from '../TimeInput'
 import type { CalendarEvent } from '../../types/calendar'
 import type { CourseModule } from '../../types/course'
 import { EVENT_KINDS, eventToDraft, hasErrors, validateEvent } from '../../utils/authoring'
@@ -41,7 +42,11 @@ export function EventForm({
       }}
     >
       <div className="form__row">
-        <Field label="Title" error={touched ? errors.title : undefined}>
+        <Field
+          label="Title"
+          error={touched ? errors.title : undefined}
+          hint={d.kind === 'lecture' ? 'Students rate every lecture on its own, so add one event per lecture and give it its own title, for example “Lecture 2: Goroutines”.' : undefined}
+        >
           {(p) => <input {...p} className="field__input form__input" value={d.title} onChange={(e) => set({ title: e.target.value })} />}
         </Field>
         {!lectureOnly && (
@@ -71,10 +76,10 @@ export function EventForm({
       {!d.allDay && (
         <div className="form__row">
           <Field label="Starts" error={touched ? errors.time : undefined}>
-            {(p) => <input {...p} type="time" className="field__input form__input" value={d.start} onChange={(e) => set({ start: e.target.value })} />}
+            {(p) => <TimeInput {...p} className="field__input form__input" value={d.start} onChange={(start) => set({ start })} />}
           </Field>
           <Field label="Ends">
-            {(p) => <input {...p} type="time" className="field__input form__input" value={d.end} onChange={(e) => set({ end: e.target.value })} />}
+            {(p) => <TimeInput {...p} className="field__input form__input" value={d.end} onChange={(end) => set({ end })} />}
           </Field>
         </div>
       )}
@@ -103,7 +108,11 @@ export function EventForm({
           )}
         </Field>
       )}
-      <Field label="Module" optional hint="Students get a link to the module's materials.">
+      <Field
+        label="Module"
+        optional
+        hint={d.kind === 'lecture' ? "Students get a link to the module's materials, and rate the lecture on this module's page." : "Students get a link to the module's materials."}
+      >
         {(p) => (
           <select {...p} className="field__input form__input" value={d.moduleId} onChange={(e) => set({ moduleId: e.target.value })}>
             <option value="">No module</option>

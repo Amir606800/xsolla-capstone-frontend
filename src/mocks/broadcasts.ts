@@ -50,7 +50,7 @@ export function listBroadcasts(): Broadcast[] {
   return read<Broadcast[]>(KEY, []).filter((b) => !b.kind).sort(newestFirst)
 }
 
-const dayTime = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+const dayTime = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
 /**
  * A lecturer added (or changed) the meeting link of a lecture: tell the students. Offline only: with a

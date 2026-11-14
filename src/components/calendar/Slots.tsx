@@ -4,6 +4,7 @@ import { SLOT_MINUTES } from '../../types/slots'
 import { formatDateTime } from '../../utils/date'
 import { previewText, slotLabel, upcomingSlotTimes, windowError } from '../../utils/slots'
 import { Icon } from '../Icon'
+import { TimeInput } from '../TimeInput'
 import type { Notice } from './DayPanel'
 
 export interface SlotActions {
@@ -86,27 +87,13 @@ export function AvailabilityForm({
           <label className="field__label" htmlFor={`${id}-from`}>
             From
           </label>
-          <input
-            id={`${id}-from`}
-            className="field__input slots__time"
-            type="time"
-            step={SLOT_MINUTES * 60}
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-          />
+          <TimeInput id={`${id}-from`} className="field__input slots__time" value={start} onChange={setStart} />
         </div>
         <div>
           <label className="field__label" htmlFor={`${id}-to`}>
             To
           </label>
-          <input
-            id={`${id}-to`}
-            className="field__input slots__time"
-            type="time"
-            step={SLOT_MINUTES * 60}
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-          />
+          <TimeInput id={`${id}-to`} className="field__input slots__time" value={end} onChange={setEnd} />
         </div>
         <button type="submit" className="btn" disabled={error !== null || busy}>
           Add availability

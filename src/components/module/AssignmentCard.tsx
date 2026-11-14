@@ -56,17 +56,33 @@ function AssignmentCardBase({ assignment, now, onSubmit, closesAt, context }: As
 
       {open && (
         <div id={panelId} className="assignment__body">
-          {assignment.description && <p>{assignment.description}</p>}
-          {assignment.requirements && assignment.requirements.length > 0 && (
-            <>
-              <h4 className="submission__title">Requirements</h4>
-              <ul className="assignment__requirements">
-                {assignment.requirements.map((r) => (
-                  <li key={r}>{r}</li>
-                ))}
-              </ul>
-            </>
-          )}
+          <section className="abox" aria-labelledby={`${panelId}-task`}>
+            <header className="abox__head">
+              <span className="abox__icon abox__icon--accent">
+                <Icon name="tasks" size={14} />
+              </span>
+              <h4 id={`${panelId}-task`} className="abox__title">
+                The task
+              </h4>
+            </header>
+            <div className="abox__body">
+              {assignment.description ? (
+                <p className="abox__text">{assignment.description}</p>
+              ) : (
+                <p className="submission__muted">No description.</p>
+              )}
+              {assignment.requirements && assignment.requirements.length > 0 && (
+                <div className="abox__section">
+                  <h5 className="abox__label">Requirements</h5>
+                  <ul className="assignment__requirements">
+                    {assignment.requirements.map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </section>
           <SubmissionPanel assignment={assignment} onSubmit={onSubmit} now={now} closesAt={closesAt} />
         </div>
       )}

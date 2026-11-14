@@ -3,11 +3,12 @@ import { Link } from 'react-router'
 import { Icon } from '../components/Icon'
 import { Loading } from '../components/loading/Loading'
 import { Avatar } from '../components/team/People'
+import { Scale } from '../components/review/Scale'
 import { XsollaLogo } from '../components/XsollaLogo'
 import { useAuth } from '../hooks/useAuth'
 import { useMentorReview } from '../hooks/useMentorReview'
 import { NO_SESSION_REASONS, REVIEW_STATEMENTS, REVIEW_TOPICS } from '../types/mentorReview'
-import type { ReviewStatement, Score } from '../types/mentorReview'
+import type { ReviewStatement } from '../types/mentorReview'
 import { formatShortDate } from '../utils/date'
 import {
   draftToReview,
@@ -15,7 +16,6 @@ import {
   MAX_COMMENT,
   MAX_OTHER_TOPIC,
   NO_SESSION_LABEL,
-  SCORES,
   STATEMENT_LABEL,
   TOPIC_LABEL,
   validateReview,
@@ -26,26 +26,6 @@ import '../components/module/module.css'
 import './TeamPage.css'
 import '../components/authoring/authoring.css'
 import '../components/review/review.css'
-
-/** One 1-5 choice. `name` groups the radios; the legend or label around it says what is rated. */
-function Scale({ name, value, onChange, low, high }: { name: string; value: Score | null | undefined; onChange: (s: Score) => void; low: string; high: string }) {
-  return (
-    <>
-      <div className="mentor-review__scale">
-        {SCORES.map((s) => (
-          <label key={s} className="mentor-review__score">
-            <input type="radio" name={name} value={s} checked={value === s} onChange={() => onChange(s)} aria-label={`${s}${s === 1 ? ` - ${low}` : s === 5 ? ` - ${high}` : ''}`} />
-            <span aria-hidden="true">{s}</span>
-          </label>
-        ))}
-      </div>
-      <p className="mentor-review__ends" aria-hidden="true">
-        <span>{low}</span>
-        <span>{high}</span>
-      </p>
-    </>
-  )
-}
 
 /**
  * STUDENT: the weekly review of their mentor. Mandatory: once the week is over, every other page sends the student
@@ -129,7 +109,8 @@ export default function MentorReviewPage() {
             <p className="mentor-review__lock" role="alert">
               <Icon name="lock" size={18} />
               <span>
-                Week {due.module.position} is over and its review is missing. The LMS is locked until you send it; it takes about two minutes.
+                Week {due.module.position} is over and its review is missing. The LMS is locked until you send it; it takes about
+                two minutes.
               </span>
             </p>
           )}
@@ -142,7 +123,9 @@ export default function MentorReviewPage() {
                 <br />
                 <span className="list__meta">
                   Week {due.module.position} · {due.module.title}
-                  {due.module.opensAt && due.module.closesAt ? ` · ${formatShortDate(due.module.opensAt)} - ${formatShortDate(due.module.closesAt)}` : ''}
+                  {due.module.opensAt && due.module.closesAt
+                    ? ` · ${formatShortDate(due.module.opensAt)} - ${formatShortDate(due.module.closesAt)}`
+                    : ''}
                 </span>
               </p>
             </div>
@@ -158,7 +141,12 @@ export default function MentorReviewPage() {
                 <div className="mentor-review__options mentor-review__options--row">
                   {[true, false].map((v) => (
                     <label key={String(v)} className="mentor-review__option">
-                      <input type="radio" name={`${id}-session`} checked={draft.hadSession === v} onChange={() => set({ hadSession: v })} />
+                      <input
+                        type="radio"
+                        name={`${id}-session`}
+                        checked={draft.hadSession === v}
+                        onChange={() => set({ hadSession: v })}
+                      />
                       {v ? 'Yes' : 'No'}
                     </label>
                   ))}
@@ -172,7 +160,12 @@ export default function MentorReviewPage() {
                   <div className="mentor-review__options">
                     {NO_SESSION_REASONS.map((r) => (
                       <label key={r} className="mentor-review__option">
-                        <input type="radio" name={`${id}-reason`} checked={draft.noSessionReason === r} onChange={() => set({ noSessionReason: r })} />
+                        <input
+                          type="radio"
+                          name={`${id}-reason`}
+                          checked={draft.noSessionReason === r}
+                          onChange={() => set({ noSessionReason: r })}
+                        />
                         {NO_SESSION_LABEL[r]}
                       </label>
                     ))}
@@ -192,7 +185,11 @@ export default function MentorReviewPage() {
                           <input
                             type="checkbox"
                             checked={draft.topics.includes(t)}
-                            onChange={(e) => set({ topics: e.target.checked ? [...draft.topics, t] : draft.topics.filter((x) => x !== t) })}
+                            onChange={(e) =>
+                              set({
+                                topics: e.target.checked ? [...draft.topics, t] : draft.topics.filter((x) => x !== t),
+                              })
+                            }
                           />
                           {TOPIC_LABEL[t]}
                         </label>
@@ -208,7 +205,9 @@ export default function MentorReviewPage() {
                         onChange={(e) => set({ otherTopic: e.target.value })}
                       />
                     )}
-                    {(show('topics') || show('otherTopic')) && <p className="field__error">{show('topics') ?? show('otherTopic')}</p>}
+                    {(show('topics') || show('otherTopic')) && (
+                      <p className="field__error">{show('topics') ?? show('otherTopic')}</p>
+                    )}
                   </fieldset>
 
                   <div className="mentor-review__q" role="group" aria-labelledby={`${id}-statements`}>
@@ -237,7 +236,13 @@ export default function MentorReviewPage() {
 
               <fieldset className="mentor-review__q">
                 <legend>Overall, how satisfied are you with your mentor&apos;s support this week?</legend>
-                <Scale name={`${id}-overall`} value={draft.overall} onChange={(overall) => set({ overall })} low="Not at all" high="Very satisfied" />
+                <Scale
+                  name={`${id}-overall`}
+                  value={draft.overall}
+                  onChange={(overall) => set({ overall })}
+                  low="Not at all"
+                  high="Very satisfied"
+                />
                 {show('overall') && <p className="field__error">{show('overall')}</p>}
               </fieldset>
 

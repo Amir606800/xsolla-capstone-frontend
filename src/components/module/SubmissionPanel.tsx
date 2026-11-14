@@ -99,31 +99,70 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
 
   return (
     <div className="submission">
+      {/* what the student handed in: the answer, the files, the earlier versions */}
       {submission && (
-        <div className="submission__current">
-          <p className="submission__line">
-            <Icon name="check" size={16} /> Submitted {formatDateTime(submission.submittedAt)}
-            {versions > 1 && <span className="submission__version-tag">version {versions}</span>}
-          </p>
-          {submission.textBody && <p className="submission__text">{submission.textBody}</p>}
-          {submission.files && submission.files.length > 0 && <FileList files={submission.files} label="Submitted files" />}
-          {graded && (
-            <div className="submission__grade">
-              <GradedPill />
-              {submission.feedback && <p>&ldquo;{submission.feedback}&rdquo;</p>}
-            </div>
-          )}
-          {/* tasks are not graded any more: the mentor may simply leave a comment */}
-          {!graded && submission.feedback && (
-            <div className="submission__comment">
-              <p className="submission__comment-head">
-                <Icon name="user" size={14} /> Comment from your mentor
-              </p>
-              <p>&ldquo;{submission.feedback}&rdquo;</p>
-            </div>
-          )}
-          {history.length > 0 && <EarlierVersions history={history} total={versions} />}
-        </div>
+        <section className="abox abox--work" aria-labelledby={`${uid}-work`}>
+          <header className="abox__head">
+            <span className="abox__icon">
+              <Icon name="file" size={14} />
+            </span>
+            <h4 id={`${uid}-work`} className="abox__title">
+              Your submission
+            </h4>
+            <p className="submission__line abox__aside">
+              <Icon name="check" size={16} /> Submitted {formatDateTime(submission.submittedAt)}
+              {versions > 1 && <span className="submission__version-tag">version {versions}</span>}
+            </p>
+          </header>
+          <div className="abox__body">
+            {submission.textBody && (
+              <div className="abox__section">
+                <h5 className="abox__label">Your answer</h5>
+                <p className="abox__quote">{submission.textBody}</p>
+              </div>
+            )}
+            {submission.files && submission.files.length > 0 && (
+              <div className="abox__section">
+                <h5 className="abox__label">Files you handed in</h5>
+                <FileList files={submission.files} label="Submitted files" />
+              </div>
+            )}
+            {!submission.textBody && !submission.files?.length && (
+              <p className="submission__muted">Only the hand-in time was saved.</p>
+            )}
+            {history.length > 0 && (
+              <div className="abox__section">
+                <EarlierVersions history={history} total={versions} />
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* what the mentor or lecturer said; a graded task is final (tasks are otherwise only commented) */}
+      {submission && (graded || submission.feedback) && (
+        <section className={`abox abox--feedback${graded ? ' is-graded' : ''}`} aria-labelledby={`${uid}-feedback`}>
+          <header className="abox__head">
+            <span className="abox__icon">
+              <Icon name="user" size={14} />
+            </span>
+            <h4 id={`${uid}-feedback`} className="abox__title">
+              {graded ? 'Feedback' : 'Comment from your mentor'}
+            </h4>
+            {graded && (
+              <span className="abox__aside">
+                <GradedPill />
+              </span>
+            )}
+          </header>
+          <div className="abox__body">
+            {submission.feedback ? (
+              <p className="abox__quote abox__quote--feedback">&ldquo;{submission.feedback}&rdquo;</p>
+            ) : (
+              <p className="submission__muted">No comment was left.</p>
+            )}
+          </div>
+        </section>
       )}
 
       {/* Graded work is final: no form, nothing to change. */}
@@ -144,85 +183,95 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
       )}
 
       {!graded && !closed && (
-        <form onSubmit={handleSubmit} noValidate>
-          <h4 className="submission__title">{submission ? 'Hand in a new version' : 'Submit your work'}</h4>
-          <p className="submission__hint">
-            {submission
-              ? `You can hand in a new version as often as you like until ${formatDateTime(assignment.dueAt)}. Earlier versions stay listed above.`
-              : `Open until ${formatDateTime(assignment.dueAt)}. You can hand in a new version later if you change something.`}
-          </p>
-
-          <label className="field__label" htmlFor={`${uid}-text`}>
-            Answer or link
-          </label>
-          <textarea
-            id={`${uid}-text`}
-            className="field__input submission__textarea"
-            rows={4}
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value)
-              setDone(false)
-            }}
-            placeholder="Paste a repository link or write a short note"
-          />
-
-          <label className="field__label" htmlFor={`${uid}-files`}>
-            Files{' '}
-            <span className="submission__muted">
-              ({ALLOWED_EXTENSIONS.join(', ')}, up to {formatBytes(MAX_FILE_BYTES).replace('.0 ', ' ')} each, {MAX_FILES} files at most)
+        <section className="abox abox--form" aria-labelledby={`${uid}-form`}>
+          <header className="abox__head">
+            <span className="abox__icon abox__icon--accent">
+              <Icon name="upload" size={14} />
             </span>
-          </label>
-
-          <PickedFiles
-            kept
-            label="Kept from the current version"
-            files={keep.map((f) => ({
-              key: f.id ?? fileKey(f),
-              name: f.name,
-              sizeBytes: f.sizeBytes,
-              tag: 'kept',
-              removeLabel: `Leave out ${f.name}`,
-              onRemove: () => setKeep((prev) => prev.filter((x) => x !== f)),
-            }))}
-          />
-
-          <FileDropzone inputId={`${uid}-files`} accept={ACCEPT} multiple onFiles={addFiles} />
-
-          {fileErrors.length > 0 && (
-            <ul className="submission__errors" role="alert">
-              {fileErrors.map((m) => (
-                <li key={m}>{m}</li>
-              ))}
-            </ul>
-          )}
-
-          <PickedFiles
-            label="Files to upload"
-            files={files.map((f) => ({
-              key: fileKey(f),
-              name: f.name,
-              sizeBytes: f.size,
-              onRemove: () => setFiles((prev) => prev.filter((x) => x !== f)),
-            }))}
-          />
-
-          {error && (
-            <p className="field__error" role="alert">
-              {error}
+            <h4 id={`${uid}-form`} className="abox__title">
+              {submission ? 'Hand in a new version' : 'Submit your work'}
+            </h4>
+          </header>
+          <form className="abox__body" onSubmit={handleSubmit} noValidate>
+            <p className="submission__hint">
+              {submission
+                ? `You can hand in a new version as often as you like until ${formatDateTime(assignment.dueAt)}. Earlier versions stay listed above.`
+                : `Open until ${formatDateTime(assignment.dueAt)}. You can hand in a new version later if you change something.`}
             </p>
-          )}
-          {done && (
-            <p className="submission__done" role="status">
-              Your work was submitted.
-            </p>
-          )}
 
-          <button type="submit" className="btn submission__submit" disabled={!canSubmit}>
-            <Icon name="upload" size={18} />
-            {busy ? 'Submitting…' : submission ? 'Hand in new version' : 'Submit'}
-          </button>
-        </form>
+            <label className="field__label" htmlFor={`${uid}-text`}>
+              Answer or link
+            </label>
+            <textarea
+              id={`${uid}-text`}
+              className="field__input submission__textarea"
+              rows={4}
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value)
+                setDone(false)
+              }}
+              placeholder="Paste a repository link or write a short note"
+            />
+
+            <label className="field__label" htmlFor={`${uid}-files`}>
+              Files{' '}
+              <span className="submission__muted">
+                ({ALLOWED_EXTENSIONS.join(', ')}, up to {formatBytes(MAX_FILE_BYTES).replace('.0 ', ' ')} each, {MAX_FILES} files
+                at most)
+              </span>
+            </label>
+
+            <PickedFiles
+              kept
+              label="Kept from the current version"
+              files={keep.map((f) => ({
+                key: f.id ?? fileKey(f),
+                name: f.name,
+                sizeBytes: f.sizeBytes,
+                tag: 'kept',
+                removeLabel: `Leave out ${f.name}`,
+                onRemove: () => setKeep((prev) => prev.filter((x) => x !== f)),
+              }))}
+            />
+
+            <FileDropzone inputId={`${uid}-files`} accept={ACCEPT} multiple onFiles={addFiles} />
+
+            {fileErrors.length > 0 && (
+              <ul className="submission__errors" role="alert">
+                {fileErrors.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
+            )}
+
+            <PickedFiles
+              label="Files to upload"
+              files={files.map((f) => ({
+                key: fileKey(f),
+                name: f.name,
+                sizeBytes: f.size,
+                onRemove: () => setFiles((prev) => prev.filter((x) => x !== f)),
+              }))}
+            />
+
+            {error && (
+              <p className="field__error" role="alert">
+                {error}
+              </p>
+            )}
+            {done && (
+              <p className="submission__done" role="status">
+                Your work was submitted.
+              </p>
+            )}
+
+            <button type="submit" className="btn submission__submit" disabled={!canSubmit}>
+              <Icon name="upload" size={18} />
+              {busy ? 'Submitting…' : submission ? 'Hand in new version' : 'Submit'}
+            </button>
+          </form>
+        </section>
       )}
     </div>
   )

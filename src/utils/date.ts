@@ -7,10 +7,10 @@ const dateTimeFmt = new Intl.DateTimeFormat('en', {
   day: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
-  hour12: false,
+  hourCycle: 'h23',
 })
 
-const clockFmt = new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hour12: false })
+const clockFmt = new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
 /** "18:00" */
 export function formatClockTime(iso: string): string {

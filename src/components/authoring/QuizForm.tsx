@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { TimeInput } from '../TimeInput'
 import type { QuizItem } from '../../types/course'
 import { MAX_OPTIONS, MIN_OPTIONS, emptyQuestion, quizHasErrors, quizToDraft, validateQuiz } from '../../utils/authoring'
 import type { QuestionDraft, QuizDraft } from '../../utils/authoring'
@@ -139,7 +140,7 @@ export function QuizForm({
           {(p) => <input {...p} type="date" className="field__input form__input" value={d.dueDate} onChange={(e) => set({ dueDate: e.target.value })} />}
         </Field>
         <Field label="Due time" optional>
-          {(p) => <input {...p} type="time" className="field__input form__input" value={d.dueTime} onChange={(e) => set({ dueTime: e.target.value })} />}
+          {(p) => <TimeInput {...p} className="field__input form__input" value={d.dueTime} onChange={(dueTime) => set({ dueTime })} />}
         </Field>
       </div>
 

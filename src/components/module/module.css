@@ -126,7 +126,7 @@
   transform: rotate(180deg);
 }
 .assignment__body {
-  padding: 4px 20px 20px;
+  padding: 12px 20px 20px;
 }
 .assignment__body > p {
   margin: 8px 0;
@@ -138,11 +138,113 @@
 }
 
 /* ---------- Submission ---------- */
+/* an open task is a stack of boxes: the task, what was handed in, the feedback, the form. Each has a header strip. */
+.assignment__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .submission {
-  margin-top: 12px;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.abox {
+  overflow: hidden;
+  border: 1px solid var(--field-border);
   border-radius: 8px;
+  background: var(--card);
+}
+.abox__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--field-border);
   background: var(--sidebar-bg);
+}
+.abox__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--active-bg);
+  color: var(--text);
+}
+.abox__icon--accent {
+  background: var(--xs-cyan);
+  color: #06232b;
+}
+.abox__title {
+  margin: 0;
+  font-size: var(--fs-p);
+  line-height: var(--lh-p);
+  font-weight: var(--fw-medium);
+}
+.abox__aside {
+  margin: 0 0 0 auto;
+}
+.abox__body {
+  padding: 14px;
+}
+.abox__text {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.abox__section + .abox__section,
+.abox__text + .abox__section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+}
+.abox__label {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: var(--fw-strong);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.abox__quote {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--main-bg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.abox__quote--feedback {
+  border-left: 3px solid var(--xs-cyan);
+  font-style: italic;
+}
+.abox--feedback.is-graded .abox__icon {
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  color: var(--ok);
+}
+.abox .assignment__requirements {
+  margin: 0;
+}
+/* each handed-in file is a row of its own */
+.abox .submission__files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+.abox .submission__files li {
+  padding: 8px 10px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--main-bg);
+}
+.abox .submission__history {
+  margin-top: 0;
+}
+.abox--form .submission__hint {
+  margin-bottom: 8px;
 }
 .submission__title {
   margin: 12px 0 4px;
@@ -158,16 +260,12 @@
 .submission__hint {
   margin: 0 0 4px;
 }
-.submission__current {
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--divider);
-}
 .submission__line {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin: 0 0 6px;
+  margin: 0;
   color: var(--ok);
   font-size: 14px;
 }
@@ -175,14 +273,6 @@
   margin: 6px 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-.submission__grade {
-  margin-top: 8px;
-}
-.submission__grade p {
-  margin: 4px 0 0;
-  color: var(--text-muted);
-  font-style: italic;
 }
 .submission__textarea {
   height: auto;
@@ -385,24 +475,6 @@
   background: var(--sidebar-bg);
   color: var(--text-muted);
   font-size: var(--fs-label);
-}
-.submission__comment {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-left: 3px solid var(--xs-cyan);
-  border-radius: 4px;
-  background: var(--main-bg);
-}
-.submission__comment-head {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-.submission__comment p:last-child {
-  margin: 4px 0 0;
 }
 
 /* ---------- resources: scroll inside the card, filter, pop-up ---------- */
