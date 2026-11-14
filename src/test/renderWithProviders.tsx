@@ -3,6 +3,7 @@ import type { ReactElement } from 'react'
 import { MemoryRouter } from 'react-router'
 import { AuthProvider } from '../context/AuthProvider'
 import { GoogleProvider } from '../context/GoogleProvider'
+import { ProfileProvider } from '../context/ProfileProvider'
 import { ThemeProvider } from '../context/ThemeProvider'
 
 interface Options {
@@ -14,9 +15,11 @@ export function renderWithProviders(ui: ReactElement, { route = '/' }: Options =
   return render(
     <ThemeProvider>
       <AuthProvider>
-        <GoogleProvider>
-          <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
-        </GoogleProvider>
+        <ProfileProvider>
+          <GoogleProvider>
+            <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+          </GoogleProvider>
+        </ProfileProvider>
       </AuthProvider>
     </ThemeProvider>,
   )

@@ -31,12 +31,11 @@ describe('Admin dashboard frame', () => {
       'Teams',
       'Announce',
       'Notifications',
-      'Settings',
       'Office tour',
       'Slack',
       'GitLab',
     ])
-    for (const g of ['Course', 'People', 'Messages', 'Account', 'Community', 'Team tools']) expect(within(nav).getByRole('group', { name: g })).toBeInTheDocument()
+    for (const g of ['Course', 'People', 'Messages', 'Community', 'Team tools']) expect(within(nav).getByRole('group', { name: g })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
   })
 

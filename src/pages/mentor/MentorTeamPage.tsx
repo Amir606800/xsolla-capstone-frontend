@@ -69,7 +69,7 @@ export default function MentorTeamPage() {
                   const next = meetings.status === 'ready' ? myNextBooking(meetings.slots, m.id, now) : undefined
                   return (
                     <li key={m.id} className="list__row team__person mentor__student">
-                      <Avatar name={m.name} />
+                      <Avatar name={m.name} url={m.avatarUrl} />
                       <div className="team__info">
                         <p className="list__title">{m.name}</p>
                         <Contact person={m} />

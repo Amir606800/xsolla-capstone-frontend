@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { useAuth } from '../../hooks/useAuth'
 import { useGoogle } from '../../hooks/useGoogle'
 import type { CalendarEvent } from '../../types/calendar'
-import { settingsPath } from '../../utils/googleSync'
+import { profilePath } from '../../utils/googleSync'
 
 /**
  * "Also add to my Google Calendar" on the event form. The server can only do this when the event is
@@ -36,7 +36,7 @@ export function GoogleSyncField({ event, checked, onChange }: { event?: Calendar
     hint = (
       <>
         {connection === 'reconnect' ? 'Your Google connection needs renewing. ' : 'Google is not connected. '}
-        <Link to={settingsPath(user)}>Open Settings</Link> to {connection === 'reconnect' ? 'reconnect' : 'connect'} it.
+        <Link to={profilePath(user)}>Open Profile</Link> to {connection === 'reconnect' ? 'reconnect' : 'connect'} it.
       </>
     )
 

@@ -1,34 +1,49 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ThemeContext } from './theme'
-import type { Theme } from './theme'
+import type { Theme, ThemePreference } from './theme'
 
 const STORAGE_KEY = 'theme'
+const DARK_QUERY = '(prefers-color-scheme: dark)'
 
-function getInitialTheme(): Theme {
+function getInitialPreference(): ThemePreference {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved === 'light' || saved === 'dark') return saved
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved
   } catch {
     // storage unavailable
   }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return 'system'
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const [preference, setPreference] = useState<ThemePreference>(getInitialPreference)
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia(DARK_QUERY).matches)
+
+  // "system" follows the device, also while the page is open
+  useEffect(() => {
+    const query = window.matchMedia(DARK_QUERY)
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches)
+    query.addEventListener?.('change', onChange)
+    return () => query.removeEventListener?.('change', onChange)
+  }, [])
+
+  const theme: Theme = preference === 'system' ? (systemDark ? 'dark' : 'light') : preference
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+  }, [theme])
+
+  useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, theme)
+      localStorage.setItem(STORAGE_KEY, preference)
     } catch {
       // storage unavailable
     }
-  }, [theme])
+  }, [preference])
 
-  const toggleTheme = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), [])
-  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme])
+  const toggleTheme = useCallback(() => setPreference(theme === 'dark' ? 'light' : 'dark'), [theme])
+  const value = useMemo(() => ({ theme, preference, toggleTheme, setPreference }), [theme, preference, toggleTheme])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

@@ -3,6 +3,8 @@ export interface Person {
   id: number
   name: string
   email: string
+  /** The picture, when the person has one that this viewer may see. */
+  avatarUrl?: string | null
 }
 
 /**

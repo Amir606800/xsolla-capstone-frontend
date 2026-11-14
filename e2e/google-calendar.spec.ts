@@ -11,12 +11,11 @@ async function signInAs(page: Page, user: object) {
 }
 const overflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
 
-test('a lecturer connects Google from Settings and sees the account', async ({ page }) => {
+test('a lecturer connects Google from their profile and sees the account', async ({ page }) => {
   await signInAs(page, LECTURER)
   await page.goto('/dashboard')
-  await page.getByRole('button', { name: 'Account menu' }).click()
-  await page.getByRole('menuitem', { name: 'Settings' }).click()
-  await expect(page).toHaveURL(/\/settings$/)
+  await page.getByRole('link', { name: 'Rashad Aliyev profile' }).click()
+  await expect(page).toHaveURL(/\/profile$/)
   await expect(page.getByText('Not connected')).toBeVisible()
   await page.getByRole('button', { name: 'Connect Google Calendar' }).click()
   await expect(page.getByText('rashad@gmail.com')).toBeVisible()
@@ -32,12 +31,12 @@ test('a lecturer connects Google from Settings and sees the account', async ({ p
   await expect(page.getByText('Not connected')).toBeVisible()
 })
 
-test('Google’s way back to /settings shows the answer once and tidies the address', async ({ page }) => {
+test('Google’s way back to /settings leads to the profile, shows the answer once and tidies the address', async ({ page }) => {
   await signInAs(page, LECTURER)
   await page.addInitScript(() => localStorage.setItem('google_mock', JSON.stringify({ connection: 'connected', account: { email: 'rashad@gmail.com', name: 'Rashad' } })))
   await page.goto('/settings?google=connected')
   await expect(page.getByText('Google Calendar is connected.')).toBeVisible()
-  await expect(page).toHaveURL(/\/settings$/)
+  await expect(page).toHaveURL(/\/profile$/)
 })
 
 test('a ticked event is put on Google and marked; an unticked one is not', async ({ page }) => {
@@ -71,7 +70,7 @@ test('a ticked event is put on Google and marked; an unticked one is not', async
   await expect(dialog.getByRole('checkbox', { name: 'Also add to my Google Calendar' })).toHaveCount(0)
 })
 
-test('with no Google connection the tick is off and Settings is one click away', async ({ page }) => {
+test('with no Google connection the tick is off and the profile is one click away', async ({ page }) => {
   await signInAs(page, LECTURER)
   await page.goto('/calendar')
   await page.locator('.cell.is-today + .cell').click()
@@ -79,24 +78,24 @@ test('with no Google connection the tick is off and Settings is one click away',
   await dialog.getByRole('button', { name: 'Add a lecture' }).click()
   const form = dialog.getByRole('form', { name: 'New lecture' })
   await expect(form.getByRole('checkbox', { name: 'Also add to my Google Calendar' })).toBeDisabled()
-  await form.getByRole('link', { name: 'Open Settings' }).click()
-  await expect(page).toHaveURL(/\/settings$/)
+  await form.getByRole('link', { name: 'Open Profile' }).click()
+  await expect(page).toHaveURL(/\/profile$/)
   await expect(page.getByRole('button', { name: 'Connect Google Calendar' })).toBeVisible()
 })
 
 test('a revoked connection says Reconnect', async ({ page }) => {
   await signInAs(page, LECTURER)
   await page.addInitScript(() => localStorage.setItem('google_mock', JSON.stringify({ connection: 'reconnect', account: { email: 'rashad@gmail.com', name: 'Rashad' } })))
-  await page.goto('/settings')
+  await page.goto('/profile')
   await expect(page.getByText('Reconnect needed')).toBeVisible()
   await page.getByRole('button', { name: 'Reconnect Google Calendar' }).click()
   await expect(page.getByText('Connected', { exact: true })).toBeVisible()
 })
 
-test('the admin has Settings in the sidebar, and sees which events are on Google', async ({ page }) => {
+test('the admin has a profile behind their name, and sees which events are on Google', async ({ page }) => {
   await signInAs(page, ADMIN)
   await page.addInitScript(() => localStorage.setItem('google_mock', JSON.stringify({ connection: 'connected', account: { email: 'boss@gmail.com', name: 'Boss' } })))
-  await page.goto('/admin/settings')
+  await page.goto('/admin/profile')
   await expect(page.getByText('boss@gmail.com')).toBeVisible()
 
   await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Calendar' }).click()
@@ -115,24 +114,23 @@ test('the admin has Settings in the sidebar, and sees which events are on Google
   await expect(list).toContainText('Board meeting')
 })
 
-test('students have Settings, with Google in their own words and a password form', async ({ page }) => {
+test('students have a profile, with Google in their own words and a password form', async ({ page }) => {
   await signInAs(page, STUDENT)
   await page.goto('/dashboard')
-  await page.getByRole('button', { name: 'Account menu' }).click()
-  await page.getByRole('menuitem', { name: 'Settings' }).click()
-  await expect(page).toHaveURL(/\/settings$/)
+  await page.getByRole('link', { name: 'Sam Student profile' }).click()
+  await expect(page).toHaveURL(/\/profile$/)
   await expect(page.getByText('Connect your Google account to see your own Google Calendar on the school calendar.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible()
 })
 
 for (const width of [320, 390]) {
-  test(`the Settings page fits a ${width}px phone`, async ({ page }) => {
+  test(`the Profile page fits a ${width}px phone`, async ({ page }) => {
     await signInAs(page, LECTURER)
     await page.addInitScript(() =>
       localStorage.setItem('google_mock', JSON.stringify({ connection: 'connected', account: { email: 'a.very.long.address.for.a.teacher@gmail.com', name: 'Rashad Aliyev With A Long Name' } })),
     )
     await page.setViewportSize({ width, height: 800 })
-    await page.goto('/settings')
+    await page.goto('/profile')
     await expect(page.getByText('a.very.long.address.for.a.teacher@gmail.com')).toBeVisible()
     expect(await overflow(page)).toBeLessThanOrEqual(0)
   })

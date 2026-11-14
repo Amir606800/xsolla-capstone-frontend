@@ -49,12 +49,12 @@ describe('"Also add to my Google Calendar" on the event form', () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ syncToGoogle: false }))
   })
 
-  it('is disabled, with a link to Settings, when Google is not connected', async () => {
+  it('is disabled, with a link to the profile, when Google is not connected', async () => {
     signIn()
     form()
     expect(await screen.findByText(/Google is not connected/)).toBeInTheDocument()
     expect(box()).toBeDisabled()
-    expect(screen.getByRole('link', { name: 'Open Settings' })).toHaveAttribute('href', '/settings')
+    expect(screen.getByRole('link', { name: 'Open Profile' })).toHaveAttribute('href', '/profile')
   })
 
   it('asks for a reconnect when the connection lapsed', async () => {
@@ -68,7 +68,7 @@ describe('"Also add to my Google Calendar" on the event form', () => {
   it('an admin is sent to the admin settings', async () => {
     signIn(['admin'])
     form()
-    expect(await screen.findByRole('link', { name: 'Open Settings' })).toHaveAttribute('href', '/admin/settings')
+    expect(await screen.findByRole('link', { name: 'Open Profile' })).toHaveAttribute('href', '/admin/profile')
   })
 
   it('an event being edited cannot be added to Google later, so there is no tick', async () => {

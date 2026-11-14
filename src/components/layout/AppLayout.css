@@ -83,9 +83,28 @@
 .header__icon-btn {
   width: 40px;
 }
-.header__user-btn {
-  padding: 0 10px;
+/* the name (a link to the profile) and the arrow (the account menu) share one grey pill */
+.header__user {
+  display: flex;
+  align-items: center;
   background: var(--sidebar-bg);
+  border-radius: 4px;
+}
+.header__user-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 4px 0 8px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.header__user-btn {
+  width: 32px;
+  padding: 0;
   font-size: 14px;
   white-space: nowrap;
 }
@@ -95,7 +114,8 @@
   text-overflow: ellipsis;
 }
 .header__icon-btn:hover,
-.header__user-btn:hover {
+.header__user-btn:hover,
+.header__user-link:hover {
   background: var(--active-bg);
 }
 .header__menu-btn {
@@ -252,6 +272,7 @@
 }
 .sidebar__link:focus-visible,
 .header__icon-btn:focus-visible,
+.header__user-link:focus-visible,
 .header__user-btn:focus-visible {
   outline: 2px solid var(--xs-cyan);
   outline-offset: 2px;

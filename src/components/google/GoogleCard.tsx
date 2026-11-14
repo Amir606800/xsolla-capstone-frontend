@@ -32,7 +32,7 @@ function Avatar({ account }: { account: GoogleAccount }) {
 
 /**
  * Connect, check and reconnect the Google account behind "Add to my Google Calendar". Shared by the LMS
- * Settings page and the admin one (`variant` picks that section's button style). Google sends the person
+ * Profile page and the admin one (`variant` picks that section's button style). Google sends the person
  * back here with `?google=connected` or `?google=error`; that is read once, shown, and removed.
  */
 export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {

@@ -49,7 +49,7 @@ export function MyTeamCard({ team, slots, now }: { team: Team; slots: MeetingSlo
           const next = myNextBooking(slots, m.id, now)
           return (
             <li key={m.id} className="person-row">
-              <Avatar name={m.name} small />
+              <Avatar name={m.name} url={m.avatarUrl} small />
               <span className="person-row__main">
                 <span className="person-row__name">{m.name}</span>
               </span>
@@ -134,7 +134,7 @@ export function GradesDueCard({ due }: { due: GradeDue[] }) {
           <ul className="list" aria-label="Week grades to give">
             {due.slice(0, MAX_DUE).map((d) => (
               <li key={`${d.module.id}-${d.student.id}`} className="person-row">
-                <Avatar name={d.student.name} small />
+                <Avatar name={d.student.name} url={d.student.avatarUrl} small />
                 <Link className="lect__row-link" to={`/grading?week=${d.module.id}&grade=${d.student.id}`}>
                   <span className="list__title">{d.student.name}</span>
                   <span className="list__meta">

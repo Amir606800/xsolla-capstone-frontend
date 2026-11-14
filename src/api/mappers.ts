@@ -256,7 +256,7 @@ export function mapEvent(e: ApiEvent): CalendarEvent {
 
 /** `attendees` only when there are some. */
 export function attendeesField(list: ApiAttendee[] | null | undefined): { attendees?: Attendee[] } {
-  const attendees = (list ?? []).map((a) => ({ id: Number(a.id), name: a.name, email: a.email ?? '' }))
+  const attendees = (list ?? []).map((a) => ({ id: Number(a.id), name: a.name, email: a.email ?? '', ...(a.avatar_url ? { avatarUrl: a.avatar_url } : {}) }))
   return attendees.length ? { attendees } : {}
 }
 

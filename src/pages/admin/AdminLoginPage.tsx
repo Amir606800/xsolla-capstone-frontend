@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
   const { user, signInAdmin } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
-  // set when the admin changed their password in Settings and was signed out (read once)
+  // set when the admin was signed out (read once)
   const [notice] = useState(takeLoginNotice)
 
   const [email, setEmail] = useState('')

@@ -69,7 +69,7 @@ export function WorkItem({
             <Icon name="tasks" size={18} />
           </span>
         ) : (
-          <Avatar name={student.name} small />
+          <Avatar name={student.name} url={student.avatarUrl} small />
         )}
         <span className="person-row__main">
           <span className="person-row__name">{by === 'task' ? row.task.title : student.name}</span>

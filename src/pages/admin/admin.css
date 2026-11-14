@@ -221,11 +221,27 @@
   min-width: 0;
 }
 .admin__who {
-  overflow: hidden;
-  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--text);
   font-size: 14px;
+  text-decoration: none;
   white-space: nowrap;
+}
+.admin__who > span:last-child {
+  overflow: hidden;
   text-overflow: ellipsis;
+}
+.admin__who:hover {
+  background: var(--active-bg);
+}
+.admin__who:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
 }
 .admin__body {
   display: grid;
@@ -417,7 +433,8 @@
   .admin__bar {
     padding: 0 16px;
   }
-  .admin__who {
+  /* on a phone only the picture is left, still a link to the profile */
+  .admin__who > span:last-child {
     display: none;
   }
   .admin__main {

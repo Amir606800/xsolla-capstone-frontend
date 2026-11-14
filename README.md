@@ -96,6 +96,9 @@ localStorage.setItem('mentor_review_demo', 'reminder')  // this week's reminder,
 localStorage.removeItem('mentor_review_demo')           // back to normal
 ```
 
+This is for the offline demo only. With a real server (`VITE_API_URL` set) the reviews always come from the server and
+the flag does nothing.
+
 ## 5. Commands
 
 | Command | What it does |

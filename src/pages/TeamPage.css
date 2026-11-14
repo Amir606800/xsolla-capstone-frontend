@@ -26,6 +26,9 @@
   font-weight: var(--fw-medium);
   letter-spacing: 0.5px;
 }
+.avatar--photo {
+  object-fit: cover;
+}
 .avatar--mentor {
   background: var(--xs-cyan);
   color: #06232b;

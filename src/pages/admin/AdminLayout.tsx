@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { PageLoader } from '../../components/loading/PageLoader'
+import { Avatar } from '../../components/profile/Avatar'
+import { useProfile } from '../../hooks/useProfile'
 import { AdminAlertsProvider } from '../../context/AdminAlertsProvider'
 import { useAdminAlerts } from '../../hooks/useAdminAlerts'
 import { GitLabLogo, SlackLogo } from '../../components/BrandLogos'
@@ -33,7 +35,8 @@ export default function AdminLayout() {
 function AdminFrame() {
   const { user, signOut } = useAuth()
   const { attention } = useAdminAlerts()
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
+  const { profile, savePrefs } = useProfile()
   const navigate = useNavigate()
 
   async function handleSignOut() {
@@ -49,10 +52,17 @@ function AdminFrame() {
           <span className="admin-brand__tag">Admin</span>
         </div>
         <div className="admin__account">
-          <span className="admin__who" title={user?.email}>
-            {user?.email}
-          </span>
-          <button type="button" className="admin-icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
+          {/* the name opens the admin's profile */}
+          <Link to="/admin/profile" className="admin__who" title={user?.email} aria-label={`${user?.name ?? user?.email ?? 'My'} profile`}>
+            <Avatar name={user?.name ?? user?.email ?? ''} url={profile.avatarUrl} size={24} />
+            <span>{user?.name || user?.email}</span>
+          </Link>
+          <button
+            type="button"
+            className="admin-icon-btn"
+            onClick={() => savePrefs({ theme: theme === 'dark' ? 'light' : 'dark' }).catch(() => undefined)}
+            aria-label="Toggle theme"
+          >
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
           </button>
           <button type="button" className="admin-btn" onClick={handleSignOut}>

@@ -4,8 +4,10 @@ import { isStaff } from '../../utils/roles'
 import { useAuth } from '../../hooks/useAuth'
 import { useDashboardLayout } from '../../hooks/useDashboardLayout'
 import { useNotifications } from '../../hooks/useNotifications'
+import { useProfile } from '../../hooks/useProfile'
 import { useTheme } from '../../hooks/useTheme'
 import { Icon } from '../Icon'
+import { Avatar } from '../profile/Avatar'
 import { XsollaLogo } from '../XsollaLogo'
 import { NotificationsModal } from '../notifications/NotificationsModal'
 import { CommandPalette } from '../search/CommandPalette'
@@ -20,7 +22,8 @@ const SHORTCUT = isMac ? '⌘ K' : 'Ctrl K'
 
 function HeaderBase({ onMenuClick }: HeaderProps) {
   const { user, signOut } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
+  const { profile, savePrefs } = useProfile()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { isShown } = useDashboardLayout()
@@ -132,6 +135,11 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
         </button>
 
         <div className="header__user" ref={menuRef}>
+          {/* the name opens the profile; the arrow beside it opens the menu */}
+          <Link to="/profile" className="header__user-link" aria-label={`${user?.name ?? 'My'} profile`} title="My profile">
+            <Avatar name={user?.name ?? ''} url={profile.avatarUrl} size={28} />
+            <span className="header__user-name">{user?.name}</span>
+          </Link>
           <button
             type="button"
             className="header__user-btn"
@@ -140,8 +148,6 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
             aria-expanded={menuOpen}
             aria-label="Account menu"
           >
-            <Icon name="user" />
-            <span className="header__user-name" title={user?.name}>{user?.name}</span>
             <Icon name="chevron" size={16} />
           </button>
 
@@ -151,16 +157,13 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
                 <strong>{user?.name}</strong>
                 <span>{user?.email}</span>
               </div>
-              <Link to="/settings" role="menuitem" onClick={() => setMenuOpen(false)}>
-                <Icon name="settings" size={18} />
-                Settings
-              </Link>
               {/* the theme switch lives here, so the bar stays short on a phone */}
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  toggleTheme()
+                  // also remembered on the server, so the choice follows the person; the page changes at once either way
+                  savePrefs({ theme: theme === 'dark' ? 'light' : 'dark' }).catch(() => undefined)
                   setMenuOpen(false)
                 }}
               >

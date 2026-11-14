@@ -172,7 +172,7 @@ The admin dashboard will need these later; the exact shapes can be agreed then.
 
 Built by the back-end: `POST /auth/password-reset` (signed in, any role) with `{ "old_password", "new_password" }`.
 `204` on success, `401 invalid_credentials` when the current password is wrong, `400 bad_request` (with the rule in the
-`message`) when the new one breaks the password rules. The sessions stay open. Settings > "Change password" uses it
+`message`) when the new one breaks the password rules. The sessions stay open. Profile > "Change password" uses it
 for every role. Someone who forgot their password asks a mentor or the admin (the admin sets a new one with
 `PUT /users/:id/password`); there is no e-mail reset.
 

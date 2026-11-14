@@ -6,7 +6,7 @@ import type { GoogleStatus } from '../types/google'
 import { GoogleContext } from './google'
 
 /**
- * The signed-in person's Google Calendar connection, shared by Settings, the event form and the calendar.
+ * The signed-in person's Google Calendar connection, shared by the profile page, the event form and the calendar.
  * The server is asked lazily (the status costs two calls to Google) and only once per sign-in. What was
  * learned belongs to one person: for anyone else (after a sign-out) it simply does not count.
  */

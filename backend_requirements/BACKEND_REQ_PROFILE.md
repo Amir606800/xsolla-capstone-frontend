@@ -2,8 +2,9 @@
 
 **For:** the backend developer (`xsolla-capstone-backend`).
 
-The Settings page becomes a **Profile** page for every role (student, mentor, lecturer, admin). It keeps what Settings
-has today (Google Calendar, change password: nothing new needed for those) and adds two small things:
+The Settings page is now a **Profile** page for every role (student, mentor, lecturer, admin), **built in the
+front-end** and waiting for these routes. It keeps what Settings had (Google Calendar, change password: nothing new
+needed for those) and adds two small things:
 
 1. **About me**: a profile picture, a short bio and two contact handles. Other people can see these.
 2. **Look and accessibility**: big text, a readable font, high contrast and so on. Only the person sees these.
@@ -124,14 +125,40 @@ Not needed for the first version. If it is cheap for you, the profile page can a
 
 ---
 
-## What the front-end does
+## What the front-end does (already built)
 
-- Keeps a copy of the look settings in the browser, so large text and the theme apply at once on page load, with no
-  flash. The server copy wins after sign-in.
-- Crops and shrinks the picture before upload, and shows initials when there is none.
-- Shows "Saved" after a change, and a plain message for a `400`.
-- Until the routes exist, the profile page works offline in demo mode and says "The server cannot save this yet" for a
-  `404`/`405`/`501`.
+**Where it is.** The person's name in the top right bar (picture and name) opens the profile: `/profile`, and
+`/admin/profile` for an admin (the name in the admin bar). The old `/settings` and `/admin/settings` addresses forward to
+it and keep the query, so **Google's way back to `/settings?google=connected` keeps working**: nothing to change in the
+backend's redirect.
+
+**About me.**
+- Loads `GET /users/me/profile`; saves with `PATCH /users/me/profile`, sending the four text fields. Bio is limited to
+  300 and the handles to 40 characters in the form before anything is sent.
+- The picture: the person picks a JPG, PNG or WebP (up to 10 MB, they may be phone photos). The browser crops the middle
+  **square**, shrinks it to 512 x 512 and sends it as WebP (JPEG where the browser cannot make WebP), so the file sent is
+  small. `PUT /users/me/avatar` as multipart with one `file` field; `DELETE /users/me/avatar` to remove.
+- The new `avatar_url` from the answer is shown at once in the top bar and on the profile. A picture that fails to load
+  falls back to the initials.
+- The page does not show other people's pictures yet (team page, attendees, etc.). That comes after `avatar_url` is on
+  `GET /users`, `/teams/me`, `/mentors/me/team` and the attendees, as in section 1 above.
+
+**Look and accessibility.**
+- Loads `GET /users/me/preferences`; every click saves one key with `PATCH /users/me/preferences` (only that key).
+- Keeps a copy in the browser (`localStorage`: `look`, and `theme` for the theme), so large text and the theme apply at
+  once on page load, with no flash. The server copy wins after sign-in. A key or value the front-end does not know is
+  ignored, so the backend can add options later without breaking the page.
+- The theme in the top bar menu ("Dark mode") is the same setting: it is saved with the same `PATCH`.
+- `text_size` zooms the reading areas (page content and the sidebar), `font: "dyslexia"` switches the font, and the rest
+  are plain switches on the page. The easy-to-read font uses OpenDyslexic when it is installed on the front-end, else
+  Verdana-like fonts.
+
+**When the server is not ready.** A `404`, `405` or `501` on the profile routes shows "The server cannot save this yet",
+and the About me form is read-only. The look settings still work and are kept on this device, with the note "Saved on
+this device only". Without a backend at all (demo mode) everything is kept in the browser.
+
+**Answers the front-end relies on.** `PATCH` answers `200` with the whole object. `GET /users/me/preferences` answers
+`200` with defaults for a person who never saved (not `404`: a `404` is read as "the routes are not there").
 
 ## Checklist
 

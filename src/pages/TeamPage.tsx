@@ -73,7 +73,7 @@ export default function TeamPage() {
               <ul className="list" aria-label="Team members">
                 {team.members.map((m) => (
                   <li key={m.id} className="list__row team__person">
-                    <Avatar name={m.name} />
+                    <Avatar name={m.name} url={m.avatarUrl} />
                     <div className="team__info">
                       <p className="list__title">
                         {m.name}
@@ -95,7 +95,7 @@ export default function TeamPage() {
               </header>
               {team.mentor ? (
                 <div className="team__mentor">
-                  <Avatar name={team.mentor.name} mentor />
+                  <Avatar name={team.mentor.name} url={team.mentor.avatarUrl} mentor />
                   <div className="team__info">
                     <p className="list__title">{team.mentor.name}</p>
                     <p className="list__meta">Mentor of {team.name}</p>

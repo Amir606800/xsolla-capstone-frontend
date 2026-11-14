@@ -8,7 +8,10 @@ export default function ProtectedRoute() {
   const location = useLocation()
 
   if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location }} />
-  // Google sends everyone back to /settings (?google=connected); an admin's settings live in their own section
-  if (isAdmin(user)) return <Navigate to={location.pathname === '/settings' ? `/admin/settings${location.search}` : '/admin'} replace />
+  // Google sends everyone back to /settings (?google=connected); an admin's profile lives in their own section
+  if (isAdmin(user)) {
+    const mine = location.pathname === '/settings' || location.pathname === '/profile'
+    return <Navigate to={mine ? `/admin/profile${location.search}` : '/admin'} replace />
+  }
   return <Outlet />
 }

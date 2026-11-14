@@ -81,7 +81,7 @@ describe('the lecturer’s calendar and Google', () => {
 })
 
 describe('the admin’s calendar and Google', () => {
-  it('with a lapsed connection the tick is off and points at the admin Settings', async () => {
+  it('with a lapsed connection the tick is off and points at the admin profile', async () => {
     signIn(ADMIN)
     connect({ connection: 'reconnect' })
     const user = userEvent.setup()
@@ -89,7 +89,7 @@ describe('the admin’s calendar and Google', () => {
     await screen.findByRole('button', { name: /^Add an event/ })
     await user.click(screen.getByRole('button', { name: /^Add an event/ }))
     const form = within(await screen.findByRole('dialog'))
-    expect(await form.findByRole('link', { name: 'Open Settings' })).toHaveAttribute('href', '/admin/settings')
+    expect(await form.findByRole('link', { name: 'Open Profile' })).toHaveAttribute('href', '/admin/profile')
     expect(form.getByRole('checkbox', { name: 'Also add to my Google Calendar' })).toBeDisabled()
   })
 
@@ -121,57 +121,55 @@ describe('the admin’s calendar and Google', () => {
   })
 })
 
-describe('the Settings pages', () => {
-  it('a lecturer reaches Settings from the account menu and sees the Google card', async () => {
+describe('the Profile pages', () => {
+  it('a lecturer reaches the profile by clicking their name, and sees the Google card', async () => {
     signIn(LECTURER)
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/dashboard' })
-    await user.click(await screen.findByRole('button', { name: 'Account menu' }))
-    await user.click(screen.getByRole('menuitem', { name: 'Settings' }))
-    expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
+    await user.click(await screen.findByRole('link', { name: 'Rashad Aliyev profile' }))
+    expect(await screen.findByRole('heading', { name: 'Profile', level: 1 })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Connect Google Calendar' })).toBeEnabled()
   })
 
-  it('a student has Settings too: a menu item, the Google card in its own words, and the password form', async () => {
+  it('a student has a profile too: Google in their own words, and the password form', async () => {
     signIn(STUDENT)
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/dashboard' })
-    await user.click(await screen.findByRole('button', { name: 'Account menu' }))
-    await user.click(screen.getByRole('menuitem', { name: 'Settings' }))
-    expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
+    await user.click(await screen.findByRole('link', { name: 'Sam Student profile' }))
+    expect(await screen.findByRole('heading', { name: 'Profile', level: 1 })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Connect Google Calendar' })).toBeEnabled()
     expect(screen.getByText('Connect your Google account to see your own Google Calendar on the school calendar.')).toBeInTheDocument()
     expect(screen.queryByText(/lectures and events you add/)).toBeNull()
     expect(screen.getByRole('heading', { name: 'Change password' })).toBeInTheDocument()
   })
 
-  it('a student opening /settings stays there', async () => {
+  it('the old /settings address leads to the profile', async () => {
     signIn(STUDENT)
     renderWithProviders(<App />, { route: '/settings' })
-    expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Profile', level: 1 })).toBeInTheDocument()
   })
 
-  it('every role finds the password form on its Settings page, the admin in the admin section', async () => {
+  it('every role finds the password form on its profile, the admin in the admin section', async () => {
     for (const who of [LECTURER, STUDENT]) {
       localStorage.clear()
       signIn(who)
-      const { unmount } = renderWithProviders(<App />, { route: '/settings' })
+      const { unmount } = renderWithProviders(<App />, { route: '/profile' })
       expect(await screen.findByRole('heading', { name: 'Change password' })).toBeInTheDocument()
       unmount()
     }
     localStorage.clear()
     signIn(ADMIN)
-    renderWithProviders(<App />, { route: '/admin/settings' })
+    renderWithProviders(<App />, { route: '/admin/profile' })
     expect(await screen.findByRole('heading', { name: 'Change password' })).toBeInTheDocument()
   })
 
-  it('the admin has Settings in the sidebar, and Google’s return trip to /settings ends up there with its answer', async () => {
+  it('the admin reaches the profile from their name, and Google’s return trip to /settings ends up there with its answer', async () => {
     signIn(ADMIN)
     connect({ connection: 'connected', account: { email: 'boss@gmail.com', name: 'Boss' } })
     renderWithProviders(<App />, { route: '/settings?google=connected' })
-    expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Profile', level: 1 })).toBeInTheDocument()
     expect(await screen.findByText('Google Calendar is connected.')).toBeInTheDocument()
     expect(await screen.findByText('boss@gmail.com')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'School Admin profile' })).toHaveAttribute('href', '/admin/profile')
   })
 })

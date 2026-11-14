@@ -17,6 +17,7 @@ interface PersonDto {
   id: number | string
   name: string
   email: string
+  avatar_url?: string | null
 }
 
 export interface TeamDetailDto {
@@ -29,7 +30,7 @@ export interface TeamDetailDto {
   team_count?: number
 }
 
-const person = (p: PersonDto): Person => ({ id: Number(p.id), name: p.name, email: p.email })
+const person = (p: PersonDto): Person => ({ id: Number(p.id), name: p.name, email: p.email, ...(p.avatar_url ? { avatarUrl: p.avatar_url } : {}) })
 
 export function mapTeamDetail(t: TeamDetailDto): Team {
   const members = (t.members ?? []).map(person)

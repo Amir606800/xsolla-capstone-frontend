@@ -36,7 +36,7 @@ afterEach(() => {
 describe('everyone changes their own password with the current one', () => {
   it('asks for the current password, and the new one is checked', async () => {
     signIn(SAM)
-    const { fill } = await open('/settings')
+    const { fill } = await open('/profile')
     expect(screen.getByLabelText('Current password')).toBeInTheDocument()
     await fill('short', 'other', 'x')
     expect(screen.getByText('Use 10 to 72 characters.')).toBeInTheDocument()
@@ -57,9 +57,9 @@ describe('everyone changes their own password with the current one', () => {
 
   it('a student: saves in the demo, the form empties, and only the new password works from then on', async () => {
     signIn(SAM)
-    const { fill } = await open('/settings')
+    const { fill } = await open('/profile')
     await fill(GOOD, GOOD)
-    expect(await screen.findByRole('status')).toHaveTextContent('Your password is changed')
+    expect(await within(screen.getByRole('region', { name: 'Change password' })).findByRole('status')).toHaveTextContent('Your password is changed')
     expect(screen.getByLabelText('New password', { exact: true })).toHaveValue('')
     expect(screen.getByLabelText('Current password')).toHaveValue('')
     expect(passwordMatches(1, GOOD)).toBe(true)
@@ -68,9 +68,9 @@ describe('everyone changes their own password with the current one', () => {
 
   it('in the demo a wrong current password is refused, and nothing changes', async () => {
     signIn(SAM)
-    const { fill } = await open('/settings')
+    const { fill } = await open('/profile')
     await fill(GOOD, GOOD) // first: the demo accepts any current password until one is set
-    await screen.findByRole('status')
+    await within(screen.getByRole('region', { name: 'Change password' })).findByRole('status')
     await fill('Another-Pass-9921', 'Another-Pass-9921', 'not-the-one')
     expect(await screen.findByRole('alert')).toHaveTextContent(WRONG_CURRENT)
     expect(passwordMatches(1, GOOD)).toBe(true)
@@ -78,16 +78,16 @@ describe('everyone changes their own password with the current one', () => {
 
   it('a lecturer too', async () => {
     signIn({ id: 902, name: 'Elvin Huseynov', email: 'teacher@xsolla.school', roles: ['lecturer'] })
-    const { fill } = await open('/settings')
+    const { fill } = await open('/profile')
     await fill(GOOD, GOOD)
-    expect(await screen.findByRole('status')).toHaveTextContent('Your password is changed')
+    expect(await within(screen.getByRole('region', { name: 'Change password' })).findByRole('status')).toHaveTextContent('Your password is changed')
   })
 
   it('an admin in the demo stays signed in', async () => {
     signIn(ADMIN)
-    const { fill } = await open('/admin/settings')
+    const { fill } = await open('/admin/profile')
     await fill(GOOD, GOOD)
-    expect(await screen.findByRole('status')).toHaveTextContent('Your password is changed')
+    expect(await within(screen.getByRole('region', { name: 'Change password' })).findByRole('status')).toHaveTextContent('Your password is changed')
   })
 
   it('real server, a student: POST /auth/password-reset with the current and the new password', async () => {
@@ -104,9 +104,9 @@ describe('everyone changes their own password with the current one', () => {
       }),
     )
     signIn(SAM)
-    const { fill } = await open('/settings')
+    const { fill } = await open('/profile')
     await fill(GOOD, GOOD, 'Old-Password-1')
-    expect(await screen.findByRole('status')).toHaveTextContent('Your password is changed')
+    expect(await within(screen.getByRole('region', { name: 'Change password' })).findByRole('status')).toHaveTextContent('Your password is changed')
     expect(sent).toEqual([{ body: { old_password: 'Old-Password-1', new_password: GOOD }, auth: 'Bearer acc' }])
   })
 
@@ -122,7 +122,7 @@ describe('everyone changes their own password with the current one', () => {
       }),
     )
     signIn(SAM)
-    const { fill } = await open('/settings')
+    const { fill } = await open('/profile')
     await fill(GOOD, GOOD)
     const card = screen.getByRole('region', { name: 'Change password' })
     expect(await within(card).findByRole('alert')).toHaveTextContent(WRONG_CURRENT)
@@ -150,9 +150,9 @@ describe('everyone changes their own password with the current one', () => {
       }),
     )
     signIn(ADMIN)
-    const { fill } = await open('/admin/settings')
+    const { fill } = await open('/admin/profile')
     await fill(GOOD, GOOD)
-    expect(await screen.findByRole('status')).toHaveTextContent('Your password is changed')
+    expect(await within(screen.getByRole('region', { name: 'Change password' })).findByRole('status')).toHaveTextContent('Your password is changed')
     expect(sent.find((c) => c.path === '/auth/password-reset')).toMatchObject({
       method: 'POST',
       body: { old_password: 'Old-Password-1', new_password: GOOD },

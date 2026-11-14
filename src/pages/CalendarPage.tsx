@@ -20,7 +20,7 @@ import { myNextBooking, slotEvents, slotsOnDay } from '../utils/slots'
 import { draftToEvent, isEditableEvent } from '../utils/authoring'
 import type { EventDraft } from '../utils/authoring'
 import { isAssignedTo } from '../utils/content'
-import { savedNotice, settingsPath } from '../utils/googleSync'
+import { savedNotice, profilePath } from '../utils/googleSync'
 import { newId } from '../mocks/contentEdits'
 import type { CalendarEvent, EventKind } from '../types/calendar'
 import '../styles/ui.css'
@@ -258,12 +258,12 @@ export default function CalendarPage() {
 
             {google.connection === 'disconnected' && (
               <p className="calendar__google">
-                Connect Google Calendar in <Link to={settingsPath(user)}>Settings</Link> to see your Google events here.
+                Connect Google Calendar in <Link to={profilePath(user)}>Profile</Link> to see your Google events here.
               </p>
             )}
             {google.connection === 'reconnect' && (
               <p className="calendar__google" role="status">
-                Reconnect Google Calendar in <Link to={settingsPath(user)}>Settings</Link> to see your Google events again.
+                Reconnect Google Calendar in <Link to={profilePath(user)}>Profile</Link> to see your Google events again.
               </p>
             )}
             {google.status === 'error' && (

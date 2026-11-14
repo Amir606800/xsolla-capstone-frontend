@@ -120,6 +120,7 @@ export interface ApiAttendee {
   id: ApiId
   name: string
   email: string
+  avatar_url?: string | null
 }
 
 /** GET /google/calendar/events: one event of the signed-in person's primary Google Calendar. */

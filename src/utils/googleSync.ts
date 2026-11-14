@@ -2,8 +2,8 @@ import type { User } from '../types/user'
 import type { GoogleOutcome } from '../types/google'
 import { isAdmin } from './roles'
 
-/** Where a person manages the Google connection: admins have their own section. */
-export const settingsPath = (user: Pick<User, 'roles' | 'roleUntil'> | null | undefined) => (isAdmin(user) ? '/admin/settings' : '/settings')
+/** Where a person manages the Google connection (their profile): admins have their own section. */
+export const profilePath = (user: Pick<User, 'roles' | 'roleUntil'> | null | undefined) => (isAdmin(user) ? '/admin/profile' : '/profile')
 
 /**
  * The line shown after an event is saved. If the person asked for the Google copy and it did not arrive, the event
@@ -13,7 +13,7 @@ export function savedNotice(base: string, google: GoogleOutcome, { meetingLinkLo
   const link = meetingLinkLost ? ' The server did not keep the meeting link.' : ''
   if (google === 'synced') return { text: `${base} It is on your Google Calendar too.${link}`, warn: meetingLinkLost }
   if (google === 'failed') {
-    return { text: `${base} But it did not reach your Google Calendar. Open Settings and connect Google again.${link}`, warn: true }
+    return { text: `${base} But it did not reach your Google Calendar. Open your profile and connect Google again.${link}`, warn: true }
   }
   return { text: `${base}${link}`, warn: meetingLinkLost }
 }

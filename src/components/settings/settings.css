@@ -1,4 +1,4 @@
-/* "Change password" card on the Settings pages (LMS and admin). Flat, like the Google card. */
+/* "Change password" card on the Profile pages (LMS and admin). Flat, like the Google card. */
 .settings {
   display: flex;
   flex-direction: column;

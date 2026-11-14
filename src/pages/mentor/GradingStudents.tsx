@@ -164,7 +164,7 @@ export const StudentCard = memo(function StudentCard({
         aria-label={`Open ${student.name}'s week ${week.position}`}
       >
         <span className="gcard__top">
-          <Avatar name={student.name} />
+          <Avatar name={student.name} url={student.avatarUrl} />
           <span className="gcard__who">
             <span className="gcard__name">{student.name}</span>
             {grade ? (
@@ -291,7 +291,7 @@ export function StudentWeekView({
       </div>
 
       <header className="gview__head">
-        <Avatar name={student.name} />
+        <Avatar name={student.name} url={student.avatarUrl} />
         <div className="gview__who">
           <h2 className="gview__name">{student.name}</h2>
           <a className="list__meta" href={`mailto:${student.email}`}>

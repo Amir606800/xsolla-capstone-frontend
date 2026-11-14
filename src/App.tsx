@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
+import { Navigate, Route, Routes, useLocation } from 'react-router'
 import AdminRoute from './components/AdminRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Allow, ByRole, StudentOnly } from './components/RoleRoutes'
@@ -29,8 +29,8 @@ const MentorTeamPage = lazy(() => import('./pages/mentor/MentorTeamPage'))
 const GradingPage = lazy(() => import('./pages/mentor/GradingPage'))
 // everyone
 const OfficeTourPage = lazy(() => import('./pages/OfficeTourPage'))
-// staff: connections of their own account (Google Calendar)
-const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+// everyone: picture, look settings, Google Calendar and password of their own account
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 // admin section: separate sign-in and pages
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
@@ -46,9 +46,15 @@ const AdminTeamsPage = lazy(() => import('./pages/admin/teams/AdminTeamsPage'))
 const AdminAnnouncePage = lazy(() => import('./pages/admin/announce/AdminAnnouncePage'))
 const AdminNotificationsPage = lazy(() => import('./pages/admin/notifications/AdminNotificationsPage'))
 const AdminLecturersPage = lazy(() => import('./pages/admin/people/AdminLecturersPage'))
-const AdminSettingsPage = lazy(() => import('./pages/admin/settings/AdminSettingsPage'))
+const AdminProfilePage = lazy(() => import('./pages/admin/profile/AdminProfilePage'))
 /** Admin sections with their own pages; the rest show a placeholder until they are built. */
-const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'announce', 'notifications', 'settings']
+const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'announce', 'notifications']
+
+/** The old Settings addresses (and Google's way back to /settings?google=...) now lead to the profile, answer and all. */
+function ToProfile({ to }: { to: string }) {
+  const { search } = useLocation()
+  return <Navigate to={`${to}${search}`} replace />
+}
 
 export default function App() {
   return (
@@ -74,7 +80,8 @@ export default function App() {
             <Route path="/admin/announce" element={<AdminAnnouncePage />} />
             <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
             <Route path="/admin/office-tour" element={<OfficeTourPage />} />
-            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+            <Route path="/admin/profile" element={<AdminProfilePage />} />
+            <Route path="/admin/settings" element={<ToProfile to="/admin/profile" />} />
             {/* the lecturers page counts each lecturer's modules, so it loads the course */}
             <Route path="/admin/lecturers" element={<AdminCoursesLayout />}>
               <Route index element={<AdminLecturersPage />} />
@@ -100,7 +107,8 @@ export default function App() {
             />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/office-tour" element={<OfficeTourPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<ToProfile to="/profile" />} />
             <Route
               path="/team"
               element={<ByRole student={<TeamPage />} staff={<Allow when={canMentor}><MentorTeamPage /></Allow>} />}

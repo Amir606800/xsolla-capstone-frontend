@@ -75,7 +75,7 @@ export function WeekGradeItem({
         </p>
       ) : (
       <div className="review__row">
-        <Avatar name={student.name} small />
+        <Avatar name={student.name} url={student.avatarUrl} small />
         <span className="person-row__main">
           <span className="person-row__name">{student.name}</span>
           {work && (

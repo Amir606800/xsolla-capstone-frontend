@@ -45,7 +45,7 @@ describe('Admin sign-in', () => {
     renderWithProviders(<App />, { route: '/admin/login' })
     await fillAndSubmit(DEMO_ADMIN.email)
     expect(await screen.findByRole('heading', { name: 'Overview', level: 1 })).toBeInTheDocument()
-    expect(screen.getByText(DEMO_ADMIN.email)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: `${DEMO_ADMIN.name} profile` })).toHaveAttribute('href', '/admin/profile')
     expect(savedUser()).toMatchObject({ email: DEMO_ADMIN.email, roles: ['admin'] })
   })
 

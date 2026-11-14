@@ -8,8 +8,7 @@ import { listModules } from './contentEdits'
  *   localStorage.setItem('mentor_review_demo', 'locked')    last week's review is missing: the LMS is locked
  *   localStorage.setItem('mentor_review_demo', 'reminder')  this week's review is open, as on a weekend
  * Sending the review clears the situation; remove `mentor_reviews` to start again.
- * With a real back-end the flag still works: the weeks are then the server's (`modules` below) and the review is kept
- * in the browser only, for trying the screens before the server has the routes.
+ * Only for the offline demo (no VITE_API_URL): with a real back-end the reviews are always the server's, whatever the flag.
  */
 const KEY = 'mentor_reviews'
 const FLAG = 'mentor_review_demo'

@@ -1,0 +1,166 @@
+/*
+ * "Look and accessibility" (Profile page). ProfileProvider puts one attribute per setting on <html>; a default
+ * leaves no attribute, so nothing here applies until someone chooses it:
+ *   data-text="large|xlarge"  data-font="dyslexia"  data-spacing="relaxed"  data-density="compact"
+ *   data-contrast="high"  data-colorblind="on"  data-motion="reduce"  data-focus="strong"
+ * (The theme is data-theme, set by ThemeProvider.)
+ */
+
+/* ---------- Text size: the reading areas are zoomed, so the many fixed pixel sizes grow with it ---------- */
+:root[data-text='large'] {
+  --text-zoom: 1.125;
+}
+:root[data-text='xlarge'] {
+  --text-zoom: 1.25;
+}
+:root[data-text] .shell__main > *,
+:root[data-text] .admin__main > *,
+:root[data-text] .sidebar__group,
+:root[data-text] .sidebar__progress,
+:root[data-text] .sidebar__apps,
+:root[data-text] .admin-nav {
+  zoom: var(--text-zoom);
+}
+/* a phone has no room to spare: a smaller step there */
+@media (max-width: 720px) {
+  :root[data-text='large'] {
+    --text-zoom: 1.08;
+  }
+  :root[data-text='xlarge'] {
+    --text-zoom: 1.15;
+  }
+}
+
+/* ---------- Readable font. OpenDyslexic is used when it is installed; the others are plain, wide, clear faces ---------- */
+:root[data-font='dyslexia'] {
+  --font-body: 'OpenDyslexic', 'Lexend', 'Atkinson Hyperlegible', Verdana, 'Trebuchet MS', sans-serif;
+  --font-display: var(--font-body);
+  --font-label: var(--font-body);
+}
+
+/* ---------- More space between lines, words and letters ---------- */
+:root[data-spacing='relaxed'] :is(p, li, label, td, th, dd, dt, blockquote, textarea, input, button) {
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+  word-spacing: 0.1em;
+}
+
+/* ---------- Tighter lists ---------- */
+:root[data-density='compact'] .shell__main,
+:root[data-density='compact'] .admin__main {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+:root[data-density='compact'] .list__row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+:root[data-density='compact'] .card__head {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+:root[data-density='compact'] :is(td, th) {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* ---------- High contrast: black on white (white on black in the dark theme), clear borders ---------- */
+:root[data-contrast='high'][data-theme='light'] {
+  --text: #000000;
+  --text-muted: #2a3033;
+  --link: #00465c;
+  --danger: #8f1f10;
+  --ok: #0b5a2a;
+  --warn: #6b4600;
+  --bg: #ffffff;
+  --main-bg: #ffffff;
+  --card: #ffffff;
+  --header-bg: #ffffff;
+  --sidebar-bg: #f0f0f0;
+  --field-border: #000000;
+  --divider: #4a5155;
+  --active-bg: #dcdcdc;
+}
+:root[data-contrast='high'][data-theme='dark'] {
+  --text: #ffffff;
+  --text-muted: #e3eaed;
+  --link: #8be8ff;
+  --bg: #000000;
+  --main-bg: #000000;
+  --card: #0d1214;
+  --header-bg: #000000;
+  --sidebar-bg: #0d1214;
+  --field: #000000;
+  --field-border: #ffffff;
+  --divider: #b8c4c9;
+  --active-bg: #2b383d;
+}
+:root[data-contrast='high'] .card,
+:root[data-contrast='high'] .pw-card,
+:root[data-contrast='high'] .google-card {
+  border-color: var(--field-border);
+}
+
+/* ---------- Icons next to the green, yellow and red grades, so colour is not the only signal ---------- */
+:root[data-colorblind='on'] .week-tile {
+  position: relative;
+}
+:root[data-colorblind='on'] .week-tile--green::after,
+:root[data-colorblind='on'] .week-tile--yellow::after,
+:root[data-colorblind='on'] .week-tile--red::after {
+  position: absolute;
+  top: 1px;
+  right: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+:root[data-colorblind='on'] .week-tile--green::after,
+:root[data-colorblind='on'] .standing-pill--green::before,
+:root[data-colorblind='on'] .standing-bar__dot--green::before,
+:root[data-colorblind='on'] .gweeks__dot--green::before {
+  content: '▲';
+}
+:root[data-colorblind='on'] .week-tile--yellow::after,
+:root[data-colorblind='on'] .standing-pill--yellow::before,
+:root[data-colorblind='on'] .standing-bar__dot--yellow::before,
+:root[data-colorblind='on'] .gweeks__dot--yellow::before {
+  content: '●';
+}
+:root[data-colorblind='on'] .week-tile--red::after,
+:root[data-colorblind='on'] .standing-pill--red::before,
+:root[data-colorblind='on'] .standing-bar__dot--red::before,
+:root[data-colorblind='on'] .gweeks__dot--red::before {
+  content: '▼';
+}
+:root[data-colorblind='on'] .standing-pill--green::before,
+:root[data-colorblind='on'] .standing-pill--yellow::before,
+:root[data-colorblind='on'] .standing-pill--red::before {
+  font-size: 0.8em;
+}
+:root[data-colorblind='on'] .standing-bar__dot {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--on-fill);
+  font-size: 9px;
+  line-height: 1;
+}
+
+/* ---------- No animations ---------- */
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ---------- A stronger keyboard focus ---------- */
+:root[data-focus='strong'] :focus-visible {
+  outline: 3px solid var(--text) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px var(--xs-cyan) !important;
+}

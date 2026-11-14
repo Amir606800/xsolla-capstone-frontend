@@ -136,7 +136,7 @@ export default function MentorReviewPage() {
 
           <form className="card" onSubmit={send} noValidate aria-label={`Review of week ${due.module.position}`}>
             <div className="mentor-review__who">
-              <Avatar name={mentor?.name ?? '?'} mentor />
+              <Avatar name={mentor?.name ?? '?'} url={mentor?.avatarUrl} mentor />
               <p>
                 <strong>{mentor?.name}</strong>
                 <br />

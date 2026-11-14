@@ -41,7 +41,7 @@ describe('the calendar and the person’s own Google events', () => {
     signIn(STUDENT)
     await openTomorrow()
     expect(await screen.findByText(/to see your Google events here\./)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings')
+    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile')
     expect(screen.queryByText('Dentist appointment')).toBeNull()
     // the school calendar itself works
     expect(screen.getByRole('region', { name: 'Day details' })).toBeInTheDocument()

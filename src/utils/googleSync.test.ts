@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { savedNotice, settingsPath } from './googleSync'
+import { savedNotice, profilePath } from './googleSync'
 
 describe('savedNotice', () => {
   it('says nothing more when Google was not asked for', () => {
@@ -25,10 +25,10 @@ describe('savedNotice: a meeting link the server did not keep', () => {
   })
 })
 
-describe('settingsPath', () => {
+describe('profilePath', () => {
   it('sends admins to their own section and everyone else to the LMS settings', () => {
-    expect(settingsPath({ roles: ['admin'] })).toBe('/admin/settings')
-    expect(settingsPath({ roles: ['lecturer'] })).toBe('/settings')
-    expect(settingsPath(null)).toBe('/settings')
+    expect(profilePath({ roles: ['admin'] })).toBe('/admin/profile')
+    expect(profilePath({ roles: ['lecturer'] })).toBe('/profile')
+    expect(profilePath(null)).toBe('/profile')
   })
 })
