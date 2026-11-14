@@ -35,6 +35,42 @@ export interface MentorReview {
   comment?: string
 }
 
+/**
+ * A review as the admin reads it: who wrote it, about whom, and when. The student's name is shown to the school
+ * team only (the form promises "not to your mentor"), so this type is for the admin pages and nothing else.
+ */
+export interface AdminReview {
+  id: string
+  /** The week reviewed (the module's id). */
+  moduleId: string
+  /** The module's title as the server knows it; the page prefers the course's own when it has it. */
+  moduleTitle?: string
+  studentId: number
+  studentName: string
+  /** The mentor the review was about, as of the day it was sent (the team's mentor may change later). */
+  mentorId: number
+  mentorName: string
+  teamName?: string
+  hadSession: boolean
+  noSessionReason?: NoSessionReason
+  topics: ReviewTopic[]
+  otherTopic?: string
+  /** Only the statements the server sent; none when there was no session. */
+  ratings: Partial<Record<ReviewStatement, Score>>
+  overall: Score
+  comment?: string
+  submittedAt: string
+}
+
+/** A student who has not sent a week's review yet, with the mentor it would be about. */
+export interface MissingReview {
+  studentId: number
+  studentName: string
+  mentorId: number
+  mentorName: string
+  teamName?: string
+}
+
 /** A week the student has already reviewed. */
 export interface ReviewedWeek {
   moduleId: string

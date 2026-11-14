@@ -3,7 +3,7 @@
 Written for the backend developer. This file covers **only** the weekly mentor review; the earlier requirements are
 done or parked. Checked against `xsolla-capstone-backend` `master` at `8f04f85` (no mentor-review routes exist yet).
 
-The front-end is built and runs on its demo store. With a real server it calls the two routes in section 3. **Until
+The front-end is built and runs on its demo store. With a real server it calls the two routes in section 3 (and, for the admin page, section 7). **Until
 they exist the feature is off** (a 404 on `GET /mentor-reviews/me` means "not available": no reminder, no lock), so
 nothing breaks in the meantime.
 
@@ -12,7 +12,7 @@ nothing breaks in the meantime.
 ## 1. What the feature is
 
 Every week each student reviews the week with **their mentor** (the mentor of their team; the student never picks
-one). It replaces the Google Form "Mentor Session Feedback". The answers will feed an analytics page for admins later.
+one). It replaces the Google Form "Mentor Session Feedback". The admin reads them on the "Mentor reviews" page (section 7).
 
 - **One review per student per week.** A week is a module (`modules.opens_at` .. `closes_at`).
 - **It is mandatory.**
@@ -116,7 +116,7 @@ CREATE TABLE mentor_reviews (
 CREATE INDEX mentor_reviews_mentor ON mentor_reviews (mentor_id, module_id);
 ```
 
-Separate rating columns (not JSON) keep the averages for the analytics page plain SQL.
+Separate rating columns (not JSON) keep the averages plain SQL.
 
 ## 5. The lock
 
@@ -137,14 +137,27 @@ Saturday 10:00 school time, to every student who has a mentor and has not review
 "Review your week with {mentor name}. The LMS locks on Monday until it is sent." Link: `/mentor-review`.
 The front-end already shows its own reminder on every page during the weekend, so this is an extra.
 
-## 7. For the analytics page (not called yet)
+## 7. The admin's "Mentor reviews" page (built on both sides)
 
-The admin dashboard will need these later; the exact shapes can be agreed then.
+**Status:** the back-end built these routes (`xsolla-capstone-backend` `dev`, commit `f1fe677`, described in its
+`docs/mentor_reviews.md`) and the front-end page uses them. Admin sidebar > People > **Mentor reviews**
+(`/admin/mentor-reviews`).
 
-- `GET /mentor-reviews?module_id=&mentor_id=&team_id=` (admin): the rows, with student and mentor names.
-- `GET /mentor-reviews/summary?from_module=&to_module=` (admin): per mentor and week: number of reviews, number of
-  students expected, sessions held, average of each rating and of `overall`, topic counts, no-session reasons.
-- `GET /mentor-reviews/missing?module_id=` (admin): students who have not sent the week's review.
+- `GET /mentor-reviews` (admin): **used.** Every review with every answer; student, mentor and team come as small objects
+  (`student: {id, name, email}`, `mentor: {...}`, `team: {id, name} | null`; `ratings` is `null` and `topics` `[]` without a
+  session). The page sends **no filters**: a cohort is about 30 students x 12 weeks, so a few hundred rows, and the week,
+  mentor, words, low scores and averages are all worked out in the browser.
+- `GET /mentor-reviews/missing?module_id=` (admin): **used** when a week is picked in the filter: "Not sent yet (N)" lists
+  the students who still owe it, with team and mentor. A `404` (a server without it, or an unknown week) just hides that
+  part. Note it lists students for a running week too, so before the weekend everybody shows as "not sent yet"; the page
+  names the week so this reads right.
+- `GET /mentor-reviews/summary` (admin): **not used.** The page computes the same numbers from the list, and the list is
+  needed for the comments anyway. It would be worth switching to it only if the list gets too long to load at once. (It
+  also has `expected`, so a "7 of 29 sent" figure per mentor is possible later.)
+- `403` for everyone else, mentors included (D1). A server without `GET /mentor-reviews` (404/405/501) shows "The server
+  cannot list the mentor reviews yet" instead of an error.
+- The page ignores topics, reasons and rating keys it does not know, and drops a row whose `overall` is not a whole number
+  from 1 to 5, so the back-end can add options later.
 
 ## 8. Open decisions
 
@@ -163,7 +176,7 @@ The admin dashboard will need these later; the exact shapes can be agreed then.
 - [ ] `POST /mentor-reviews` with the validation of section 2 and `mentor_id` taken from the team
 - [ ] Decide D1-D5
 - [ ] (Optional) lock middleware, reminder notification
-- [ ] (Later) admin read routes for analytics
+- [x] Admin read routes `GET /mentor-reviews`, `/summary`, `/missing` (section 7: built, the page uses the list and `/missing`)
 - [ ] `API_CONTRACT.md` updated
 
 ---

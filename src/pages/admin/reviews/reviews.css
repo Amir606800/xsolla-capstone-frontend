@@ -1,0 +1,164 @@
+/* Admin: Mentor reviews. Flat, built from the admin page's own pieces (tiles, tables, pills, panels). */
+.admin-page > .admin-segmented {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.admin-reviews__mentor {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-reviews__mentor:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.admin-table tr.is-selected {
+  background: var(--active-bg);
+}
+
+.admin-reviews__insights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+/* a label, a bar and a number; the number says it, the bar only compares */
+.admin-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-bars li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(60px, 90px) 2.5ch;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.admin-bars__label {
+  overflow-wrap: anywhere;
+}
+.admin-bars__track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--active-bg);
+  overflow: hidden;
+}
+.admin-bars__fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--xs-cyan);
+}
+.admin-bars__count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.admin-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-review {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+}
+.admin-review p {
+  margin: 0;
+}
+.admin-review__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.admin-review__who {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-review__session {
+  font-size: 14px;
+}
+.admin-review__topics,
+.admin-review__ratings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-review__topics .admin-pill {
+  white-space: normal;
+}
+.admin-review__ratings > div {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+}
+.admin-review__ratings dt {
+  color: var(--text-muted);
+}
+.admin-review__ratings dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.admin-review__comment {
+  margin: 4px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--xs-cyan);
+  background: var(--active-bg);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.admin-reviews__more {
+  align-self: flex-start;
+}
+
+@media (max-width: 600px) {
+  .admin-bars li {
+    grid-template-columns: minmax(0, 1fr) 2.5ch;
+  }
+  .admin-bars__track {
+    display: none;
+  }
+}
+
+/* who has not sent the chosen week's review */
+.admin-missing {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-missing li {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.admin-missing .admin-muted {
+  font-size: 13px;
+}

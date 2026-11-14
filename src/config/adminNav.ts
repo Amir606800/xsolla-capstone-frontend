@@ -1,7 +1,16 @@
 import type { IconName } from '../components/Icon'
 
 /** The admin section's pages, in sidebar order. The routes in App.tsx are made from this list. */
-export type AdminSectionKey = 'modules' | 'calendar' | 'students' | 'mentors' | 'lecturers' | 'teams' | 'announce' | 'notifications'
+export type AdminSectionKey =
+  | 'modules'
+  | 'calendar'
+  | 'students'
+  | 'mentors'
+  | 'lecturers'
+  | 'teams'
+  | 'reviews'
+  | 'announce'
+  | 'notifications'
 
 export interface AdminSection {
   key: AdminSectionKey
@@ -32,6 +41,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { key: 'mentors', path: '/admin/mentors', label: 'Mentors', icon: 'mentor', summary: 'Mentors and their roles.' },
       { key: 'lecturers', path: '/admin/lecturers', label: 'Lecturers', icon: 'lecturer', summary: 'Lecturers and their roles.' },
       { key: 'teams', path: '/admin/teams', label: 'Teams', icon: 'team', summary: 'Teams, their mentors and students.' },
+      { key: 'reviews', path: '/admin/mentor-reviews', label: 'Mentor reviews', icon: 'grades', summary: 'What students say about their mentor, week by week.' },
     ],
   },
   {
