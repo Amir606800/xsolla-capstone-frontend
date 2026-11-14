@@ -16,6 +16,7 @@ export interface UserDto {
   roles?: string[]
   /** Planned: roles given for a while, role -> when it ends, e.g. { "lecturer": "2026-12-01T00:00:00Z" }. */
   role_expires_at?: Record<string, string | null>
+  avatar_url?: string | null
   created_at?: string
 }
 
@@ -28,7 +29,15 @@ interface AuthResponse {
 /** Backend user -> app user. See `rolesFrom` for how role names are read. */
 export function mapUser(dto: UserDto): User {
   const roleUntil = untilFrom(dto.role_expires_at)
-  return { id: Number(dto.id), name: dto.name, email: dto.email, roles: rolesFrom(dto.roles ?? dto.role), ...(roleUntil ? { roleUntil } : {}) }
+  const avatarUrl = typeof dto.avatar_url === 'string' && dto.avatar_url.trim() ? dto.avatar_url.trim() : undefined
+  return {
+    id: Number(dto.id),
+    name: dto.name,
+    email: dto.email,
+    roles: rolesFrom(dto.roles ?? dto.role),
+    ...(roleUntil ? { roleUntil } : {}),
+    ...(avatarUrl ? { avatarUrl } : {}),
+  }
 }
 
 function startSession(res: AuthResponse): User {
