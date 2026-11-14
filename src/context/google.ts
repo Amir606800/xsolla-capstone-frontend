@@ -15,6 +15,8 @@ export interface GoogleContextValue {
   markReconnect: () => void
   /** Takes the Google connection away: the server forgets it and the person is "not connected". Rejects with a message. */
   disconnect: () => Promise<void>
+  /** Like disconnect, and the permission is also taken back at Google (it no longer lists the school app). Rejects with a message. */
+  revoke: () => Promise<void>
   /** Starts the connection: the browser leaves for Google, or (offline) it is connected at once. */
   connect: () => Promise<void>
 }

@@ -18,6 +18,7 @@ import {
   quizToDraft,
   splitLines,
   taskToDraft,
+  defaultDue,
   taskWarnings,
   toDateInput,
   toTimeInput,
@@ -106,13 +107,20 @@ describe('material', () => {
 })
 
 describe('task', () => {
-  it('a new task is due at 18:00 on the last day of the module', () => {
-    const d = taskToDraft(undefined, module)
-    expect(d.dueDate).toBe('2026-11-08')
-    expect(d.dueTime).toBe('18:00')
+  it('a new task is due by default on Friday 08:00 of this week', () => {
+    const d = taskToDraft(undefined, NOW) // Wednesday 4 Nov
+    expect(d.dueDate).toBe('2026-11-06')
+    expect(d.dueTime).toBe('08:00')
     expect(validateTask(d).title).toBeDefined()
     expect(hasErrors(validateTask({ ...d, title: 'CLI' }))).toBe(false)
     expect(validateTask({ ...d, title: 'CLI', dueTime: '' }).due).toBe('Pick a due date and time.')
+  })
+  it('the default due moves to next Friday once this Friday 08:00 has passed', () => {
+    expect(defaultDue(new Date(2026, 10, 2, 9))).toEqual({ date: '2026-11-06', time: '08:00', nextWeek: false }) // Monday
+    expect(defaultDue(new Date(2026, 10, 6, 7, 59))).toEqual({ date: '2026-11-06', time: '08:00', nextWeek: false }) // Friday, just before
+    expect(defaultDue(new Date(2026, 10, 6, 9))).toEqual({ date: '2026-11-13', time: '08:00', nextWeek: true }) // Friday, after
+    expect(defaultDue(new Date(2026, 10, 14, 12))).toEqual({ date: '2026-11-20', time: '08:00', nextWeek: true }) // Saturday
+    expect(defaultDue(new Date(2026, 10, 15, 12))).toEqual({ date: '2026-11-20', time: '08:00', nextWeek: true }) // Sunday
   })
   it('turns lines into requirements and drops empty ones', () => {
     const t = draftToTask({ title: 'CLI', description: '', requirements: ' Push it \n\n README ', dueDate: '2026-11-06', dueTime: '18:00' }, 'm6', 'a1')
@@ -123,7 +131,7 @@ describe('task', () => {
   })
   it('editing keeps the task values', () => {
     const t = draftToTask({ title: 'CLI', description: 'Do it', requirements: 'A\nB', dueDate: '2026-11-06', dueTime: '09:30' }, 'm6', 'a1')
-    expect(taskToDraft(t, module)).toEqual({ title: 'CLI', description: 'Do it', requirements: 'A\nB', dueDate: '2026-11-06', dueTime: '09:30' })
+    expect(taskToDraft(t, NOW)).toEqual({ title: 'CLI', description: 'Do it', requirements: 'A\nB', dueDate: '2026-11-06', dueTime: '09:30' })
   })
   it('warns about deadlines in the past or outside the module week', () => {
     const base = { title: 'x', description: '', requirements: '' }

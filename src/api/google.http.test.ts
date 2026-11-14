@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubHttp } from '../test/stubHttp'
-import { connectUrl, disconnect, fetchCalendarEvents, fetchStatus } from './google.http'
+import { connectUrl, disconnect, fetchCalendarEvents, fetchStatus, revoke } from './google.http'
 import { saveEvent } from './events.http'
 import { getTokens, saveTokens } from './session'
 
@@ -183,5 +183,20 @@ describe('disconnecting Google (POST /auth/google/logout)', () => {
     await expect(disconnect()).rejects.toThrow(/cannot disconnect Google yet/)
     await backend({ 'POST /auth/google/logout': err(500, 'server_error', 'could not disconnect Google account') })
     await expect(disconnect()).rejects.toMatchObject({ status: 500 })
+  })
+})
+
+describe('removing Google access (POST /auth/google/revoke)', () => {
+  it('posts with the token and is done on 204', async () => {
+    await backend({ 'POST /auth/google/revoke': () => ({ status: 204 }) })
+    await expect(revoke()).resolves.toBeUndefined()
+    expect(find('POST', '/auth/google/revoke').init.headers).toMatchObject({ Authorization: 'Bearer acc' })
+  })
+
+  it('a server without the route says so in words; a server error stays an error', async () => {
+    await backend({ 'POST /auth/google/revoke': err(404, 'not_found') })
+    await expect(revoke()).rejects.toThrow(/cannot remove Google access yet/)
+    await backend({ 'POST /auth/google/revoke': err(500, 'server_error', 'could not revoke Google access') })
+    await expect(revoke()).rejects.toMatchObject({ status: 500 })
   })
 })

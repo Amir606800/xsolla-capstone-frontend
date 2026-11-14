@@ -162,8 +162,20 @@ export interface TaskDraft {
   dueTime: string
 }
 
-/** A new task is due at 18:00 on the last day of the module by default. */
-export function taskToDraft(a: AssignmentItem | undefined, module: CourseModule): TaskDraft {
+/**
+ * What a new task is due by default: Friday 08:00 of this week (the week runs Monday to Sunday). On a Friday after 08:00,
+ * and at the weekend, that moment has gone, so it is next Friday instead (`nextWeek`).
+ */
+export function defaultDue(now: Date): { date: string; time: string; nextWeek: boolean } {
+  const sinceMonday = (now.getDay() + 6) % 7
+  const friday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + 4, 8, 0)
+  const nextWeek = friday.getTime() <= now.getTime()
+  if (nextWeek) friday.setDate(friday.getDate() + 7)
+  return { date: toDateInput(friday.toISOString()), time: '08:00', nextWeek }
+}
+
+/** A new task starts with the default due time (Friday 08:00); the lecturer can change it. */
+export function taskToDraft(a: AssignmentItem | undefined, now: Date = new Date()): TaskDraft {
   if (a) {
     return {
       title: a.title,
@@ -173,7 +185,8 @@ export function taskToDraft(a: AssignmentItem | undefined, module: CourseModule)
       dueTime: toTimeInput(a.dueAt),
     }
   }
-  return { title: '', description: '', requirements: '', dueDate: toDateInput(module.closesAt), dueTime: '18:00' }
+  const due = defaultDue(now)
+  return { title: '', description: '', requirements: '', dueDate: due.date, dueTime: due.time }
 }
 
 export function validateTask(d: TaskDraft): Errors<'title' | 'due'> {

@@ -7,7 +7,7 @@ import { hasBackend } from './http'
 
 /**
  * The Google Calendar connection: the real backend when VITE_API_URL is set (./google.http), a local
- * stand-in otherwise. Disconnecting is not offered: the server has no route for it yet.
+ * stand-in otherwise. Two ways out: disconnect (the server forgets its copy) and revoke (Google's permission is withdrawn too).
  */
 const MOCK_LATENCY_MS = 300
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
@@ -22,6 +22,16 @@ export async function fetchGoogleStatus(): Promise<GoogleStatus> {
 export async function disconnectGoogle(): Promise<GoogleStatus> {
   if (hasBackend()) {
     await http.disconnect()
+    return { connection: 'disconnected' }
+  }
+  await wait()
+  return mockGoogleDisconnect()
+}
+
+/** Disconnects and also takes the school app's permission back at Google (the server revokes the grant, then forgets it). */
+export async function revokeGoogle(): Promise<GoogleStatus> {
+  if (hasBackend()) {
+    await http.revoke()
     return { connection: 'disconnected' }
   }
   await wait()

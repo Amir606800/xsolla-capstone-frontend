@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AssignmentItem, CourseModule } from '../../types/course'
-import { hasErrors, taskToDraft, taskWarnings, validateTask } from '../../utils/authoring'
+import { defaultDue, hasErrors, taskToDraft, taskWarnings, validateTask } from '../../utils/authoring'
 import type { TaskDraft } from '../../utils/authoring'
 import { Icon } from '../Icon'
 import { Field, FormActions } from './Field'
@@ -19,7 +19,7 @@ export function TaskForm({
   onSave: (draft: TaskDraft) => Promise<void>
   onCancel: () => void
 }) {
-  const [d, setD] = useState<TaskDraft>(() => taskToDraft(item, module))
+  const [d, setD] = useState<TaskDraft>(() => taskToDraft(item, now))
   const { touched, busy, error, submit } = useSave()
   const errors = validateTask(d)
   const warnings = taskWarnings(d, module, now)
@@ -64,6 +64,11 @@ export function TaskForm({
             {(p) => <input {...p} type="time" className="field__input form__input" value={d.dueTime} onChange={(e) => set({ dueTime: e.target.value })} />}
           </Field>
         </div>
+        {!item && (
+          <p className="form__hint">
+            Set by default to Friday 8:00 AM {defaultDue(now).nextWeek ? 'of next week' : 'of this week'}. Change it if the task is due another time.
+          </p>
+        )}
       </fieldset>
       {warnings.length > 0 && (
         <ul className="form__warnings" aria-label="Please check">

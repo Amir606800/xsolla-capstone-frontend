@@ -9,9 +9,6 @@ import { Loading } from '../loading/Loading'
 import { Spinner } from '../loading/Spinner'
 import './google.css'
 
-/** Where a person also takes back the access in their own Google account (the school's server only forgets its copy). */
-export const GOOGLE_PERMISSIONS_URL = 'https://myaccount.google.com/permissions'
-
 const PILL: Record<GoogleConnection, { text: string; tone: 'ok' | 'warn' | 'off' }> = {
   connected: { text: 'Connected', tone: 'ok' },
   disconnected: { text: 'Not connected', tone: 'off' },
@@ -39,7 +36,7 @@ function Avatar({ account }: { account: GoogleAccount }) {
  * back here with `?google=connected` or `?google=error`; that is read once, shown, and removed.
  */
 export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
-  const { status, loading, connecting, reload, connect, disconnect } = useGoogle()
+  const { status, loading, connecting, reload, connect, disconnect, revoke } = useGoogle()
   const { user } = useAuth()
   const student = isStudent(user)
   const [params, setParams] = useSearchParams()
@@ -49,7 +46,8 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
     return back === 'connected' || back === 'error' ? back : null
   })
   const [problem, setProblem] = useState('')
-  const [confirming, setConfirming] = useState(false)
+  // which way out is being confirmed: forget the connection here, or also take the permission back at Google
+  const [confirming, setConfirming] = useState<'disconnect' | 'revoke' | null>(null)
   const [disconnecting, setDisconnecting] = useState(false)
 
   const back = params.get('google')
@@ -80,37 +78,57 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
     }
   }
 
-  async function stop() {
+  async function stop(how: 'disconnect' | 'revoke') {
     setProblem('')
     setDisconnecting(true)
     try {
-      await disconnect()
-      setConfirming(false)
+      await (how === 'revoke' ? revoke() : disconnect())
+      setConfirming(null)
       setCame(null)
     } catch (e) {
-      setProblem(e instanceof Error ? e.message : 'Could not disconnect. Try again in a moment.')
+      setProblem(e instanceof Error ? e.message : how === 'revoke' ? 'Could not remove access. Try again in a moment.' : 'Could not disconnect. Try again in a moment.')
     } finally {
       setDisconnecting(false)
     }
   }
 
-  const disconnectControls = confirming ? (
-    <div className="google-card__confirm" role="group" aria-label="Disconnect Google Calendar?">
-      <span>
-        Disconnect? {student ? 'Your Google events will no longer show on the school calendar.' : 'Your Google events stop showing here, and new events will not be added to your Google Calendar.'}
-      </span>
-      <button type="button" className={variant === 'admin' ? 'admin-btn admin-btn--danger-outline' : 'btn btn--danger'} onClick={stop} disabled={disconnecting}>
-        {disconnecting ? 'Disconnecting…' : 'Yes, disconnect'}
-      </button>
-      <button type="button" className={btnQuiet} onClick={() => setConfirming(false)} disabled={disconnecting}>
-        Keep
-      </button>
-    </div>
-  ) : (
-    <button type="button" className={btnQuiet} onClick={() => setConfirming(true)}>
-      Disconnect
-    </button>
-  )
+  /** Disconnect, and (while the grant is still good) also taking the school app's permission back at Google. */
+  const exitControls = (canRevoke: boolean) =>
+    confirming ? (
+      <div
+        className="google-card__confirm"
+        role="group"
+        aria-label={confirming === 'revoke' ? 'Remove Google access?' : 'Disconnect Google Calendar?'}
+      >
+        <span>
+          {confirming === 'revoke'
+            ? 'Remove access? Google will no longer list the school app, and Google Calendar is disconnected here. Events already on your Google Calendar stay.'
+            : `Disconnect? ${student ? 'Your Google events will no longer show on the school calendar.' : 'Your Google events stop showing here, and new events will not be added to your Google Calendar.'}`}
+        </span>
+        <button
+          type="button"
+          className={variant === 'admin' ? 'admin-btn admin-btn--danger-outline' : 'btn btn--danger'}
+          onClick={() => void stop(confirming)}
+          disabled={disconnecting}
+        >
+          {confirming === 'revoke' ? (disconnecting ? 'Removing…' : 'Yes, remove access') : disconnecting ? 'Disconnecting…' : 'Yes, disconnect'}
+        </button>
+        <button type="button" className={btnQuiet} onClick={() => setConfirming(null)} disabled={disconnecting}>
+          Keep
+        </button>
+      </div>
+    ) : (
+      <>
+        <button type="button" className={btnQuiet} onClick={() => setConfirming('disconnect')}>
+          Disconnect
+        </button>
+        {canRevoke && (
+          <button type="button" className={btnQuiet} onClick={() => setConfirming('revoke')} title="Also removes the school app from your Google account’s permissions">
+            Remove access in Google
+          </button>
+        )}
+      </>
+    )
 
   const pill = status ? PILL[status.connection] : undefined
   const connectButton = (label: string, primary = true) => (
@@ -182,10 +200,7 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
           </ul>
           <div className="google-card__actions">
             {connectButton('Use a different Google account', false)}
-            {disconnectControls}
-            <a className="google-card__link" href={GOOGLE_PERMISSIONS_URL} target="_blank" rel="noopener noreferrer">
-              Also remove access in your Google account <span className="sr-only">(opens in a new tab)</span>
-            </a>
+            {exitControls(true)}
           </div>
         </>
       )}
@@ -208,7 +223,7 @@ export function GoogleCard({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) {
           </p>
           <div className="google-card__actions">
             {connectButton('Reconnect Google Calendar')}
-            {disconnectControls}
+            {exitControls(false)}
           </div>
         </>
       )}

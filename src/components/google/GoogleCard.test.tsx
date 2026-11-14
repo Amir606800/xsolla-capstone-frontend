@@ -24,14 +24,36 @@ describe('the Google Calendar card', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Checking your Google connection…')
   })
 
-  it('connecting shows the account, a Disconnect button, and the way to also remove access at Google', async () => {
+  it('connecting shows the account, a Disconnect button, and a button to also remove access at Google', async () => {
     const user = userEvent.setup()
     show()
     await user.click(await screen.findByRole('button', { name: 'Connect Google Calendar' }))
     expect(await screen.findByText('rashad@gmail.com')).toBeInTheDocument()
     expect(screen.getByText('Connected')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Disconnect' })).toBeEnabled()
-    expect(screen.getByRole('link', { name: /Also remove access in your Google account/ })).toHaveAttribute('href', 'https://myaccount.google.com/permissions')
+    expect(screen.getByRole('button', { name: 'Remove access in Google' })).toBeEnabled()
+  })
+
+  it('Remove access in Google asks once, then disconnects the same way; Keep changes nothing', async () => {
+    mock({ connection: 'connected', account: { email: 'sam@gmail.com', name: 'Sam T' } })
+    const user = userEvent.setup()
+    show()
+    await user.click(await screen.findByRole('button', { name: 'Remove access in Google' }))
+    const ask = screen.getByRole('group', { name: 'Remove Google access?' })
+    await user.click(within(ask).getByRole('button', { name: 'Keep' }))
+    expect(screen.getByText('Connected')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Remove access in Google' }))
+    await user.click(within(screen.getByRole('group', { name: 'Remove Google access?' })).getByRole('button', { name: 'Yes, remove access' }))
+    expect(await screen.findByText('Not connected')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('google_mock')!).connection).toBe('disconnected')
+  })
+
+  it('a connection that needs renewing can be disconnected but has no access left to remove at Google', async () => {
+    mock({ connection: 'reconnect', account: { email: 'sam@gmail.com', name: 'Sam T' } })
+    show()
+    expect(await screen.findByRole('button', { name: 'Disconnect' })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: 'Remove access in Google' })).not.toBeInTheDocument()
   })
 
   it('Disconnect asks once, then the account is not connected any more; Keep changes nothing', async () => {
