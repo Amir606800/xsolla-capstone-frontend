@@ -186,13 +186,13 @@ export default function AuthPage() {
             Forgot password?
           </Link>
 
-          <p className="auth__support">
+          {/* <p className="auth__support">
             Are you a gamer with a payment issue?
             <br />
             <a href="#" className="auth__link">
               Contact gamer support
             </a>
-          </p>
+          </p> */}
         </div>
       </main>
     </div>

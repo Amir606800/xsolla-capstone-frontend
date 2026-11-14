@@ -143,7 +143,8 @@ All of them are in the [`backend_requirements/`](backend_requirements/) folder.
 
 | File | What it is |
 |---|---|
-| `backend_requirements/BACKEND_REQUIREMENTS.md` | What the back-end must add: weekly mentor review, set own password, assigning lecturers to modules, quizzes, bulk module import, and more |
+| `backend_requirements/BACKEND_REQUIREMENTS.md` | What the back-end must add: weekly mentor review, assigning lecturers to modules, quizzes, bulk module import, and more |
+| `backend_requirements/BACKEND_REQ_PROFILE.md` | The profile page: picture, bio, contact handles, and look and accessibility settings |
 | `backend_requirements/BACKEND_INTEGRATION_CHECK.md` | Result of testing the front-end against the real server: bugs and gaps |
 | `backend_requirements/backend-fixes.patch` | A small patch for three back-end bugs found in that test |
 
