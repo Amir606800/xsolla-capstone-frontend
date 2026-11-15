@@ -5,7 +5,7 @@ import * as http from './standings.http'
 
 /**
  * Weekly green / yellow / red grades: the real backend's enrollment grades (./standings.http) when VITE_API_URL is
- * set, the demo store otherwise. The server keeps no note (see capabilities.gradeNotesKept).
+ * set, the demo store otherwise. The week grade comes with the mentor's module feedback (required).
  */
 const MOCK_LATENCY_MS = 300
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
@@ -33,7 +33,7 @@ export async function saveWeekGrade(
   level: StandingLevel,
   note: string,
 ): Promise<StoredStanding[]> {
-  if (hasBackend()) return http.saveWeekGrade(studentId, week, level)
+  if (hasBackend()) return http.saveWeekGrade(studentId, week, level, note)
   await wait()
   return gradeWeek(mentor, studentId, week, level, note)
 }

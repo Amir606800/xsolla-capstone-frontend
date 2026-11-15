@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
-import { gradeNotesKept, mentorSeesTeamWork } from '../../api/capabilities'
+import { mentorSeesTeamWork } from '../../api/capabilities'
 import { hasBackend } from '../../api/http'
 import { fetchTeamQuizResults } from '../../api/quizResults'
 import type { TeamQuizResults } from '../../api/quizResults'
@@ -184,7 +184,6 @@ export default function GradingPage() {
               theirWeeks={theirWeeks(student.id)}
               workIndex={workIndex}
               seesWork={seesWork}
-              gradeDetails={gradeNotesKept()}
               quizResults={quizResults}
               now={now}
               openWork={openWork}
@@ -203,8 +202,11 @@ export default function GradingPage() {
                 if (gradeLocked(week, weekGradeOf(gradeIndex, student.id, week.position), now)) {
                   throw new Error(`Week ${week.position} is closed, so its grade can no longer be changed.`)
                 }
-                await grades.gradeWeek(student.id, week.position, level, note)
-                setSaved(`${student.name}: week ${week.position} graded ${STANDING_LABEL[level].toLowerCase()}.`)
+                const saved = await grades.gradeWeek(student.id, week.position, level, note)
+                setSaved(
+                  `${student.name}: week ${week.position} graded ${STANDING_LABEL[level].toLowerCase()}.` +
+                    (saved?.note ? '' : ' The server did not keep the module feedback yet, so the student will only see the colour.'),
+                )
               }}
             />
           ) : phase === 'upcoming' ? (

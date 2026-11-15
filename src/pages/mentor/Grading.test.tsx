@@ -69,10 +69,15 @@ describe('Grading page: a card per student, then one student at a time', () => {
     await openStudent(user, 'Leyla Hasanova')
 
     await user.click(await screen.findByRole('button', { name: 'Save week grade' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Pick green, yellow or red')
+    expect(screen.getByText('Pick green, yellow or red first.')).toBeInTheDocument()
 
+    // a colour alone is not enough: the module feedback is required
     await user.click(screen.getByRole('radio', { name: /Falling behind/ }))
-    await user.type(screen.getByLabelText('Note for Leyla Hasanova (optional)'), 'Routing app was late.')
+    await user.click(screen.getByRole('button', { name: 'Save week grade' }))
+    expect(screen.getByText('Write the module feedback for Leyla Hasanova: it is required.')).toBeInTheDocument()
+    expect(standingsOf(101).find((s) => s.week === 5)).toBeUndefined()
+
+    await user.type(screen.getByLabelText('Module feedback for Leyla Hasanova (required)'), 'Routing app was late.')
     await user.click(screen.getByRole('button', { name: 'Save week grade' }))
 
     expect(await screen.findByText('Leyla Hasanova: week 5 graded falling behind.')).toBeInTheDocument()
@@ -178,13 +183,13 @@ describe('Grading page: what is not there', () => {
     expect(await screen.findByText(/You do not look after a team yet/)).toBeInTheDocument()
   })
 
-  it('on the real server: no note field (it keeps only the colour), the team hand-ins are shown, quiz results are not', async () => {
+  it('on the real server: the module feedback is asked for too, the team hand-ins are shown, quiz results are not', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     const user = userEvent.setup()
     renderAs(['mentor'], '/grading?week=m5')
     await openStudent(user, 'Leyla Hasanova')
     expect(await screen.findByRole('group', { name: 'Week 5 grade for Leyla Hasanova' })).toBeInTheDocument()
-    expect(screen.queryByLabelText(/^Note for/)).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Module feedback for Leyla Hasanova (required)')).toBeRequired()
     expect(screen.queryByText(/does not show your students/)).not.toBeInTheDocument()
     expect(screen.getAllByText(/handed in/).length).toBeGreaterThan(0)
     expect(screen.getByText(/Tasks are not graded/)).toBeInTheDocument()

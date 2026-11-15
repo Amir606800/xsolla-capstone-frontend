@@ -3,14 +3,15 @@ import type { StandingLevel, WeeklyStanding } from '../../../types/standing'
 import type { Person } from '../../../types/team'
 import { formatDateTime } from '../../../utils/date'
 import { gradeWarning } from '../../../utils/review'
-import { STANDING_ICON, STANDING_LABEL, STANDING_LEVELS } from '../../../utils/standing'
+import { MAX_GRADE_NOTE, STANDING_ICON, STANDING_LABEL, STANDING_LEVELS } from '../../../utils/standing'
 import { Icon } from '../../Icon'
 import { StandingPill } from '../../StandingPill'
 import { Avatar } from '../../team/People'
 
 /**
  * MENTOR: one student's grade for one week - green (on track), yellow (falling behind) or red
- * (no progress) - with an optional note. The grade can be changed later; the last one counts.
+ * (no progress) - with the module feedback, which is required: a grade is never given without a few words on the week.
+ * The grade can be changed later; the last one counts. (The comments on single tasks are separate and optional.)
  */
 export function WeekGradeItem({
   student,
@@ -21,7 +22,6 @@ export function WeekGradeItem({
   open,
   onToggle,
   onSave,
-  details = true,
   alwaysOpen = false,
   locked = false,
 }: {
@@ -35,8 +35,6 @@ export function WeekGradeItem({
   open: boolean
   onToggle: () => void
   onSave: (level: StandingLevel, note: string) => Promise<void>
-  /** The note and the "last saved" date; off where the server keeps only the colour. */
-  details?: boolean
   /** One student's page: the form is always shown, there is nothing to open. */
   alwaysOpen?: boolean
   /** The week has closed and it already has a grade: the grade is shown, not editable. */
@@ -47,18 +45,30 @@ export function WeekGradeItem({
   const [note, setNote] = useState(grade?.note ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [noteError, setNoteError] = useState('')
   const warning = level ? gradeWarning(theirWeeks, week, level) : null
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
+    const text = note.trim()
+    setError('')
+    setNoteError('')
     if (!level) {
       setError('Pick green, yellow or red first.')
+      if (!text) setNoteError(`Write the module feedback for ${student.name}: it is required.`)
+      return
+    }
+    if (!text) {
+      setNoteError(`Write the module feedback for ${student.name}: it is required.`)
+      return
+    }
+    if (text.length > MAX_GRADE_NOTE) {
+      setNoteError(`Keep the module feedback under ${MAX_GRADE_NOTE} characters.`)
       return
     }
     setBusy(true)
-    setError('')
     try {
-      await onSave(level, note)
+      await onSave(level, text)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save the grade')
     } finally {
@@ -107,8 +117,8 @@ export function WeekGradeItem({
             <Icon name="lock" size={16} /> Grade locked
           </p>
           <p className="list__meta">Week {week} is closed, so its grade can no longer be changed.</p>
-          {details && grade.note && <p className="review__locked-note">{grade.note}</p>}
-          {details && <p className="list__meta">Saved {formatDateTime(grade.assessedAt)}.</p>}
+          {grade.note && <p className="review__locked-note">{grade.note}</p>}
+          <p className="list__meta">Saved {formatDateTime(grade.assessedAt)}.</p>
         </div>
       )}
 
@@ -138,22 +148,33 @@ export function WeekGradeItem({
             </p>
           )}
 
-          {details && (
-            <>
-              <label className="field__label" htmlFor={`${id}-note`}>
-                Note for {student.name} (optional)
-              </label>
-              <textarea
-                id={`${id}-note`}
-                className="field__input form__textarea"
-                rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </>
+          <label className="field__label" htmlFor={`${id}-note`}>
+            Module feedback for {student.name} (required)
+          </label>
+          <textarea
+            id={`${id}-note`}
+            className="field__input form__textarea"
+            rows={3}
+            required
+            aria-required="true"
+            aria-invalid={noteError ? true : undefined}
+            aria-describedby={noteError ? `${id}-note-error` : undefined}
+            value={note}
+            onChange={(e) => {
+              setNote(e.target.value)
+              setNoteError('')
+            }}
+          />
+          <p className={`review__count${note.length > MAX_GRADE_NOTE ? ' is-over' : ''}`}>
+            {note.length} / {MAX_GRADE_NOTE}
+          </p>
+          {noteError && (
+            <p className="field__error" id={`${id}-note-error`} role="alert">
+              {noteError}
+            </p>
           )}
           {grade && (
-            <p className="list__meta">{details ? `Last saved ${formatDateTime(grade.assessedAt)}. ` : ''}Saving again replaces it.</p>
+            <p className="list__meta">Last saved {formatDateTime(grade.assessedAt)}. Saving again replaces it.</p>
           )}
           {error && (
             <p className="field__error" role="alert">

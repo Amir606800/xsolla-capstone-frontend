@@ -19,7 +19,7 @@ test("the mentor's week grade and note reach the student's My grades", async ({ 
   await page.goto('/grading?week=m6') // the running week: its grade can still be given and changed
   await page.getByRole('button', { name: "Open Sam Student's week 6" }).click()
   await page.getByRole('radio', { name: /On track/ }).check({ force: true })
-  await page.getByLabel('Note for Sam Student (optional)').fill('Strong start to the Go week.')
+  await page.getByLabel('Module feedback for Sam Student (required)').fill('Strong start to the Go week.')
   await page.getByRole('button', { name: 'Save week grade' }).click()
   await expect(page.getByRole('status')).toContainText('Sam Student: week 6 graded on track.')
 

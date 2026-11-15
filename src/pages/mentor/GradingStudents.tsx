@@ -221,7 +221,6 @@ export function StudentWeekView({
   theirWeeks,
   workIndex,
   seesWork,
-  gradeDetails,
   quizResults,
   now,
   openWork,
@@ -240,7 +239,6 @@ export function StudentWeekView({
   theirWeeks: WeeklyStanding[]
   workIndex: Map<string, TeamSubmission>
   seesWork: boolean
-  gradeDetails: boolean
   quizResults: TeamQuizResults | null
   now: Date
   openWork: string | null
@@ -364,7 +362,6 @@ export function StudentWeekView({
                   grade={weekGradeOf(grades, student.id, week.position)}
                   theirWeeks={theirWeeks}
                   work={seesWork ? { done: w.done, total: w.total } : undefined}
-                  details={gradeDetails}
                   open
                   alwaysOpen
                   locked={gradeLocked(week, weekGradeOf(grades, student.id, week.position), now)}

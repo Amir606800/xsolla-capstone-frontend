@@ -138,6 +138,7 @@ export function gradeWeek(
   if (module.opensAt && new Date(module.opensAt) > now) throw new Error('This week has not started yet')
   const store = load(now)
   const text = note.trim()
+  if (!text) throw new Error('Write the module feedback first: it is required with a week grade.')
   store[keyOf(studentId, week)] = {
     week,
     level,

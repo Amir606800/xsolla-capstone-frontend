@@ -7,12 +7,14 @@ const BASE = 'https://api.test'
 type Call = { method: string; path: string; body?: unknown }
 let calls: Call[]
 let grades: Record<string, string | null>
+/** The module feedback a server that keeps it has stored, by "module:student". */
+let notes: Record<string, string>
 
 /**
  * A fake backend with two weeks (modules 7 and 5, made in that order of creation: 5 first) and a team of two
  * (students 2 and 4). Student 9 is in another team. Grades live on the enrollments.
  */
-async function backend({ teamStatus = 200, forbidWeek }: { teamStatus?: number; forbidWeek?: string } = {}) {
+async function backend({ teamStatus = 200, forbidWeek, keepsFeedback = false }: { teamStatus?: number; forbidWeek?: string; keepsFeedback?: boolean } = {}) {
   calls = []
   await stubHttp(
     vi.fn(async (url: string, init: RequestInit) => {
@@ -34,12 +36,23 @@ async function backend({ teamStatus = 200, forbidWeek }: { teamStatus?: number; 
       const list = path.match(/^\/modules\/(\d+)\/enrollments$/)
       if (method === 'GET' && list) {
         if (list[1] === forbidWeek) return new Response(JSON.stringify({ error: 'forbidden', message: 'not enrolled' }), { status: 403 })
-        return ok([2, 4, 9].map((u) => ({ id: u, module_id: Number(list[1]), user_id: u, grade: grades[`${list[1]}:${u}`] ?? null, created_at: '2026-11-01T00:00:00Z' })))
+        return ok(
+          [2, 4, 9].map((u) => ({
+            id: u,
+            module_id: Number(list[1]),
+            user_id: u,
+            grade: grades[`${list[1]}:${u}`] ?? null,
+            ...(keepsFeedback && notes[`${list[1]}:${u}`] ? { feedback: notes[`${list[1]}:${u}`], graded_at: '2026-11-10T09:30:00Z' } : {}),
+            created_at: '2026-11-01T00:00:00Z',
+          })),
+        )
       }
       const grade = path.match(/^\/modules\/(\d+)\/enrollments\/(\d+)\/grade$/)
       if (method === 'PATCH' && grade) {
         if (grade[2] === '77') return new Response(JSON.stringify({ error: 'not_found', message: 'enrollment not found' }), { status: 404 })
-        grades[`${grade[1]}:${grade[2]}`] = (JSON.parse(init.body as string) as { grade: string }).grade
+        const sent = JSON.parse(init.body as string) as { grade: string; feedback?: string }
+        grades[`${grade[1]}:${grade[2]}`] = sent.grade
+        if (sent.feedback) notes[`${grade[1]}:${grade[2]}`] = sent.feedback
         return ok({})
       }
       return new Response(JSON.stringify({ error: 'not_found', message: 'nope' }), { status: 404 })
@@ -51,6 +64,7 @@ beforeEach(() => {
   localStorage.clear()
   vi.stubEnv('VITE_API_URL', BASE)
   saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
+  notes = {}
   grades = { '5:2': 'green', '5:4': 'yellow', '7:2': 'red', '5:9': 'green', '7:4': 'purple' }
 })
 afterEach(() => {
@@ -71,21 +85,49 @@ describe('weekly grades on the real backend (enrollment grades)', () => {
     expect(rows[0].assessedAt).toBe('2026-11-08T23:59:00Z')
   })
 
-  it('saving PATCHes the enrollment of that week with the level, then reads the team again', async () => {
+  it('saving PATCHes the enrollment of that week with the level and the module feedback, then reads the team again', async () => {
     await backend()
-    const rows = await saveWeekGrade(4, 2, 'green')
-    expect(calls.find((c) => c.method === 'PATCH')).toEqual({ method: 'PATCH', path: '/modules/7/enrollments/4/grade', body: { grade: 'green' } })
+    const rows = await saveWeekGrade(4, 2, 'green', '  Great week, keep it up.  ')
+    expect(calls.find((c) => c.method === 'PATCH')).toEqual({
+      method: 'PATCH',
+      path: '/modules/7/enrollments/4/grade',
+      body: { grade: 'green', feedback: 'Great week, keep it up.' },
+    })
     expect(rows.find((r) => r.week === 2 && r.studentId === 4)?.level).toBe('green')
+  })
+
+  it('the module feedback is required: without it nothing is sent', async () => {
+    await backend()
+    await expect(saveWeekGrade(4, 2, 'green', '   ')).rejects.toThrow('Write the module feedback first')
+    expect(calls.filter((c) => c.method === 'PATCH')).toHaveLength(0)
+  })
+
+  it('a server that keeps the feedback sends it back: the note and the date come from the enrollment', async () => {
+    await backend({ keepsFeedback: true })
+    const rows = await saveWeekGrade(4, 2, 'green', 'Great week')
+    expect(rows.find((r) => r.week === 2 && r.studentId === 4)).toMatchObject({ level: 'green', note: 'Great week', assessedAt: '2026-11-10T09:30:00Z' })
+  })
+
+  it('a server that does not keep it yet gives a grade without a note (the page says so)', async () => {
+    await backend()
+    const rows = await saveWeekGrade(4, 2, 'green', 'Great week')
+    expect(rows.find((r) => r.week === 2 && r.studentId === 4)).not.toHaveProperty('note')
+  })
+
+  it('the student reads their own feedback from their enrollments', async () => {
+    await backend({ keepsFeedback: true })
+    notes['5:2'] = 'Good start'
+    expect((await fetchStandings(2)).find((r) => r.week === 1)?.note).toBe('Good start')
   })
 
   it('a student who is not enrolled in the week gets a plain answer', async () => {
     await backend()
-    await expect(saveWeekGrade(77, 1, 'red')).rejects.toThrow('This student is not enrolled in this week, so it cannot be graded.')
+    await expect(saveWeekGrade(77, 1, 'red', 'No report this week')).rejects.toThrow('This student is not enrolled in this week, so it cannot be graded.')
   })
 
   it('a week that is not on the server cannot be graded', async () => {
     await backend()
-    await expect(saveWeekGrade(2, 9, 'red')).rejects.toThrow('Week 9 is not on the server.')
+    await expect(saveWeekGrade(2, 9, 'red', 'No report this week')).rejects.toThrow('Week 9 is not on the server.')
   })
 
   it('a week whose enrollments the caller may not read counts as not graded', async () => {

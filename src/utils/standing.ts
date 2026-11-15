@@ -20,6 +20,9 @@ export const STANDING_MEANING: Record<StandingLevel, string> = {
   red: 'No meaningful progress was made, or no progress report was given without appropriate notice.',
 }
 
+/** The longest module feedback a mentor writes with a week grade, in characters. */
+export const MAX_GRADE_NOTE = 1000
+
 /** 4 weeks of yellow in a row count as red. */
 export const YELLOW_LIMIT = 4
 /** 2 weeks of red in a row mean removal from the program. */

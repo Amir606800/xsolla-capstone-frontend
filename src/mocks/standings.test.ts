@@ -26,15 +26,21 @@ describe('rules', () => {
   })
 
   it('changing a grade replaces it: one grade per week', () => {
-    gradeWeek(RASHAD, 101, 5, 'yellow', '', NOW)
-    gradeWeek(RASHAD, 101, 5, 'green', '', NOW)
+    gradeWeek(RASHAD, 101, 5, 'yellow', 'Behind on routing', NOW)
+    gradeWeek(RASHAD, 101, 5, 'green', 'Caught up', NOW)
     const week5 = standingsOf(101, NOW).filter((s) => s.week === 5)
-    expect(week5).toEqual([expect.objectContaining({ level: 'green' })])
+    expect(week5).toEqual([expect.objectContaining({ level: 'green', note: 'Caught up' })])
+  })
+
+  it('the module feedback is required: no grade without it, and nothing is kept', () => {
+    expect(() => gradeWeek(RASHAD, 101, 5, 'green', '', NOW)).toThrow('module feedback')
+    expect(() => gradeWeek(RASHAD, 101, 5, 'green', '   ', NOW)).toThrow('module feedback')
+    expect(standingsOf(101, NOW).find((s) => s.week === 5)).toBeUndefined()
   })
 
   it('a mentor grades only their own team, and only weeks that have started', () => {
-    expect(() => gradeWeek(AYSEL, 101, 5, 'green', '', NOW)).toThrow('not in your team')
-    expect(() => gradeWeek(RASHAD, 101, 8, 'green', '', NOW)).toThrow('not started')
+    expect(() => gradeWeek(AYSEL, 101, 5, 'green', 'Good', NOW)).toThrow('not in your team')
+    expect(() => gradeWeek(RASHAD, 101, 8, 'green', 'Good', NOW)).toThrow('not started')
     expect(teamStandings(AYSEL, NOW).some((s) => s.studentId === 101)).toBe(false)
   })
 })

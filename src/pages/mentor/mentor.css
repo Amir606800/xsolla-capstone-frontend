@@ -607,3 +607,14 @@
   width: 32px;
   height: 32px;
 }
+
+/* the length of the module feedback */
+.review__count {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: right;
+}
+.review__count.is-over {
+  color: var(--danger);
+}

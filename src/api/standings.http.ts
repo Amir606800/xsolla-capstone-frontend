@@ -11,8 +11,10 @@ import type { ApiModule } from './types'
  * their enrollment in that module:
  *   GET   /modules                                    the weeks the caller is enrolled in (week N = the Nth, in course order)
  *   GET   /modules/:moduleId/enrollments              every enrollment of the week, each with `grade` (red | yellow | green)
- *   PATCH /modules/:moduleId/enrollments/:userId/grade  { grade }   mentor or admin
- * The server keeps no note and no "graded at": the week's closing date stands in for the date.
+ *   PATCH /modules/:moduleId/enrollments/:userId/grade  { grade, feedback }   mentor or admin
+ * The module feedback (`feedback`, required with every grade) is the mentor's note on the week. The server may not keep
+ * it yet (BACKEND_REQ_WEEK_FEEDBACK.md): it is sent anyway, and read back from the enrollment when the server has it.
+ * Without `graded_at` the week's closing date stands in for the date.
  */
 
 interface EnrollmentDto {
@@ -20,6 +22,9 @@ interface EnrollmentDto {
   module_id: number | string
   user_id: number | string
   grade?: string | null
+  /** The mentor's module feedback; absent until the server keeps it. */
+  feedback?: string | null
+  graded_at?: string | null
   created_at: string
 }
 
@@ -55,7 +60,10 @@ async function gradesOf(studentIds: Set<number>): Promise<StoredStanding[]> {
     for (const e of rows[i]) {
       const level = parseStandingLevel(e.grade)
       const studentId = Number(e.user_id)
-      if (level && studentIds.has(studentId)) out.push({ week: w.week, level, assessedAt: w.date, studentId })
+      if (level && studentIds.has(studentId)) {
+        const note = e.feedback?.trim()
+        out.push({ week: w.week, level, assessedAt: e.graded_at || w.date, studentId, ...(note ? { note } : {}) })
+      }
     }
   })
   return out.sort((a, b) => a.week - b.week || a.studentId - b.studentId)
@@ -63,7 +71,12 @@ async function gradesOf(studentIds: Set<number>): Promise<StoredStanding[]> {
 
 /** The signed-in student's own grades. */
 export async function fetchStandings(studentId: number): Promise<WeeklyStanding[]> {
-  return (await gradesOf(new Set([studentId]))).map(({ week, level, assessedAt }) => ({ week, level, assessedAt }))
+  return (await gradesOf(new Set([studentId]))).map(({ week, level, assessedAt, note }) => ({
+    week,
+    level,
+    assessedAt,
+    ...(note ? { note } : {}),
+  }))
 }
 
 /** The mentor's team: GET /mentors/me/team (404 = no team, so no grades). */
@@ -82,11 +95,17 @@ export async function fetchTeamStandings(): Promise<StoredStanding[]> {
 }
 
 /** Gives or changes one student's grade for one week, then returns the team's grades. */
-export async function saveWeekGrade(studentId: number, week: number, level: StandingLevel): Promise<StoredStanding[]> {
+export async function saveWeekGrade(studentId: number, week: number, level: StandingLevel, note: string): Promise<StoredStanding[]> {
+  const feedback = note.trim()
+  // required with every grade: refuse before anything is sent
+  if (!feedback) throw new ApiError(422, 'validation_failed', 'Write the module feedback first: it is required with a week grade.')
   const target = (await weeks()).find((w) => w.week === week)
   if (!target) throw new ApiError(404, 'not_found', `Week ${week} is not on the server.`)
   try {
-    await authedRequest(`/modules/${target.moduleId}/enrollments/${studentId}/grade`, { method: 'PATCH', body: { grade: level } })
+    await authedRequest(`/modules/${target.moduleId}/enrollments/${studentId}/grade`, {
+      method: 'PATCH',
+      body: { grade: level, feedback },
+    })
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) throw new ApiError(404, 'not_found', 'This student is not enrolled in this week, so it cannot be graded.')
     throw e

@@ -38,7 +38,10 @@ export function useTeamStandings() {
   const gradeWeek = useCallback(
     async (studentId: number, week: number, level: StandingLevel, note: string) => {
       if (!mentor) throw new Error('Only mentors can grade a week')
-      setStandings(await saveWeekGrade(mentor, studentId, week, level, note))
+      const saved = await saveWeekGrade(mentor, studentId, week, level, note)
+      setStandings(saved)
+      // what the store now holds for this student and week (the server may not have kept the feedback)
+      return saved.find((s) => s.studentId === studentId && s.week === week)
     },
     [mentor],
   )
