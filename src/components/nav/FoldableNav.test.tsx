@@ -6,7 +6,7 @@ import { renderWithProviders } from '../../test/renderWithProviders'
 
 /**
  * jsdom has no layout, so the menu's size is given: every element is 100px tall and the menu has `room` pixels. The admin
- * menu (a link, five groups, the tools) then needs about 800px.
+ * menu (a link, six groups, the tools) then needs about 800px.
  */
 function giveRoom(room: number) {
   const size = (name: 'clientHeight' | 'offsetHeight' | 'scrollHeight', value: (el: HTMLElement) => number) =>
@@ -64,7 +64,7 @@ describe('the admin menu folds only when it does not fit', () => {
     expect(menu.getByRole('link', { name: 'Lecture reviews' }).closest('[data-fold-body]')).not.toHaveAttribute('inert')
     await user.click(menu.getByRole('button', { name: 'People' }))
     expect(menu.getByRole('button', { name: 'People' })).toHaveAttribute('aria-expanded', 'false')
-    expect(JSON.parse(localStorage.getItem('admin_nav_fold') ?? 'null')).toEqual(['Course', 'Messages', 'Community', 'People'])
+    expect(JSON.parse(localStorage.getItem('admin_nav_fold') ?? 'null')).toEqual(['Course', 'Insights', 'Messages', 'Community', 'People'])
   })
 
   it('goes back to the choice made earlier', async () => {

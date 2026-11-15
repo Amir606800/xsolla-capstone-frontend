@@ -49,8 +49,12 @@ const AdminLecturersPage = lazy(() => import('./pages/admin/people/AdminLecturer
 const AdminProfilePage = lazy(() => import('./pages/admin/profile/AdminProfilePage'))
 const AdminReviewsPage = lazy(() => import('./pages/admin/reviews/AdminReviewsPage'))
 const AdminLectureReviewsPage = lazy(() => import('./pages/admin/reviews/AdminLectureReviewsPage'))
+const AnalyticsOverviewPage = lazy(() => import('./pages/admin/analytics/AnalyticsOverviewPage'))
+const AnalyticsPeoplePage = lazy(() => import('./pages/admin/analytics/AnalyticsPeoplePage'))
+const StudentAnalyticsPage = lazy(() => import('./pages/admin/analytics/StudentAnalyticsPage'))
+const MentorAnalyticsPage = lazy(() => import('./pages/admin/analytics/MentorAnalyticsPage'))
 /** Admin sections with their own pages; the rest show a placeholder until they are built. */
-const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'reviews', 'lectureReviews', 'announce', 'notifications']
+const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'reviews', 'lectureReviews', 'analytics', 'announce', 'notifications']
 
 /** The old Settings addresses (and Google's way back to /settings?google=...) now lead to the profile, answer and all. */
 function ToProfile({ to }: { to: string }) {
@@ -88,6 +92,11 @@ export default function App() {
             </Route>
             <Route path="/admin/announce" element={<AdminAnnouncePage />} />
             <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
+            <Route path="/admin/analytics" element={<AnalyticsOverviewPage />} />
+            <Route path="/admin/analytics/students" element={<AnalyticsPeoplePage role="students" />} />
+            <Route path="/admin/analytics/students/:studentId" element={<StudentAnalyticsPage />} />
+            <Route path="/admin/analytics/mentors" element={<AnalyticsPeoplePage role="mentors" />} />
+            <Route path="/admin/analytics/mentors/:mentorId" element={<MentorAnalyticsPage />} />
             <Route path="/admin/office-tour" element={<OfficeTourPage />} />
             <Route path="/admin/profile" element={<AdminProfilePage />} />
             <Route path="/admin/settings" element={<ToProfile to="/admin/profile" />} />
