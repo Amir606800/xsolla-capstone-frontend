@@ -1,0 +1,158 @@
+/* The "Filters" button, its panel and the chips of what is filtered. Flat, in the admin's own colours. */
+.filter {
+  position: relative;
+}
+.filter__button {
+  gap: 8px;
+}
+.filter__button.is-active {
+  border-color: var(--xs-cyan);
+}
+.filter__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--xs-cyan);
+  color: #06232b;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.filter__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  /* the button sits at the right end of the toolbar, so the panel grows to the left */
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(560px, 75vh);
+  padding: 14px;
+  overflow-y: auto;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.filter__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.filter__legend {
+  display: block;
+  margin: 0 0 6px;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+/* a long list (every lecture) scrolls inside its own box */
+.filter__options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.filter__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+.filter__option:hover {
+  background: var(--active-bg);
+}
+.filter__option.is-chosen {
+  background: var(--active-bg);
+  box-shadow: inset 3px 0 0 var(--xs-cyan);
+  font-weight: 600;
+}
+.filter__option:has(input:focus-visible) {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: -2px;
+}
+/* the radio is there for the keyboard and screen readers; the row and its check show the choice */
+.filter__option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.filter__label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.filter__check {
+  display: inline-flex;
+  color: var(--xs-cyan);
+  opacity: 0;
+}
+.filter__option.is-chosen .filter__check {
+  opacity: 1;
+}
+.filter__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+}
+
+.filter__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.filter__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--xs-cyan) 55%, var(--field-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--xs-cyan) 10%, var(--card));
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.filter__chip:hover {
+  border-color: var(--xs-cyan);
+}
+.filter__chip:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.filter__chip-name {
+  color: var(--text-muted);
+}
+
+/* on a phone the toolbar wraps and the button is at the left: the panel opens from there */
+@media (max-width: 720px) {
+  .filter__panel {
+    right: auto;
+    left: 0;
+  }
+}

@@ -19,30 +19,16 @@ import {
   topicCounts,
 } from '../../../utils/reviewAnalytics'
 import type { ReviewFilter, ReviewShow } from '../../../utils/reviewAnalytics'
+import { ALL, FilterChips, FilterMenu } from '../../../components/filter/FilterMenu'
+import type { FilterGroup } from '../../../components/filter/FilterMenu'
+import { latestWeekFirst, weekNamer } from '../../../utils/weekNames'
 import { SortableTh } from '../SortableTh'
+import { Bars } from './Bars'
 import { ReviewCard } from './ReviewCard'
 import './reviews.css'
 
 const PAGE = 20
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
-
-/** A short list of "label ... bar ... count" rows. The count is written, so the bar is only a hint. */
-function Bars({ label, rows }: { label: string; rows: { key: string; text: string; count: number }[] }) {
-  const max = Math.max(1, ...rows.map((r) => r.count))
-  return (
-    <ul className="admin-bars" aria-label={label}>
-      {rows.map((r) => (
-        <li key={r.key}>
-          <span className="admin-bars__label">{r.text}</span>
-          <span className="admin-bars__track" aria-hidden="true">
-            <span className="admin-bars__fill" style={{ width: `${(r.count / max) * 100}%` }} />
-          </span>
-          <span className="admin-bars__count">{r.count}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 /**
  * Admin: what students say about their mentors. Every weekly review in one place: totals, a table that compares the
@@ -61,21 +47,21 @@ export default function AdminReviewsPage() {
   }
 
   /** "Week 5 · Go Basics" from the course; the server's own title when the course does not know the module. */
-  const week = useMemo(() => {
-    const byId = new Map(modules.map((m) => [m.id, m]))
-    const titles = new Map(reviews.map((r) => [r.moduleId, r.moduleTitle]))
-    return (id: string) => {
-      const m = byId.get(id)
-      const title = m?.title ?? titles.get(id)
-      return m ? `Week ${m.position}${title ? ` · ${title}` : ''}` : (title ?? `Module ${id}`)
-    }
-  }, [modules, reviews])
-
-  const weeks = useMemo(() => {
-    const position = new Map(modules.map((m) => [m.id, m.position]))
-    return [...new Set(reviews.map((r) => r.moduleId))].sort((a, b) => (position.get(b) ?? 0) - (position.get(a) ?? 0) || b.localeCompare(a))
-  }, [modules, reviews])
+  const week = useMemo(() => weekNamer(modules, new Map(reviews.map((r) => [r.moduleId, r.moduleTitle]))), [modules, reviews])
+  const weeks = useMemo(() => latestWeekFirst(reviews.map((r) => r.moduleId), modules), [modules, reviews])
   const mentors = useMemo(() => byMentor(reviews).map((m) => ({ id: m.mentorId, name: m.mentorName })), [reviews])
+
+  // what can be filtered by: the week and the mentor
+  const filterGroups: FilterGroup[] = [
+    { id: 'week', label: 'Week', value: filter.moduleId, options: [{ value: ALL, label: 'All weeks' }, ...weeks.map((id) => ({ value: id, label: week(id) }))] },
+    {
+      id: 'mentor',
+      label: 'Mentor',
+      value: String(filter.mentorId),
+      options: [{ value: ALL, label: 'All mentors' }, ...mentors.map((x) => ({ value: String(x.id), label: x.name }))],
+    },
+  ]
+  const choose = (id: string, value: string) => set(id === 'week' ? { moduleId: value } : { mentorId: value === ALL ? 'all' : Number(value) })
 
   const rows = useMemo(() => filterReviews(reviews, filter), [reviews, filter])
   const summary = useMemo(() => summarise(rows), [rows])
@@ -117,7 +103,6 @@ export default function AdminReviewsPage() {
     { key: 'overall', dir: 'asc' },
   )
 
-  const filtered = filter.moduleId !== 'all' || filter.mentorId !== 'all' || filter.query !== '' || filter.show !== 'all'
 
   return (
     <section className="admin-page">
@@ -166,38 +151,10 @@ export default function AdminReviewsPage() {
                 onChange={(e) => set({ query: e.target.value })}
               />
             </label>
-            <label className="admin-inline-field">
-              <span>Week</span>
-              <select className="admin-field__input" value={filter.moduleId} onChange={(e) => set({ moduleId: e.target.value })}>
-                <option value="all">All weeks</option>
-                {weeks.map((id) => (
-                  <option key={id} value={id}>
-                    {week(id)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="admin-inline-field">
-              <span>Mentor</span>
-              <select
-                className="admin-field__input"
-                value={filter.mentorId}
-                onChange={(e) => set({ mentorId: e.target.value === 'all' ? 'all' : Number(e.target.value) })}
-              >
-                <option value="all">All mentors</option>
-                {mentors.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {filtered && (
-              <button type="button" className="admin-btn admin-btn--small" onClick={() => set(ALL_REVIEWS)}>
-                Clear filters
-              </button>
-            )}
+            <FilterMenu groups={filterGroups} onChange={choose} onClear={() => set({ moduleId: 'all', mentorId: 'all' })} />
           </div>
+
+          <FilterChips groups={filterGroups} onChange={choose} />
 
           <div className="admin-segmented" role="group" aria-label="Kind of review">
             {(
@@ -277,7 +234,12 @@ export default function AdminReviewsPage() {
           )}
 
           {rows.length === 0 ? (
-            <p className="admin-empty">No reviews match.</p>
+            <div className="admin-empty">
+              <p>No reviews match.</p>
+              <button type="button" className="admin-btn" onClick={() => set(ALL_REVIEWS)}>
+                Clear filters
+              </button>
+            </div>
           ) : (
             <>
               <section className="admin-page" aria-labelledby="reviews-mentors">

@@ -1,0 +1,69 @@
+/* Folding groups in the side menus (only when the menu does not fit). */
+.fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.18s ease;
+}
+.fold[data-open='false'] {
+  grid-template-rows: 0fr;
+}
+.fold__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.fold[data-open='false'] > .fold__inner {
+  visibility: hidden;
+}
+
+/* the heading as a button: it looks like the plain heading, with a chevron at the end */
+.fold__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.fold__heading:hover {
+  color: var(--text);
+}
+.fold__heading:focus-visible {
+  outline: 2px solid var(--xs-cyan);
+  outline-offset: 2px;
+}
+.fold__chevron {
+  display: inline-flex;
+  flex: none;
+  height: 12px;
+  transition: transform 0.18s ease;
+}
+.fold__heading[aria-expanded='false'] .fold__chevron {
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fold,
+  .fold__chevron {
+    transition: none;
+  }
+}
+
+/* the heading buttons take the look of each menu's own heading */
+.admin-nav__heading.fold__heading {
+  width: calc(100% - 20px);
+  padding: 0;
+  font-family: inherit;
+}
+.sidebar__heading.fold__heading {
+  width: 100%;
+  font-family: var(--font-label);
+}
+/* the sidebar's rule line sits between the name and the chevron */
+.sidebar__heading.fold__heading::after {
+  order: 1;
+}
+.fold__chevron {
+  order: 2;
+}

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchAllReviews, fetchMissingReviews } from '../../api/adminReviews'
 import App from '../../App'
+import { clearFilters, filterOptions, pickFilter } from '../../test/filters'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import type { AdminReview, MissingReview } from '../../types/mentorReview'
 
@@ -96,11 +97,11 @@ describe('Admin: mentor reviews', () => {
 
     await user.click(within(rows[1]).getByRole('button', { name: 'Rashad Aliyev' }))
     expect((await items())).toHaveLength(2)
-    expect(screen.getByLabelText('Mentor')).toHaveValue('900')
+    expect(screen.getByRole('list', { name: 'Active filters' })).toHaveTextContent('Mentor: Rashad Aliyev')
     // the table still compares everyone
     expect(table.getAllByRole('row')).toHaveLength(3)
 
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    await clearFilters(user)
     expect((await items())).toHaveLength(3)
   })
 
@@ -108,12 +109,13 @@ describe('Admin: mentor reviews', () => {
     serverSends([review({ moduleId: 'm5', studentName: 'Five Student' }), review({ moduleId: 'm4', studentName: 'Four Student' })])
     const user = userEvent.setup()
     open()
-    const week = await screen.findByLabelText('Week')
-    const options = within(week).getAllByRole('option').map((o) => o.textContent)
+    await screen.findByRole('list', { name: 'Reviews' })
+    const options = await filterOptions(user, 'Week')
     expect(options[0]).toBe('All weeks')
     expect(options[1]).toMatch(/^Week 5 · /) // newest week first
     expect(options[2]).toMatch(/^Week 4 · /)
-    await user.selectOptions(week, 'm4')
+    await pickFilter(user, 'Week', /^Week 4/)
+    expect(screen.getByRole('list', { name: 'Active filters' })).toHaveTextContent('Week:')
     const found = await items()
     expect(found).toHaveLength(1)
     expect(found[0]).toHaveTextContent('Four Student')
@@ -250,14 +252,14 @@ describe('Admin: mentor reviews', () => {
       vi.mocked(fetchMissingReviews).mockResolvedValue([owes('Lazy Student'), owes('Busy Student', 901, 'Aysel Mammadova')])
       const user = userEvent.setup()
       open()
-      await user.selectOptions(await screen.findByLabelText('Week'), 'm5')
+      await pickFilter(user, 'Week', /^Week 5/)
       expect(await screen.findByRole('heading', { name: 'Not sent yet (2)' })).toBeInTheDocument()
       expect(vi.mocked(fetchMissingReviews)).toHaveBeenLastCalledWith('m5')
       const list = within(screen.getByRole('list', { name: 'Students who have not sent the review' }))
       expect(list.getAllByRole('listitem')).toHaveLength(2)
       expect(list.getByText('Lazy Student').closest('li')).toHaveTextContent('Team 3 · mentor Rashad Aliyev')
 
-      await user.selectOptions(screen.getByLabelText('Week'), 'all')
+      await pickFilter(user, 'Week', 'All weeks')
       expect(screen.queryByRole('heading', { name: /Not sent yet/ })).toBeNull()
     })
 
@@ -266,9 +268,9 @@ describe('Admin: mentor reviews', () => {
       vi.mocked(fetchMissingReviews).mockResolvedValue([owes('Lazy Student'), owes('Busy Student', 901, 'Aysel Mammadova')])
       const user = userEvent.setup()
       open()
-      await user.selectOptions(await screen.findByLabelText('Week'), 'm5')
+      await pickFilter(user, 'Week', /^Week 5/)
       await screen.findByRole('heading', { name: 'Not sent yet (2)' })
-      await user.selectOptions(screen.getByLabelText('Mentor'), '901')
+      await pickFilter(user, 'Mentor', 'Aysel Mammadova')
       expect(await screen.findByRole('heading', { name: 'Not sent yet (1)' })).toBeInTheDocument()
       expect(screen.getByText('Busy Student')).toBeInTheDocument()
       expect(screen.queryByText('Lazy Student')).toBeNull()
@@ -279,7 +281,7 @@ describe('Admin: mentor reviews', () => {
       vi.mocked(fetchMissingReviews).mockResolvedValue([])
       const user = userEvent.setup()
       open()
-      await user.selectOptions(await screen.findByLabelText('Week'), 'm5')
+      await pickFilter(user, 'Week', /^Week 5/)
       expect(await screen.findByText(/Everyone has sent the review of Week 5/)).toBeInTheDocument()
     })
 
@@ -288,7 +290,7 @@ describe('Admin: mentor reviews', () => {
       vi.mocked(fetchMissingReviews).mockResolvedValue(null)
       const user = userEvent.setup()
       open()
-      await user.selectOptions(await screen.findByLabelText('Week'), 'm5')
+      await pickFilter(user, 'Week', /^Week 5/)
       expect(await listEl()).toHaveTextContent('Still Here')
       expect(screen.queryByRole('heading', { name: /Not sent yet/ })).toBeNull()
     })
@@ -298,7 +300,7 @@ describe('Admin: mentor reviews', () => {
       vi.mocked(fetchMissingReviews).mockResolvedValue([owes('Lazy Student')])
       const user = userEvent.setup()
       open()
-      await user.selectOptions(await screen.findByLabelText('Week'), 'm5')
+      await pickFilter(user, 'Week', /^Week 5/)
       await user.type(screen.getByRole('searchbox', { name: 'Search reviews' }), 'lazy')
       expect(await screen.findByText('No reviews match.')).toBeInTheDocument()
       expect(screen.getByRole('heading', { name: 'Not sent yet (1)' })).toBeInTheDocument()

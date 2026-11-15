@@ -48,8 +48,9 @@ const AdminNotificationsPage = lazy(() => import('./pages/admin/notifications/Ad
 const AdminLecturersPage = lazy(() => import('./pages/admin/people/AdminLecturersPage'))
 const AdminProfilePage = lazy(() => import('./pages/admin/profile/AdminProfilePage'))
 const AdminReviewsPage = lazy(() => import('./pages/admin/reviews/AdminReviewsPage'))
+const AdminLectureReviewsPage = lazy(() => import('./pages/admin/reviews/AdminLectureReviewsPage'))
 /** Admin sections with their own pages; the rest show a placeholder until they are built. */
-const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'reviews', 'announce', 'notifications']
+const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'reviews', 'lectureReviews', 'announce', 'notifications']
 
 /** The old Settings addresses (and Google's way back to /settings?google=...) now lead to the profile, answer and all. */
 function ToProfile({ to }: { to: string }) {
@@ -81,6 +82,9 @@ export default function App() {
             {/* the page names each review's week from the course, so it loads the course */}
             <Route path="/admin/mentor-reviews" element={<AdminCoursesLayout />}>
               <Route index element={<AdminReviewsPage />} />
+            </Route>
+            <Route path="/admin/lecture-reviews" element={<AdminCoursesLayout />}>
+              <Route index element={<AdminLectureReviewsPage />} />
             </Route>
             <Route path="/admin/announce" element={<AdminAnnouncePage />} />
             <Route path="/admin/notifications" element={<AdminNotificationsPage />} />

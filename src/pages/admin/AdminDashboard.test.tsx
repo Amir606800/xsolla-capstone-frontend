@@ -12,7 +12,7 @@ beforeEach(() => {
 })
 
 /** Sections that have their real page already. */
-const BUILT = ['/admin/modules', '/admin/calendar', '/admin/students', '/admin/mentors', '/admin/lecturers', '/admin/teams', '/admin/mentor-reviews', '/admin/announce', '/admin/notifications', '/admin/settings']
+const BUILT = ['/admin/modules', '/admin/calendar', '/admin/students', '/admin/mentors', '/admin/lecturers', '/admin/teams', '/admin/mentor-reviews', '/admin/lecture-reviews', '/admin/announce', '/admin/notifications', '/admin/settings']
 
 const tiles = () => screen.findByRole('list', { name: 'School at a glance' })
 const tileFor = async (label: string) => within(await tiles()).getByRole('link', { name: new RegExp(`^${label}`) })
@@ -30,13 +30,14 @@ describe('Admin dashboard frame', () => {
       'Lecturers',
       'Teams',
       'Mentor reviews',
+      'Lecture reviews',
       'Announce',
       'Notifications',
       'Office tour',
       'Slack',
       'GitLab',
     ])
-    for (const g of ['Course', 'People', 'Messages', 'Community', 'Team tools']) expect(within(nav).getByRole('group', { name: g })).toBeInTheDocument()
+    for (const g of ['Course', 'People', 'Feedback', 'Messages', 'Community', 'Team tools']) expect(within(nav).getByRole('group', { name: g })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
   })
 

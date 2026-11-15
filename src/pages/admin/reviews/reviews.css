@@ -162,3 +162,13 @@
 .admin-missing .admin-muted {
   font-size: 13px;
 }
+
+/* a labelled comment on a lecture review */
+.admin-review__label {
+  margin: 0 0 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}

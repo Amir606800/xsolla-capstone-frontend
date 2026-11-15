@@ -1,12 +1,14 @@
-import { memo } from 'react'
-import { NavLink } from 'react-router'
+import { memo, useMemo } from 'react'
+import { NavLink, useLocation } from 'react-router'
 import { LINKS } from '../../config/links'
 import { navFor } from '../../config/nav'
 import { useAuth } from '../../hooks/useAuth'
 import { useCourses } from '../../hooks/useCourses'
+import { useFoldableNav } from '../../hooks/useFoldableNav'
 import { isModuleLocked } from '../../utils/progress'
 import { GitLabLogo, SlackLogo } from '../BrandLogos'
 import { Icon } from '../Icon'
+import { FoldBody, FoldHeading } from '../nav/Fold'
 
 interface SidebarProps {
   /** Mobile drawer state. */
@@ -79,6 +81,13 @@ function TeamTools({ collapsed }: { collapsed: boolean }) {
 
 function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarProps) {
   const nav = navFor(useAuth().user)
+  const { pathname } = useLocation()
+  // the groups with a heading fold only when the menu is taller than the sidebar; on the icon rail nothing folds
+  const groups = useMemo(
+    () => nav.flatMap((g) => (g.heading ? [{ id: g.heading, paths: g.items.map((i) => i.to) }] : [])),
+    [nav],
+  )
+  const [asideRef, fold] = useFoldableNav({ storageKey: 'sidebar_fold', groups, pathname, enabled: !collapsed })
   return (
     <>
       <div
@@ -90,15 +99,15 @@ function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarPro
         id="app-sidebar"
         className={`sidebar${open ? ' is-open' : ''}${collapsed ? ' is-collapsed' : ''}`}
         aria-label="Sidebar"
+        ref={asideRef}
       >
         <button type="button" className="sidebar__close" onClick={onClose} aria-label="Close navigation">
           <Icon name="close" />
         </button>
 
         <nav aria-label="Main navigation">
-          {nav.map((group, i) => (
-            <div className="sidebar__group" key={group.heading ?? i}>
-              {group.heading && <p className="sidebar__heading">{group.heading}</p>}
+          {nav.map((group, i) => {
+            const list = (
               <ul>
                 {group.items.map((item) => (
                   <li key={item.to}>
@@ -118,8 +127,31 @@ function SidebarBase({ open, onClose, collapsed, onToggleCollapsed }: SidebarPro
                   </li>
                 ))}
               </ul>
-            </div>
-          ))}
+            )
+            const heading = group.heading
+            return (
+              <div className="sidebar__group" key={heading ?? i}>
+                {heading ? (
+                  <>
+                    <FoldHeading
+                      id={`sidebar-group-${i}`}
+                      label={heading}
+                      className="sidebar__heading"
+                      foldable={fold.foldable}
+                      open={fold.isOpen(heading)}
+                      onToggle={() => fold.toggle(heading)}
+                      bodyId={`sidebar-group-body-${i}`}
+                    />
+                    <FoldBody id={`sidebar-group-body-${i}`} open={fold.isOpen(heading)}>
+                      {list}
+                    </FoldBody>
+                  </>
+                ) : (
+                  list
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         <div className="sidebar__bottom">
