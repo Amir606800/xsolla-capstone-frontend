@@ -8,6 +8,7 @@ export type AdminSectionKey =
   | 'mentors'
   | 'lecturers'
   | 'teams'
+  | 'studentReviews'
   | 'reviews'
   | 'lectureReviews'
   | 'analytics'
@@ -48,6 +49,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     label: 'Feedback',
     sections: [
+      { key: 'studentReviews', path: '/admin/student-reviews', label: 'Student reviews', icon: 'student', summary: 'What the mentors say about their students, week by week.' },
       { key: 'reviews', path: '/admin/mentor-reviews', label: 'Mentor reviews', icon: 'grades', summary: 'What students say about their mentor, week by week.' },
       { key: 'lectureReviews', path: '/admin/lecture-reviews', label: 'Lecture reviews', icon: 'lecturer', summary: 'What students say about each lecture, grouped by lecturer.' },
     ],

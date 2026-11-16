@@ -47,6 +47,7 @@ const AdminAnnouncePage = lazy(() => import('./pages/admin/announce/AdminAnnounc
 const AdminNotificationsPage = lazy(() => import('./pages/admin/notifications/AdminNotificationsPage'))
 const AdminLecturersPage = lazy(() => import('./pages/admin/people/AdminLecturersPage'))
 const AdminProfilePage = lazy(() => import('./pages/admin/profile/AdminProfilePage'))
+const AdminStudentReviewsPage = lazy(() => import('./pages/admin/reviews/AdminStudentReviewsPage'))
 const AdminReviewsPage = lazy(() => import('./pages/admin/reviews/AdminReviewsPage'))
 const AdminLectureReviewsPage = lazy(() => import('./pages/admin/reviews/AdminLectureReviewsPage'))
 const AnalyticsOverviewPage = lazy(() => import('./pages/admin/analytics/AnalyticsOverviewPage'))
@@ -54,7 +55,7 @@ const AnalyticsPeoplePage = lazy(() => import('./pages/admin/analytics/Analytics
 const StudentAnalyticsPage = lazy(() => import('./pages/admin/analytics/StudentAnalyticsPage'))
 const MentorAnalyticsPage = lazy(() => import('./pages/admin/analytics/MentorAnalyticsPage'))
 /** Admin sections with their own pages; the rest show a placeholder until they are built. */
-const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'reviews', 'lectureReviews', 'analytics', 'announce', 'notifications']
+const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'studentReviews', 'reviews', 'lectureReviews', 'analytics', 'announce', 'notifications']
 
 /** The old Settings addresses (and Google's way back to /settings?google=...) now lead to the profile, answer and all. */
 function ToProfile({ to }: { to: string }) {
@@ -84,6 +85,9 @@ export default function App() {
             <Route path="/admin/mentors" element={<AdminMentorsPage />} />
             <Route path="/admin/teams" element={<AdminTeamsPage />} />
             {/* the page names each review's week from the course, so it loads the course */}
+            <Route path="/admin/student-reviews" element={<AdminCoursesLayout />}>
+              <Route index element={<AdminStudentReviewsPage />} />
+            </Route>
             <Route path="/admin/mentor-reviews" element={<AdminCoursesLayout />}>
               <Route index element={<AdminReviewsPage />} />
             </Route>

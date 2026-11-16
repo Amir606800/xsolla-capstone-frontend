@@ -120,6 +120,11 @@ export interface Mentor {
 
 const teamIds = (mentor: Mentor) => new Set(buildMentorTeam({ ...mentor, email: '' }).members.map((m) => m.id))
 
+/** Every weekly grade of every student (what the admin reads). */
+export function allStandings(now: Date = new Date()): StoredStanding[] {
+  return Object.values(load(now))
+}
+
 /** Every weekly grade of this mentor's students. */
 export function teamStandings(mentor: Mentor, now: Date = new Date()): StoredStanding[] {
   const ids = teamIds(mentor)
