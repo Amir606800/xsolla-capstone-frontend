@@ -19,10 +19,12 @@ export interface SubmissionVersion {
 }
 
 /**
- * The student's current work on a task. Until the deadline they may hand in a new version as often as
- * they like; the versions before it stay in `history` (newest first) so nothing they sent is lost.
+ * The student's current work on a task. They may hand in a new version as often as they like, also after the
+ * deadline; the versions before it stay in `history` (newest first) so nothing they sent is lost.
  */
 export interface Submission extends SubmissionVersion {
+  /** Handed in after the student's deadline: a "Late submission", and the week grade turns red. */
+  late?: boolean
   /** Set when the work was graded and given feedback. A graded submission can no longer be changed. */
   feedback?: string
   gradedAt?: string // ISO
@@ -55,12 +57,21 @@ export interface ResourceItem extends BaseItem {
   upload?: File
 }
 
+/** Why a student's deadline is when it is: 08:00 on the day of their booked 1:1, or no 1:1 booked (Monday 08:00). */
+export type DueFrom = 'one_on_one' | 'no_one_on_one'
+
 export interface AssignmentItem extends BaseItem {
   type: 'assignment'
   description?: string
   /** What the student has to hand in. */
   requirements?: string[]
-  dueAt: string // ISO
+  /**
+   * A task has no deadline of its own. For a student this is THEIR deadline: 08:00 on the day of their 1:1 that week, or
+   * Monday 08:00 with no 1:1 booked (see utils/deadline). Staff get none; a week without an opening date has none.
+   */
+  dueAt?: string // ISO
+  /** Why the student's deadline is when it is: their booked 1:1, or none booked yet. */
+  dueFrom?: DueFrom
   submission?: Submission
 }
 

@@ -55,6 +55,7 @@ export function mapSubmission(s: ApiSubmission): Submission {
     ...(s.feedback ? { feedback: s.feedback } : {}),
     // null (not graded) -> undefined so `gradedAt !== undefined` means "graded"
     ...(s.graded_at ? { gradedAt: s.graded_at } : {}),
+    ...(typeof s.late === 'boolean' ? { late: s.late } : {}),
     ...(history.length ? { history } : {}),
   }
 }
@@ -105,9 +106,8 @@ export function mapContentItems(
         ...(text.description ? { description: text.description } : {}),
       })
     } else if (node.type === 'assignment') {
-      // the backend requires due_at on create; an item without one cannot be shown on a timeline
-      if (!node.due_at) continue
       const sub = submissions[id]
+      const dueFrom = node.due_from === 'one_on_one' || node.due_from === 'no_one_on_one' ? node.due_from : undefined
       const a: AssignmentItem = {
         id,
         moduleId,
@@ -115,7 +115,9 @@ export function mapContentItems(
         title: node.title,
         ...hidden,
         ...text,
-        dueAt: node.due_at,
+        // the student's own deadline when the server worked it out from their 1:1; otherwise the app does (utils/deadline)
+        ...(node.due_at ? { dueAt: node.due_at } : {}),
+        ...(dueFrom ? { dueFrom } : {}),
         ...(sub ? { submission: mapSubmission(sub) } : {}),
       }
       out.push(a)
@@ -218,7 +220,11 @@ export function quizToApi(q: QuizItem) {
   }
 }
 
-/** A task as the backend stores it (POST /modules/:id/content-items). Requirements go into the description. */
+/**
+ * A task as the backend stores it (POST /modules/:id/content-items). Requirements go into the description. `due_at` is
+ * the week's Friday 08:00 (see draftToTask): not a deadline of the task, but the anchor the backend needs to work each
+ * student's deadline out from their 1:1.
+ */
 export function taskToApi(t: AssignmentItem) {
   return {
     type: 'assignment' as const,

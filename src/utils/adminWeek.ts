@@ -46,7 +46,7 @@ function describe(module: CourseModule, state: WeekState, events: CalendarEvent[
     })
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.title.localeCompare(b.title))
 
-  const tasks = module.items.filter((i): i is AssignmentItem => i.type === 'assignment').sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+  const tasks = module.items.filter((i): i is AssignmentItem => i.type === 'assignment')
   const total = from !== null && to !== null ? Math.max(1, Math.round((midnight(new Date(to)) - midnight(new Date(from))) / DAY) + 1) : 7
   return {
     state,

@@ -1,4 +1,5 @@
 import type { AssignmentItem, CourseModule, ResourceItem } from '../types/course'
+import { byDue, isOverdue } from './deadline'
 
 const HOUR = 3_600_000
 export const URGENT_WITHIN_MS = 48 * HOUR
@@ -51,8 +52,7 @@ export function resourcesOf(module: CourseModule): ResourceItem[] {
 /**
  * A module that has not opened yet. Students must not see its content;
  * a module without an `opensAt` date is always open.
- * Once a module has closed it stays open for reading: the tasks and the student's own hand-ins can still be looked at,
- * only handing in is over (see isPastDue).
+ * Once a module has closed it stays open, and work can still be handed in (late, if the student's deadline passed).
  */
 export function isModuleLocked(module: CourseModule, now: Date): boolean {
   return module.opensAt !== undefined && new Date(module.opensAt) > now
@@ -65,19 +65,6 @@ export function isActiveModule(module: CourseModule, now: Date): boolean {
 }
 
 export type AssignmentStatus = 'open' | 'overdue' | 'submitted' | 'graded'
-
-/** The error a hand-in after the deadline gets (the screen tells the student in its own words). */
-export const DEADLINE_PASSED = 'The deadline for this task has passed'
-
-/**
- * The deadline has passed: no new version can be handed in (what was sent before stays, and can be read).
- * `closesAt` is the closing date of the task's module: after it nothing is handed in, even for a task whose own
- * deadline was set later.
- */
-export function isPastDue(a: Pick<AssignmentItem, 'dueAt'>, now: Date, closesAt?: string): boolean {
-  const t = now.getTime()
-  return new Date(a.dueAt).getTime() < t || (closesAt !== undefined && new Date(closesAt).getTime() < t)
-}
 
 /**
  * Modules in the order they open (the earliest first), then by when they were made. A module's number ("Module 3",
@@ -98,18 +85,15 @@ export function orderByOpening<T extends { id: string; opensAt?: string; created
 export function assignmentStatus(a: AssignmentItem, now: Date): AssignmentStatus {
   if (a.submission?.gradedAt !== undefined) return 'graded'
   if (a.submission) return 'submitted'
-  return new Date(a.dueAt) < now ? 'overdue' : 'open'
+  return isOverdue(a, now) ? 'overdue' : 'open'
 }
 
-/** Module window for display: explicit dates win, otherwise derived from its assignments. */
+/**
+ * The week for display: when it opened and when the student's work is due. Every task of a week is due at the same
+ * moment (08:00 on the day of the student's 1:1), and the module's closing date plays no part.
+ */
 export function moduleWindow(module: CourseModule): { opensAt?: string; dueAt?: string } {
-  const dues = assignmentsOf(module)
-    .map((a) => a.dueAt)
-    .sort()
-  return {
-    opensAt: module.opensAt,
-    dueAt: module.closesAt ?? dues[dues.length - 1],
-  }
+  return { opensAt: module.opensAt, dueAt: [...assignmentsOf(module)].sort(byDue)[0]?.dueAt }
 }
 
 export function moduleProgress(module: CourseModule, now: Date): ModuleProgress {
@@ -124,7 +108,7 @@ export function moduleProgress(module: CourseModule, now: Date): ModuleProgress 
   const submitted = assignments.filter((a) => a.submission).length
   const graded = assignments.filter((a) => a.submission?.gradedAt !== undefined).length
   const percent = total === 0 ? 0 : Math.round((submitted / total) * 100)
-  const overdue = assignments.some((a) => !a.submission && new Date(a.dueAt) < now)
+  const overdue = assignments.some((a) => !a.submission && isOverdue(a, now))
 
   let status: ModuleStatus
   if (overdue) status = 'overdue'
@@ -138,11 +122,10 @@ export function moduleProgress(module: CourseModule, now: Date): ModuleProgress 
 
 /** Earliest unsubmitted deadline in the module (an overdue one counts and wins). */
 export function nextDeadline(module: CourseModule, now: Date): NextDeadline | null {
-  const open = assignmentsOf(module)
-    .filter((a) => !a.submission)
-    .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
-  if (open.length === 0) return null
-  const dueAt = open[0].dueAt
+  const dueAt = assignmentsOf(module)
+    .filter((a) => !a.submission && a.dueAt)
+    .sort(byDue)[0]?.dueAt
+  if (!dueAt) return null
   return { dueAt, urgent: new Date(dueAt).getTime() - now.getTime() < URGENT_WITHIN_MS }
 }
 
@@ -172,11 +155,11 @@ export function upcomingDeadlines(modules: CourseModule[], now: Date, limit: num
   for (const m of modules) {
     for (const item of assignmentsOf(m)) {
       if (!item.submission) {
-        entries.push({ item, moduleTitle: m.title, overdue: new Date(item.dueAt) < now })
+        entries.push({ item, moduleTitle: m.title, overdue: isOverdue(item, now) })
       }
     }
   }
-  return entries.sort((a, b) => a.item.dueAt.localeCompare(b.item.dueAt)).slice(0, limit)
+  return entries.sort((a, b) => byDue(a.item, b.item)).slice(0, limit)
 }
 
 /** Most recently graded work first. */
@@ -202,7 +185,7 @@ export function recentGrades(modules: CourseModule[], limit: number): GradeEntry
 export function nextAssignment(module: CourseModule): AssignmentItem | null {
   const open = assignmentsOf(module)
     .filter((a) => !a.submission)
-    .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+    .sort(byDue)
   return open[0] ?? null
 }
 

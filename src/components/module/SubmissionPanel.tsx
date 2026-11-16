@@ -4,10 +4,11 @@ import type { SubmitPayload } from '../../api/courses'
 import type { AssignmentItem, SubmissionFile } from '../../types/course'
 import { formatDateTime } from '../../utils/date'
 import { ALLOWED_EXTENSIONS, formatBytes, MAX_FILE_BYTES, validateFile } from '../../utils/files'
-import { DEADLINE_PASSED, isPastDue } from '../../utils/progress'
+import { DUE_FROM_TEXT, isOverdue, LATE_RULE } from '../../utils/deadline'
 import { FileDropzone, PickedFiles } from '../FileDropzone'
 import { GradedPill } from '../GradedPill'
 import { Icon } from '../Icon'
+import { LatePill } from '../LatePill'
 import { EarlierVersions, FileList } from './SubmissionVersions'
 
 interface SubmissionPanelProps {
@@ -15,8 +16,6 @@ interface SubmissionPanelProps {
   onSubmit: (assignmentId: string, payload: SubmitPayload) => Promise<void>
   /** Decides whether the deadline has passed (defaults to the moment of rendering). */
   now?: Date
-  /** When the task's module closes: after it nothing is handed in, the work can only be looked at. */
-  closesAt?: string
 }
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
@@ -26,11 +25,12 @@ export const MAX_FILES = 10
 const fileKey = (f: { name: string; size?: number; sizeBytes?: number }) => `${f.name}:${f.size ?? f.sizeBytes}`
 
 /**
- * A student's work on one task. Until the deadline they hand in as many versions as they like, each
- * with a note or link and several files; the files of the current version can be carried over to the
- * next one. Every earlier version stays listed. After the deadline (or once graded) it is read-only.
+ * A student's work on one task. They hand in as many versions as they like, each with a note or link and several files;
+ * the files of the current version can be carried over to the next one. Every earlier version stays listed. Handing in
+ * stays open after the deadline (08:00 on the day of their 1:1): late work is accepted, marked as a late submission, and
+ * it makes the week grade red. Only graded work is final.
  */
-export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: SubmissionPanelProps) {
+export function SubmissionPanel({ assignment, onSubmit, now }: SubmissionPanelProps) {
   const { submission } = assignment
   const uid = useId()
   const [text, setText] = useState(submission?.textBody ?? '')
@@ -50,12 +50,11 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
   }
 
   const graded = submission?.gradedAt !== undefined
-  const closed = !graded && isPastDue(assignment, now ?? new Date(), closesAt)
-  // the moment handing in ended: the task's deadline, or the module's closing date when that came first
-  const endedAt = closesAt && closesAt < assignment.dueAt ? closesAt : assignment.dueAt
+  // the deadline has passed: handing in still works, but it will be late
+  const pastDue = !graded && isOverdue(assignment, now ?? new Date())
   const history = submission?.history ?? []
   const versions = submission ? history.length + 1 : 0
-  const canSubmit = (text.trim().length > 0 || files.length > 0 || keep.length > 0) && !busy && !graded && !closed
+  const canSubmit = (text.trim().length > 0 || files.length > 0 || keep.length > 0) && !busy && !graded
 
   function addFiles(picked: File[]) {
     const errors: string[] = []
@@ -86,12 +85,8 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
       await onSubmit(assignment.id, { textBody: text.trim(), files, keep })
       setFiles([])
       setDone(true)
-    } catch (err) {
-      setError(
-        err instanceof Error && err.message === DEADLINE_PASSED
-          ? 'The deadline has passed, so this version was not handed in.'
-          : 'Something went wrong while submitting. Please try again.',
-      )
+    } catch {
+      setError('Something went wrong while submitting. Please try again.')
     } finally {
       setBusy(false)
     }
@@ -112,6 +107,7 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
             <p className="submission__line abox__aside">
               <Icon name="check" size={16} /> Submitted {formatDateTime(submission.submittedAt)}
               {versions > 1 && <span className="submission__version-tag">version {versions}</span>}
+              {submission.late && <LatePill />}
             </p>
           </header>
           <div className="abox__body">
@@ -173,16 +169,15 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
         </p>
       )}
 
-      {closed && (
-        <p className="submission__locked">
-          <Icon name="lock" size={16} />
-          {submission
-            ? `The deadline (${formatDateTime(endedAt)}) has passed, so no new version can be handed in. You can still read what you handed in.`
-            : `The deadline (${formatDateTime(endedAt)}) has passed. Nothing was handed in.`}
+      {submission?.late && (
+        <p className="submission__late" role="note">
+          <Icon name="alert" size={16} />
+          This work was handed in after your deadline{assignment.dueAt ? ` (${formatDateTime(assignment.dueAt)})` : ''}, so it is
+          a late submission and your week grade is red.
         </p>
       )}
 
-      {!graded && !closed && (
+      {!graded && (
         <section className="abox abox--form" aria-labelledby={`${uid}-form`}>
           <header className="abox__head">
             <span className="abox__icon abox__icon--accent">
@@ -193,11 +188,20 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
             </h4>
           </header>
           <form className="abox__body" onSubmit={handleSubmit} noValidate>
-            <p className="submission__hint">
-              {submission
-                ? `You can hand in a new version as often as you like until ${formatDateTime(assignment.dueAt)}. Earlier versions stay listed above.`
-                : `Open until ${formatDateTime(assignment.dueAt)}. You can hand in a new version later if you change something.`}
-            </p>
+            {pastDue ? (
+              <p className="submission__late" role="note">
+                <Icon name="alert" size={16} />
+                Your deadline ({formatDateTime(assignment.dueAt as string)}) has passed. You can still hand in, but it will be a
+                late submission and your week grade becomes red.
+              </p>
+            ) : (
+              <p className="submission__hint">
+                {assignment.dueAt
+                  ? `Due ${formatDateTime(assignment.dueAt)}${assignment.dueFrom ? ` (${DUE_FROM_TEXT[assignment.dueFrom]})` : ''}. You can hand in a new version as often as you like. ${LATE_RULE}`
+                  : 'No deadline yet. You can hand in a new version as often as you like.'}
+                {submission && ' Earlier versions stay listed above.'}
+              </p>
+            )}
 
             <label className="field__label" htmlFor={`${uid}-text`}>
               Answer or link
@@ -262,13 +266,21 @@ export function SubmissionPanel({ assignment, onSubmit, now, closesAt }: Submiss
             )}
             {done && (
               <p className="submission__done" role="status">
-                Your work was submitted.
+                {submission?.late ? 'Your work was submitted, as a late submission.' : 'Your work was submitted.'}
               </p>
             )}
 
             <button type="submit" className="btn submission__submit" disabled={!canSubmit}>
               <Icon name="upload" size={18} />
-              {busy ? 'Submitting…' : submission ? 'Hand in new version' : 'Submit'}
+              {busy
+                ? 'Submitting…'
+                : submission
+                  ? pastDue
+                    ? 'Hand in new version late'
+                    : 'Hand in new version'
+                  : pastDue
+                    ? 'Submit late'
+                    : 'Submit'}
             </button>
           </form>
         </section>

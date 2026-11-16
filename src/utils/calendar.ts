@@ -79,11 +79,13 @@ export function groupByDay(events: CalendarEvent[]): Record<string, CalendarEven
   return out
 }
 
-/** Task deadlines appear on the calendar automatically. */
+/** A student's task deadlines appear on the calendar automatically (staff get none: tasks have no deadline of their own). */
 export function deadlineEvents(modules: CourseModule[]): CalendarEvent[] {
   return modules.flatMap((m) =>
-    assignmentsOf(m).map(
-      (a): CalendarEvent => ({
+    assignmentsOf(m).flatMap((a): CalendarEvent[] =>
+      !a.dueAt
+        ? []
+        : [{
         id: `deadline-${a.id}`,
         title: `Due: ${a.title}`,
         kind: 'deadline',
@@ -91,7 +93,7 @@ export function deadlineEvents(modules: CourseModule[]): CalendarEvent[] {
         endsAt: a.dueAt,
         moduleId: m.id,
         done: a.submission !== undefined,
-      }),
+      }],
     ),
   )
 }

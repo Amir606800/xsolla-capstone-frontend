@@ -42,8 +42,15 @@ export interface ApiFileItem extends ApiContentItemBase {
 
 export interface ApiAssignmentItem extends ApiContentItemBase {
   type: 'assignment'
-  /** Required by the backend when an assignment is created. */
+  /**
+   * For a student: THEIR deadline, 08:00 on the day of their 1:1 (backend docs/one_on_one_deadlines.md). For staff: the
+   * date stored with the task (still required on create), which the app does not show: a task has no deadline of its own.
+   */
   due_at?: string | null
+  /** Student only: the date stored with the task, when their own deadline was worked out from their 1:1. */
+  task_due_at?: string | null
+  /** Student only: `one_on_one` (08:00 on the day of their booked 1:1) or `no_one_on_one` (none booked: Monday 08:00). */
+  due_from?: string | null
   /** Not used: the program grades weeks, not tasks. Sent as 0. */
   max_points?: number
 }
@@ -111,6 +118,8 @@ export interface ApiSubmission {
   grade?: number | null
   feedback?: string | null
   graded_at?: string | null
+  /** Proposed (BACKEND_REQ_ONE_ON_ONE_DEADLINES.md): handed in after the student's deadline. */
+  late?: boolean | null
   files?: ApiFile[] | null
   /** Proposed: the earlier attempts, newest first (on GET .../submissions/me). */
   history?: Omit<ApiSubmission, 'history'>[] | null

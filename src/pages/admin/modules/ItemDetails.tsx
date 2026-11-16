@@ -4,6 +4,7 @@ import type { ContentItem, CourseModule } from '../../../types/course'
 import { ITEM_TYPE_LABEL, itemAuthor, kindLabel } from '../../../utils/adminContent'
 import { formatDateTime } from '../../../utils/date'
 import { formatBytes } from '../../../utils/files'
+import { weekDeadlineText } from '../../../utils/deadline'
 
 /** Everything about one task, resource or quiz, as the admin sees it (quiz answers included). */
 export function ItemDetails({ item, module, nameOf }: { item: ContentItem; module: CourseModule; nameOf: (id: number | undefined) => string }) {
@@ -19,7 +20,11 @@ export function ItemDetails({ item, module, nameOf }: { item: ContentItem; modul
         <Row label="Lecturer">{author}</Row>
         <Row label="Students see it">{item.hidden ? 'No, it is hidden' : 'Yes'}</Row>
 
-        {item.type === 'assignment' && <Row label="Due">{formatDateTime(item.dueAt)}</Row>}
+        {item.type === 'assignment' && (
+          <Row label="Due">
+            {weekDeadlineText(module) ? `${weekDeadlineText(module)}: 08:00 on the day of each student's 1:1` : 'No deadline: the week has no dates'}
+          </Row>
+        )}
         {item.type === 'quiz' && <Row label="Due">{item.dueAt ? formatDateTime(item.dueAt) : 'No due date'}</Row>}
         {item.type === 'resource' && <Row label="Kind">{kindLabel(item.kind)}</Row>}
 

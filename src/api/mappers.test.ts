@@ -54,6 +54,7 @@ describe('mapModules', () => {
     expect(m1.items.map((i) => [i.id, i.type, i.moduleId])).toEqual([
       ['11', 'resource', '1'],
       ['12', 'assignment', '1'],
+      ['14', 'assignment', '1'],
     ])
     expect(m1.items[0]).toMatchObject({ kind: 'pdf', fileId: '55' })
     expect(m1.items[1]).toMatchObject({ dueAt: '2026-10-05T18:00:00Z', description: 'Branches' })
@@ -69,10 +70,20 @@ describe('mapModules', () => {
     expect(m.items).toEqual([{ id: '30', moduleId: '1', type: 'resource', title: 'Go docs', kind: 'link', url: 'https://go.dev/doc/', description: 'Read' }])
   })
 
-  it('leaves out hidden items and tasks without a deadline', () => {
+  it('leaves out hidden items; a task without a stored date is kept (tasks have no deadline of their own)', () => {
     const ids = mapModules(modules, items).flatMap((m) => m.items.map((i) => i.id))
     expect(ids).not.toContain('13')
-    expect(ids).not.toContain('14')
+    expect(ids).toContain('14')
+    expect(mapModules(modules, items)[0].items.find((i) => i.id === '14')).not.toHaveProperty('dueAt')
+  })
+
+  it("reads a student's own deadline, why it is then, and whether the hand-in was late", () => {
+    const [m] = mapModules(
+      [modules[1]],
+      { '1': [{ id: 12, type: 'assignment', title: 'Git', description: '', position: 1, is_visible: true, due_at: '2026-11-23T04:00:00Z', task_due_at: '2026-11-20T04:00:00Z', due_from: 'no_one_on_one' }] },
+      { '12': submission({ late: true }) },
+    )
+    expect(m.items[0]).toMatchObject({ dueAt: '2026-11-23T04:00:00Z', dueFrom: 'no_one_on_one', submission: { late: true } })
   })
 
   it("puts the student's own work on its task only", () => {
@@ -114,6 +125,7 @@ describe('mapModules', () => {
       ['11', false],
       ['12', false],
       ['13', true],
+      ['14', false],
     ])
   })
 

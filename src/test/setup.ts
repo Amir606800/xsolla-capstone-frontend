@@ -50,11 +50,15 @@ vi.mock('../api/courses', async () => {
         items: m.items.map((i) => (i.type === 'quiz' && attempts[i.id] ? { ...i, attempt: attempts[i.id] } : i)),
       }))
     }),
-    submitWork: vi.fn(async (_id: string, p: import('../api/courses').SubmitPayload) => ({
-      submittedAt: new Date().toISOString(),
-      textBody: p.textBody || undefined,
-      files: [...(p.keep ?? []), ...p.files.map((f) => ({ name: f.name, sizeBytes: f.size }))],
-    })),
+    submitWork: vi.fn(async (id: string, p: import('../api/courses').SubmitPayload, ctx?: { studentId?: number }) => {
+      const sub = {
+        submittedAt: new Date().toISOString(),
+        textBody: p.textBody || undefined,
+        files: [...(p.keep ?? []), ...p.files.map((f) => ({ name: f.name, sizeBytes: f.size }))],
+      }
+      // like the offline API: a late hand-in is accepted, marked, and turns the week grade red
+      return ctx?.studentId === undefined ? sub : (await import('../mocks/lateWork')).checkLateHandIn(ctx.studentId, id, sub)
+    }),
     saveModule: vi.fn(async (id: string, patch: import('../mocks/contentEdits').ModulePatch) => store.putModule(id, patch)),
     saveItem: vi.fn(async (item: import('../types/course').ContentItem) => store.putItem(item)),
     deleteItem: vi.fn(async (id: string) => store.removeItem(id)),

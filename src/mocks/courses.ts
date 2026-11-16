@@ -185,7 +185,6 @@ export function buildMockModules(now: Date = new Date()): CourseModule[] {
           'Include a short README explaining your approach',
           'Hand in the link or files here before the deadline',
         ],
-        dueAt: dayAt(now, dueDays, 18), // due at 18:00
       }
 
       let submission: Submission | undefined

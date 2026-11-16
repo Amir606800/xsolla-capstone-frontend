@@ -356,6 +356,27 @@
   color: var(--danger);
   font-size: 14px;
 }
+.grade-pick__late {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--text);
+  font-size: 14px;
+}
+.grade-pick__late svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--danger);
+}
+.grade-pick__option.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .review__edit {
   display: inline-flex;
   align-items: center;

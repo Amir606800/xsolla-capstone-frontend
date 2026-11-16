@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { TimeInput } from '../TimeInput'
 import type { AssignmentItem, CourseModule } from '../../types/course'
-import { defaultDue, hasErrors, taskToDraft, taskWarnings, validateTask } from '../../utils/authoring'
+import { hasErrors, taskToDraft, taskWarnings, validateTask } from '../../utils/authoring'
+import { weekDeadlineText } from '../../utils/deadline'
 import type { TaskDraft } from '../../utils/authoring'
 import { Icon } from '../Icon'
 import { Field, FormActions } from './Field'
@@ -10,20 +10,21 @@ import { useSave } from './useSave'
 export function TaskForm({
   module,
   item,
-  now,
   onSave,
   onCancel,
 }: {
   module: CourseModule
   item?: AssignmentItem
-  now: Date
+  /** Kept for the callers; a task has no deadline of its own, so the form needs no clock. */
+  now?: Date
   onSave: (draft: TaskDraft) => Promise<void>
   onCancel: () => void
 }) {
-  const [d, setD] = useState<TaskDraft>(() => taskToDraft(item, now))
+  const [d, setD] = useState<TaskDraft>(() => taskToDraft(item))
   const { touched, busy, error, submit } = useSave()
   const errors = validateTask(d)
-  const warnings = taskWarnings(d, module, now)
+  const warnings = taskWarnings(module)
+  const due = weekDeadlineText(module)
   const set = (patch: Partial<TaskDraft>) => setD((prev) => ({ ...prev, ...patch }))
   const hasWork = item?.submission !== undefined
 
@@ -55,22 +56,12 @@ export function TaskForm({
           <textarea {...p} className="field__input form__textarea" rows={3} value={d.requirements} onChange={(e) => set({ requirements: e.target.value })} />
         )}
       </Field>
-      <fieldset className="form__group">
-        <legend className="field__label">Due</legend>
-        <div className="form__row">
-          <Field label="Date" error={touched ? errors.due : undefined}>
-            {(p) => <input {...p} type="date" className="field__input form__input" value={d.dueDate} onChange={(e) => set({ dueDate: e.target.value })} />}
-          </Field>
-          <Field label="Time">
-            {(p) => <TimeInput {...p} className="field__input form__input" value={d.dueTime} onChange={(dueTime) => set({ dueTime })} />}
-          </Field>
-        </div>
-        {!item && (
-          <p className="form__hint">
-            Set by default to Friday 08:00 {defaultDue(now).nextWeek ? 'of next week' : 'of this week'}. Change it if the task is due another time.
-          </p>
-        )}
-      </fieldset>
+      {due && (
+        <p className="form__hint">
+          <Icon name="clock" size={16} /> No deadline to set: each student's work is due at 08:00 on the day of their 1:1 ({due}). Work
+          handed in later is still accepted, marked late, and makes the student's week red.
+        </p>
+      )}
       {warnings.length > 0 && (
         <ul className="form__warnings" aria-label="Please check">
           {warnings.map((w) => (

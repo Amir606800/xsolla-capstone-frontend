@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildMockStandings, buildMockStandingStore, gradeWeek, standingsOf, teamStandings } from './standings'
+import { buildMockStandings, buildMockStandingStore, gradeWeek, LATE_WEEK_IS_RED, markLate, standingsOf, teamStandings } from './standings'
 
 const NOW = new Date(2026, 10, 4, 12, 0)
 const RASHAD = { id: 900, name: 'Rashad Aliyev' }
@@ -42,5 +42,15 @@ describe('rules', () => {
     expect(() => gradeWeek(AYSEL, 101, 5, 'green', 'Good', NOW)).toThrow('not in your team')
     expect(() => gradeWeek(RASHAD, 101, 8, 'green', 'Good', NOW)).toThrow('not started')
     expect(teamStandings(AYSEL, NOW).some((s) => s.studentId === 101)).toBe(false)
+  })
+})
+
+describe('a late hand-in', () => {
+  it('turns the week red at once; the mentor can add feedback but cannot raise it', () => {
+    markLate(101, 3, 'Promises', NOW)
+    expect(standingsOf(101, NOW).find((w) => w.week === 3)).toMatchObject({ level: 'red', lateTasks: ['Promises'] })
+    expect(() => gradeWeek(RASHAD, 101, 3, 'green', 'Good week', NOW)).toThrow(LATE_WEEK_IS_RED)
+    gradeWeek(RASHAD, 101, 3, 'red', 'The Promises task came in late.', NOW)
+    expect(standingsOf(101, NOW).find((w) => w.week === 3)).toMatchObject({ level: 'red', note: 'The Promises task came in late.', lateTasks: ['Promises'] })
   })
 })

@@ -27,7 +27,15 @@ interface EnrollmentDto {
   graded_at?: string | null
   /** The user id of whoever gave the grade (a mentor or an admin). */
   graded_by?: number | string | null
+  /** Proposed (BACKEND_REQ_ONE_ON_ONE_DEADLINES.md): the week's tasks handed in late, which made the grade red. */
+  late_submissions?: { content_item_id: number | string; title: string; submitted_at?: string; due_at?: string }[] | null
   created_at: string
+}
+
+/** The titles of the week's late hand-ins, when the server lists them. */
+const lateOf = (e: EnrollmentDto) => {
+  const titles = (e.late_submissions ?? []).map((l) => l.title).filter(Boolean)
+  return titles.length ? { lateTasks: titles } : {}
 }
 
 interface Week {
@@ -65,7 +73,7 @@ async function gradesOf(studentIds: Set<number>): Promise<StoredStanding[]> {
       const studentId = Number(e.user_id)
       if (level && studentIds.has(studentId)) {
         const note = e.feedback?.trim()
-        out.push({ week: w.week, level, assessedAt: e.graded_at || w.date, studentId, ...(note ? { note } : {}) })
+        out.push({ week: w.week, level, assessedAt: e.graded_at || w.date, studentId, ...(note ? { note } : {}), ...lateOf(e) })
       }
     }
   })
@@ -74,11 +82,12 @@ async function gradesOf(studentIds: Set<number>): Promise<StoredStanding[]> {
 
 /** The signed-in student's own grades. */
 export async function fetchStandings(studentId: number): Promise<WeeklyStanding[]> {
-  return (await gradesOf(new Set([studentId]))).map(({ week, level, assessedAt, note }) => ({
+  return (await gradesOf(new Set([studentId]))).map(({ week, level, assessedAt, note, lateTasks }) => ({
     week,
     level,
     assessedAt,
     ...(note ? { note } : {}),
+    ...(lateTasks ? { lateTasks } : {}),
   }))
 }
 

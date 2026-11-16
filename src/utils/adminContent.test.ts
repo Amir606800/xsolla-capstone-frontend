@@ -17,8 +17,9 @@ const module = (items: CourseModule['items'], over: Partial<CourseModule> = {}):
 
 describe('admin content text', () => {
   it('summarises each kind of item in one line', () => {
-    expect(itemSummary(task)).toMatch(/^Due .+ · 2 requirements$/)
-    expect(itemSummary({ ...task, requirements: undefined })).not.toContain('requirement')
+    // a task has no deadline of its own (each student's follows their 1:1)
+    expect(itemSummary(task)).toBe('2 requirements')
+    expect(itemSummary({ ...task, requirements: undefined })).toBe('Task')
     expect(itemSummary(link)).toBe('Link · developer.mozilla.org')
     expect(itemSummary(file)).toBe('PDF · slides.pdf')
     expect(itemSummary(quiz)).toBe('1 question')

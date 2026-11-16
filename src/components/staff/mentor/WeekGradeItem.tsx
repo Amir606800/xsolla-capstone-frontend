@@ -12,6 +12,7 @@ import { Avatar } from '../../team/People'
  * MENTOR: one student's grade for one week - green (on track), yellow (falling behind) or red
  * (no progress) - with the module feedback, which is required: a grade is never given without a few words on the week.
  * The grade can be changed later; the last one counts. (The comments on single tasks are separate and optional.)
+ * A task of the week handed in late makes the week red: while that stands, green and yellow cannot be picked.
  */
 export function WeekGradeItem({
   student,
@@ -24,6 +25,7 @@ export function WeekGradeItem({
   onSave,
   alwaysOpen = false,
   locked = false,
+  lateTasks = [],
 }: {
   student: Person
   week: number
@@ -39,9 +41,14 @@ export function WeekGradeItem({
   alwaysOpen?: boolean
   /** The week has closed and it already has a grade: the grade is shown, not editable. */
   locked?: boolean
+  /** Tasks of this week the student handed in late: the week is red because of them. */
+  lateTasks?: string[]
 }) {
   const id = useId()
-  const [level, setLevel] = useState<StandingLevel | null>(grade?.level ?? null)
+  const late = lateTasks.length > 0
+  const [picked, setLevel] = useState<StandingLevel | null>(grade?.level ?? null)
+  // a late hand-in keeps the week red, whatever was picked before
+  const level: StandingLevel | null = late ? 'red' : picked
   const [note, setNote] = useState(grade?.note ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -124,13 +131,26 @@ export function WeekGradeItem({
 
       {!locked && (open || alwaysOpen) && (
         <form className="review__panel review__form" id={`${id}-panel`} onSubmit={save} noValidate>
+          {late && (
+            <p className="grade-pick__late" role="note">
+              <Icon name="clock" size={16} /> Red because of a late submission ({lateTasks.join(', ')}). While it stands the week stays
+              red; your module feedback is still needed.
+            </p>
+          )}
           <fieldset className="grade-pick">
             <legend className="field__label">
               Week {week} grade for {student.name}
             </legend>
             {STANDING_LEVELS.map((l) => (
-              <label key={l} className={`grade-pick__option grade-pick__option--${l}`}>
-                <input type="radio" name={`${id}-level`} value={l} checked={level === l} onChange={() => setLevel(l)} />
+              <label key={l} className={`grade-pick__option grade-pick__option--${l}${late && l !== 'red' ? ' is-disabled' : ''}`}>
+                <input
+                  type="radio"
+                  name={`${id}-level`}
+                  value={l}
+                  checked={level === l}
+                  disabled={late && l !== 'red'}
+                  onChange={() => setLevel(l)}
+                />
                 <span className="grade-pick__head">
                   <Icon name={STANDING_ICON[l]} size={16} />
                   {STANDING_LABEL[l]}

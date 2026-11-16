@@ -2,6 +2,7 @@ import type { AssignmentItem, CourseModule, QuizItem } from '../types/course'
 import type { TeamSubmission } from '../types/review'
 import type { StandingLevel, WeeklyStanding } from '../types/standing'
 import type { Person } from '../types/team'
+import { isLateHandIn } from './deadline'
 import { analyseStandings, RED_LIMIT, YELLOW_LIMIT } from './standing'
 
 /*
@@ -18,9 +19,15 @@ export interface WorkRow {
   task: AssignmentItem
   submission?: TeamSubmission
   status: WorkStatus
-  /** Handed in after the deadline. */
+  /** Handed in after the student's deadline: a late submission. */
   late: boolean
+  /** The student's deadline for this task (08:00 on the day of their 1:1, or Monday 08:00); none when it is not known. */
+  dueAt?: string
 }
+
+/** A student's deadline for a task. Tasks have none of their own: each student's follows their 1:1 (utils/deadline). */
+export type DueLookup = (task: AssignmentItem, studentId: number) => string | undefined
+const ownDue: DueLookup = (task) => task.dueAt
 
 export const tasksOf = (m: CourseModule) => m.items.filter((i): i is AssignmentItem => i.type === 'assignment')
 
@@ -30,25 +37,27 @@ export function indexSubmissions(list: TeamSubmission[]): Map<string, TeamSubmis
   return new Map(list.map((s) => [keyOf(s.assignmentId, s.studentId), s]))
 }
 
-export function workRow(task: AssignmentItem, student: Person, index: Map<string, TeamSubmission>, now: Date): WorkRow {
+export function workRow(task: AssignmentItem, student: Person, index: Map<string, TeamSubmission>, now: Date, due: DueLookup = ownDue): WorkRow {
   const submission = index.get(keyOf(task.id, student.id))
+  const dueAt = due(task, student.id)
   const status: WorkStatus = submission
     ? submission.feedback
       ? 'commented'
       : 'new'
-    : new Date(task.dueAt) < now
+    : dueAt && new Date(dueAt) < now
       ? 'missing'
       : 'not-yet'
-  const late = !!submission && new Date(submission.submittedAt) > new Date(task.dueAt)
-  return { student, task, submission, status, late }
+  // the server says so when it knows; otherwise the hand-in is compared with the student's deadline
+  const late = submission?.late ?? isLateHandIn(submission, dueAt)
+  return { student, task, submission, status, late, ...(dueAt ? { dueAt } : {}) }
 }
 
 const ORDER: Record<WorkStatus, number> = { new: 0, missing: 1, 'not-yet': 2, commented: 3 }
 
 /** One task's rows: new work first, then missing work, then the rest; by name inside. */
-export function taskRows(task: AssignmentItem, students: Person[], index: Map<string, TeamSubmission>, now: Date): WorkRow[] {
+export function taskRows(task: AssignmentItem, students: Person[], index: Map<string, TeamSubmission>, now: Date, due: DueLookup = ownDue): WorkRow[] {
   return students
-    .map((s) => workRow(task, s, index, now))
+    .map((s) => workRow(task, s, index, now, due))
     .sort((a, b) => ORDER[a.status] - ORDER[b.status] || a.student.name.localeCompare(b.student.name))
 }
 
@@ -75,13 +84,15 @@ export function newWork(modules: CourseModule[], students: Person[], list: TeamS
 export const quizzesOf = (m: CourseModule) => m.items.filter((i): i is QuizItem => i.type === 'quiz' && (!i.status || i.status === 'ready'))
 
 /** One student's week in numbers, for the card. */
-export function studentWeek(module: CourseModule, student: Person, workIndex: Map<string, TeamSubmission>, now: Date) {
-  const rows = tasksOf(module).map((t) => workRow(t, student, workIndex, now))
+export function studentWeek(module: CourseModule, student: Person, workIndex: Map<string, TeamSubmission>, now: Date, due: DueLookup = ownDue) {
+  const rows = tasksOf(module).map((t) => workRow(t, student, workIndex, now, due))
   return {
     total: rows.length,
     done: rows.filter((r) => r.submission).length,
     fresh: rows.filter((r) => r.status === 'new').length,
     missing: rows.filter((r) => r.status === 'missing').length,
+    /** Tasks of the week this student handed in late: the week grade is red because of them. */
+    lateTasks: rows.filter((r) => r.late).map((r) => r.task.title),
   }
 }
 

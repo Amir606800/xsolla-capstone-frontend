@@ -11,6 +11,7 @@ import type { StandingLevel, WeeklyStanding } from '../../types/standing'
 import type { Person } from '../../types/team'
 import { formatDateTime } from '../../utils/date'
 import { gradeLocked, quizzesOf, rowId, studentWeek, tasksOf, weekGradeOf, weekPhase, workRow } from '../../utils/review'
+import type { DueLookup } from '../../utils/review'
 import type { StandingIndex } from '../../utils/review'
 import { STANDING_LABEL, STANDING_LEVELS } from '../../utils/standing'
 
@@ -132,6 +133,7 @@ export const StudentCard = memo(function StudentCard({
   modules,
   grades,
   workIndex,
+  due,
   seesWork,
   quizResults,
   now,
@@ -142,6 +144,8 @@ export const StudentCard = memo(function StudentCard({
   modules: CourseModule[]
   grades: StandingIndex
   workIndex: Map<string, TeamSubmission>
+  /** Each student's deadline (their 1:1); the task's own when left out. */
+  due?: DueLookup
   seesWork: boolean
   quizResults: TeamQuizResults | null
   now: Date
@@ -150,7 +154,7 @@ export const StudentCard = memo(function StudentCard({
   const grade = weekGradeOf(grades, student.id, week.position)
   const started = weekPhase(week, now) !== 'upcoming'
   const finished = weekPhase(week, now) === 'finished'
-  const w = studentWeek(week, student, workIndex, now)
+  const w = studentWeek(week, student, workIndex, now, due)
   const quizzes = quizzesOf(week)
   const taken = quizResults ? quizzes.filter((q) => quizResults[student.id]?.[q.id]).length : 0
   const needsGrade = finished && !grade
@@ -220,6 +224,7 @@ export function StudentWeekView({
   grades,
   theirWeeks,
   workIndex,
+  due,
   seesWork,
   quizResults,
   now,
@@ -238,6 +243,7 @@ export function StudentWeekView({
   grades: StandingIndex
   theirWeeks: WeeklyStanding[]
   workIndex: Map<string, TeamSubmission>
+  due?: DueLookup
   seesWork: boolean
   quizResults: TeamQuizResults | null
   now: Date
@@ -254,7 +260,10 @@ export function StudentWeekView({
   const next = at >= 0 && at < students.length - 1 ? students[at + 1] : undefined
   const phase = weekPhase(week, now)
   const tasks = tasksOf(week)
-  const w = studentWeek(week, student, workIndex, now)
+  const w = studentWeek(week, student, workIndex, now, due)
+  // the week is red because of a late hand-in: what the server recorded, or what the work shows
+  const grade = weekGradeOf(grades, student.id, week.position)
+  const lateTasks = [...new Set([...(grade?.lateTasks ?? []), ...w.lateTasks])]
   const quizzes = quizzesOf(week)
 
   return (
@@ -331,7 +340,7 @@ export function StudentWeekView({
                       <WorkItem
                         key={id}
                         by="task"
-                        row={workRow(task, student, workIndex, now)}
+                        row={workRow(task, student, workIndex, now, due)}
                         open={openWork === id}
                         onToggle={() => onToggleWork(id)}
                         onComment={(text) => onComment(task.id, task.title, text)}
@@ -365,6 +374,7 @@ export function StudentWeekView({
                   open
                   alwaysOpen
                   locked={gradeLocked(week, weekGradeOf(grades, student.id, week.position), now)}
+                  lateTasks={lateTasks}
                   onToggle={() => undefined}
                   onSave={onGrade}
                 />

@@ -5,7 +5,8 @@ import { fetchEvents } from '../api/events'
 import App from '../App'
 import { renderWithProviders } from '../test/renderWithProviders'
 
-// Fix "today" (Wed 4 Nov 2026) so the relative mock data lands on known days.
+// Fix "today" (Wed 4 Nov 2026) so the relative mock data lands on known days. A week's work is due at 08:00 on the
+// day of the student's 1:1; Sam has none booked, so it is the Monday after the week's Friday (module 6: Mon 9 Nov).
 // Only Date is faked; timers stay real so async UI keeps working.
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -67,22 +68,25 @@ describe('CalendarPage - month view', () => {
   it('indicates events inside the date box, with their time', async () => {
     renderCalendar()
     await ready()
-    const lecture = day('Monday, November 2, 1 event')
+    // a Monday with nothing else on it (module 7's deadlines are hidden: it is not open yet)
+    const lecture = day(/^Monday, November 16, 1 event$/)
     expect(lecture).toHaveTextContent('10:00')
     expect(lecture).toHaveTextContent('Lecture')
 
-    const mentor = day('Thursday, November 5, 1 event')
+    // the mentor's 1:1 times are on the 1:1 days, Friday and Monday
+    const mentor = day(/^Friday, November 6, \d+ events?$/)
     expect(mentor).toHaveTextContent('15:30') // the first time that is still free
     expect(mentor).toHaveTextContent('5 free 1:1 times')
   })
 
-  it('keeps the calendar uncluttered: at most 2 events on any day of the month', async () => {
+  it('keeps the calendar uncluttered: a few events on any day of the month', async () => {
     renderCalendar()
     await ready()
     const counts = within(grid())
       .getAllByRole('button')
       .map((c) => Number(/(\d+) events?$/.exec(c.getAttribute('aria-label') ?? '')?.[1] ?? 0))
-    expect(Math.max(...counts)).toBeLessThanOrEqual(2)
+    // the busiest day is a Monday: the week's deadlines, the lecture and the 1:1 times
+    expect(Math.max(...counts)).toBeLessThanOrEqual(4)
     expect(counts.filter((n) => n > 0).length).toBeGreaterThan(5) // still has things to show
     expect(counts.reduce((a, b) => a + b, 0)).toBeLessThan(30)
   })
@@ -92,23 +96,23 @@ describe('CalendarPage - month view', () => {
     await ready()
     // module 7 (opens Nov 11) has deadlines on Nov 13 and 15 - hidden from a student
     expect(day('Friday, November 13, 1 event')).not.toHaveTextContent('Due:')
-    expect(day('Sunday, November 15')).not.toHaveTextContent('Due:')
+    expect(day(/^Monday, November 16/)).not.toHaveTextContent('Due:')
     expect(within(grid()).queryByText(/Schema design/)).not.toBeInTheDocument()
   })
 
-  it('shows those deadlines to a teacher', async () => {
+  it('a teacher sees no task deadlines: a task has none of its own (each student\'s follows their 1:1)', async () => {
     localStorage.setItem('auth_user', JSON.stringify({ id: 2, name: 'Lec', email: 'l@x.co', role: 'teacher' }))
     renderWithProviders(<App />, { route: '/calendar' })
     await ready()
-    expect(day(/^Sunday, November 15/)).toHaveTextContent('Due: Query practice')
+    expect(within(grid()).queryByText(/^Due:/)).not.toBeInTheDocument()
   })
 
   it('includes task deadlines automatically and styles submitted ones as done', async () => {
     renderCalendar()
     await ready()
-    const friday = day(/^Friday, November 6/) // module 6 "CLI tool" is submitted
-    expect(friday).toHaveTextContent('Due: CLI tool')
-    expect(within(friday).getByText('Due: CLI tool').closest('.ev')).toHaveClass('is-done')
+    const monday = day(/^Monday, November 9/) // module 6 "CLI tool" is submitted
+    expect(monday).toHaveTextContent('Due: CLI tool')
+    expect(within(monday).getByText('Due: CLI tool').closest('.ev')).toHaveClass('is-done')
   })
 
   it('shows empty days without any event markers', async () => {
@@ -233,7 +237,9 @@ describe('CalendarPage - day panel', () => {
     await ready()
     await user.click(day(/^Monday, November 2(,|$)/)) // the lecture
 
-    const card = within(within(dialog()).getByRole('list', { name: 'Events' })).getByRole('listitem')
+    const card = within(within(dialog()).getByRole('list', { name: 'Events' }))
+      .getAllByRole('listitem')
+      .find((li) => li.textContent?.includes('Weekly lecture')) as HTMLElement
     expect(card).toHaveTextContent('Lecture')
     expect(card).toHaveTextContent('10:00 - 12:00 (2 h)')
     expect(card).toHaveTextContent('Main hall')
@@ -244,20 +250,20 @@ describe('CalendarPage - day panel', () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
-    await user.click(day(/^Friday, November 6/)) // team sync + CLI tool deadline
+    await user.click(day(/^Monday, November 9/)) // the week's two deadlines at 08:00, then the lecture
 
     const items = within(within(dialog()).getByRole('list', { name: 'Events' })).getAllByRole('listitem')
-    expect(items).toHaveLength(2)
-    expect(items[0]).toHaveTextContent('Team sync')
-    expect(items[0]).toHaveTextContent('14:00 - 14:45 (45 min)')
-    expect(items[0]).toHaveTextContent('Online')
-    expect(within(items[0]).queryByRole('link')).not.toBeInTheDocument()
+    expect(items.length).toBeGreaterThanOrEqual(3)
+    expect(items[0]).toHaveTextContent('Due: CLI tool')
+    expect(items[0]).toHaveTextContent('Deadline')
+    expect(items[0]).toHaveTextContent('08:00')
+    expect(items[0]).toHaveTextContent('Submitted')
+    expect(within(items[0]).getByRole('link', { name: 'Open module' })).toHaveAttribute('href', '/courses/m6')
+    expect(items[1]).toHaveTextContent('Due: HTTP server')
 
-    expect(items[1]).toHaveTextContent('Due: CLI tool')
-    expect(items[1]).toHaveTextContent('Deadline')
-    expect(items[1]).toHaveTextContent('18:00')
-    expect(items[1]).toHaveTextContent('Submitted')
-    expect(within(items[1]).getByRole('link', { name: 'Open module' })).toHaveAttribute('href', '/courses/m6')
+    expect(items[2]).toHaveTextContent('Lecture')
+    expect(items[2]).toHaveTextContent('10:00 - 12:00 (2 h)')
+    expect(within(items[2]).queryByRole('link', { name: 'Open module' })).not.toBeInTheDocument()
   })
 
   it('describes all-day events as such', async () => {
@@ -276,11 +282,11 @@ describe('CalendarPage - day panel', () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
-    await user.click(day(/^Sunday, November 8/)) // HTTP server, not submitted
+    await user.click(day(/^Monday, November 9/)) // HTTP server, not submitted
     expect(within(dialog()).getByText(/^Due in 4 days/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Previous month' }))
-    await user.click(day(/^Sunday, October 25/)) // module 4, never submitted
+    await user.click(day(/^Monday, October 26/)) // module 4, one task never submitted
     expect(within(dialog()).getByText('Overdue')).toHaveClass('event-card__danger')
   })
 
@@ -316,8 +322,8 @@ describe('CalendarPage - day panel', () => {
     const user = userEvent.setup()
     renderCalendar()
     await ready()
-    await user.click(day(/^Friday, November 6/))
-    await user.click(within(dialog()).getByRole('link', { name: 'Open module' }))
+    await user.click(day(/^Monday, November 9/))
+    await user.click(within(dialog()).getAllByRole('link', { name: 'Open module' })[0])
     expect(await screen.findByRole('heading', { name: 'Go Basics', level: 1 })).toBeInTheDocument()
   })
 })

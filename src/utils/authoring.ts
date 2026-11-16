@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '../types/calendar'
 import type { AssignmentItem, CourseModule, QuizItem, QuizQuestion, ResourceItem } from '../types/course'
 import { canHaveMeeting, meetingUrlError } from './meeting'
+import { oneOnOneWeek } from './deadline'
 
 /**
  * Lecturer forms: drafts (what the inputs hold), validation and turning a draft into the item
@@ -158,52 +159,22 @@ export interface TaskDraft {
   description: string
   /** One requirement per line. */
   requirements: string
-  dueDate: string
-  dueTime: string
 }
 
-/**
- * What a new task is due by default: Friday 08:00 of this week (the week runs Monday to Sunday). On a Friday after 08:00,
- * and at the weekend, that moment has gone, so it is next Friday instead (`nextWeek`).
- */
-export function defaultDue(now: Date): { date: string; time: string; nextWeek: boolean } {
-  const sinceMonday = (now.getDay() + 6) % 7
-  const friday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceMonday + 4, 8, 0)
-  const nextWeek = friday.getTime() <= now.getTime()
-  if (nextWeek) friday.setDate(friday.getDate() + 7)
-  return { date: toDateInput(friday.toISOString()), time: '08:00', nextWeek }
+/** A task has no deadline of its own (each student's follows their 1:1), so the form has none either. */
+export function taskToDraft(a: AssignmentItem | undefined): TaskDraft {
+  return a
+    ? { title: a.title, description: a.description ?? '', requirements: (a.requirements ?? []).join('\n') }
+    : { title: '', description: '', requirements: '' }
 }
 
-/** A new task starts with the default due time (Friday 08:00); the lecturer can change it. */
-export function taskToDraft(a: AssignmentItem | undefined, now: Date = new Date()): TaskDraft {
-  if (a) {
-    return {
-      title: a.title,
-      description: a.description ?? '',
-      requirements: (a.requirements ?? []).join('\n'),
-      dueDate: toDateInput(a.dueAt),
-      dueTime: toTimeInput(a.dueAt),
-    }
-  }
-  const due = defaultDue(now)
-  return { title: '', description: '', requirements: '', dueDate: due.date, dueTime: due.time }
-}
-
-export function validateTask(d: TaskDraft): Errors<'title' | 'due'> {
-  const e: Errors<'title' | 'due'> = { title: titleError(d.title) }
-  if (!fromInputs(d.dueDate, d.dueTime)) e.due = 'Pick a due date and time.'
-  return e
+export function validateTask(d: TaskDraft): Errors<'title'> {
+  return { title: titleError(d.title) }
 }
 
 /** Not errors, just things worth a second look. */
-export function taskWarnings(d: TaskDraft, module: CourseModule, now: Date): string[] {
-  const due = fromInputs(d.dueDate, d.dueTime)
-  if (!due) return []
-  const out: string[] = []
-  if (new Date(due) < now) out.push('This deadline has already passed, so students will see the task as overdue.')
-  if (module.opensAt && due < module.opensAt) out.push('The task is due before the module opens.')
-  if (module.closesAt && due > module.closesAt) out.push('The task is due after the module closes.')
-  return out
+export function taskWarnings(module: Pick<CourseModule, 'opensAt'>): string[] {
+  return module.opensAt ? [] : ['This week has no opening date yet, so its students get no deadline. Give the week its dates first.']
 }
 
 export const splitLines = (text: string) =>
@@ -212,16 +183,21 @@ export const splitLines = (text: string) =>
     .map((l) => l.trim())
     .filter(Boolean)
 
-export function draftToTask(d: TaskDraft, moduleId: string, id: string): AssignmentItem {
+/**
+ * The task to save. It has no deadline of its own; `dueAt` is only the week's anchor for the server: the backend still
+ * asks for a due_at, and with the week's Friday 08:00 it works each student's deadline out from their 1:1 (Friday or
+ * Monday 08:00). See BACKEND_REQ_ONE_ON_ONE_DEADLINES.md.
+ */
+export function draftToTask(d: TaskDraft, module: Pick<CourseModule, 'id' | 'opensAt'>, id: string): AssignmentItem {
   const requirements = splitLines(d.requirements)
   return {
     id,
-    moduleId,
+    moduleId: module.id,
     type: 'assignment',
     title: d.title.trim(),
     description: d.description.trim() || undefined,
     requirements: requirements.length ? requirements : undefined,
-    dueAt: fromInputs(d.dueDate, d.dueTime)!,
+    ...(module.opensAt ? { dueAt: oneOnOneWeek(module.opensAt).friday } : {}),
   }
 }
 

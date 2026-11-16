@@ -37,7 +37,8 @@ describe('the module template', () => {
       ['Week 2', 7, 13, '23:59'],
     ])
     expect(t.modules[0].items).toEqual([
-      { type: 'task', title: 'Kata', requirements: ['Tests'], due: { day: 4, time: '18:00' } },
+      // a task has no deadline of its own, so none goes into the file
+      { type: 'task', title: 'Kata', requirements: ['Tests'] },
       { type: 'link', title: 'Docs', url: 'https://go.dev/doc/' },
     ])
     expect(t.left_out).toEqual({ files: 1, modulesWithoutDates: 1 })
@@ -51,7 +52,8 @@ describe('the module template', () => {
     const plan = planImport(parsed.template, '2027-02-01')
     expect(plan[0].opensAt).toBe(new Date(2027, 1, 1, 0, 0).toISOString())
     expect(plan[0].closesAt).toBe(new Date(2027, 1, 7, 23, 59).toISOString())
-    expect(plan[0].items[0]).toMatchObject({ type: 'assignment', title: 'Kata', dueAt: new Date(2027, 1, 5, 18, 0).toISOString() })
+    expect(plan[0].items[0]).toMatchObject({ type: 'assignment', title: 'Kata' })
+    expect(plan[0].items[0]).not.toHaveProperty('dueAt')
     expect(plan[1].items[0]).toMatchObject({ type: 'quiz', questions: [{ prompt: '2+2?', correct: 1 }] })
   })
 
@@ -67,7 +69,9 @@ describe('the module template', () => {
     expect(bad({ ...good, modules: [] })).toMatch(/no modules/)
     expect(bad({ ...good, modules: [{ ...good.modules[0], closes: { day: -1, time: '10:00' } }] })).toMatch(/closes before it opens/)
     expect(bad({ ...good, modules: [{ ...good.modules[0], items: [{ type: 'link', title: 'x', url: 'javascript:alert(1)' }] }] })).toMatch(/http/)
-    expect(bad({ ...good, modules: [{ ...good.modules[0], items: [{ type: 'task', title: 'x', due: { day: 1, time: '25:00' } }] }] })).toMatch(/due date/)
+    // a task's due date from an older template is ignored, not refused
+    expect(bad({ ...good, modules: [{ ...good.modules[0], items: [{ type: 'task', title: 'x', due: { day: 1, time: '25:00' } }] }] })).toBe('ok')
+    expect(bad({ ...good, modules: [{ ...good.modules[0], items: [{ type: 'quiz', title: 'x', due: { day: 1, time: '25:00' }, questions: [] }] }] })).toMatch(/due date/)
   })
 })
 

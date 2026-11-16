@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildMockModules } from './courses'
 import { moduleProgress } from '../utils/progress'
+import { withStudentDeadlines } from '../utils/deadline'
 
 const NOW = new Date('2026-11-04T12:00:00Z')
 
@@ -26,8 +27,9 @@ describe('buildMockModules', () => {
     for (const m of modules) for (const i of m.items) expect(i.moduleId).toBe(m.id)
   })
 
-  it('tells a believable story: done, overdue, current, upcoming', () => {
-    const status = (i: number) => moduleProgress(modules[i], NOW).status
+  it('tells a believable story: done, overdue, current, upcoming (as a student with no 1:1 booked sees it)', () => {
+    const own = withStudentDeadlines(modules, [])
+    const status = (i: number) => moduleProgress(own[i], NOW).status
     expect(status(0)).toBe('completed')
     expect(status(3)).toBe('overdue')
     expect(status(5)).toBe('in-progress')

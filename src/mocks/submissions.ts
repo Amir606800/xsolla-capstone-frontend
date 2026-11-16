@@ -4,6 +4,7 @@ import type { Person } from '../types/team'
 import { buildMockModules } from './courses'
 import { buildMentorTeam, MENTOR } from './teams'
 import { publish } from '../sync/bus'
+import { oneOnOneWeek } from '../utils/deadline'
 
 /**
  * Stand-in for the backend's submissions table: every student's work on every task, kept in
@@ -74,7 +75,8 @@ export function buildMockSubmissions(now: Date = new Date()): Store {
       for (const m of modules) {
         const week = m.position
         tasks(m).forEach((t, ti) => {
-          const due = new Date(t.dueAt).getTime()
+          // tasks have no deadline of their own: the demo students have no 1:1 that weekend, so theirs is Monday 08:00
+          const due = m.opensAt ? new Date(oneOnOneWeek(m.opensAt).monday).getTime() : now.getTime()
           if (week <= 4) {
             put({
               ...work(t, student, label, new Date(due - DAY)),

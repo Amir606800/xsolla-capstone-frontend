@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildMockModules } from '../mocks/courses'
 import type { AssignmentItem, CourseModule } from '../types/course'
 import { collectTasks, countTasks, filterTasks, isTaskFilter, sortTasks } from './tasks'
+import { withStudentDeadlines } from './deadline'
 
 const now = new Date('2026-03-10T12:00:00Z')
 const d = (days: number) => new Date(now.getTime() + days * 86_400_000).toISOString()
@@ -102,7 +103,8 @@ describe('isTaskFilter', () => {
 
 describe('with the mock course', () => {
   it('has work in every state, so every filter has something to show', () => {
-    const c = countTasks(collectTasks(buildMockModules(new Date()).slice(0, 6), new Date()), null)
+    // as a student with no 1:1 booked sees it: their deadlines are worked out from the weeks
+    const c = countTasks(collectTasks(withStudentDeadlines(buildMockModules(new Date()).slice(0, 6), []), new Date()), null)
     expect(c.todo).toBeGreaterThan(0)
     expect(c.overdue).toBeGreaterThan(0)
     expect(c.submitted).toBeGreaterThan(0)

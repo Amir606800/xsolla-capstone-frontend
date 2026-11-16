@@ -10,6 +10,8 @@ import { publish } from '../sync/bus'
  * - a student only reads their own grades
  * - a mentor grades the students of THEIR team only, and only weeks that have started
  * - one grade per student per week; the mentor may change it (the last one counts)
+ * - a task of the week handed in after the student's deadline makes the week red at once, and while that late hand-in
+ *   stands the mentor can only keep it red (adding their feedback)
  */
 
 export interface StoredStanding extends WeeklyStanding {
@@ -103,7 +105,28 @@ const plain = (s: StoredStanding): WeeklyStanding => ({
   level: s.level,
   assessedAt: s.assessedAt,
   ...(s.note ? { note: s.note } : {}),
+  ...(s.lateTasks?.length ? { lateTasks: s.lateTasks } : {}),
 })
+
+/** The message a mentor gets when trying to raise a week that a late hand-in made red. */
+export const LATE_WEEK_IS_RED =
+  'A task of this week was handed in late, so the week grade stays red. You can still add your feedback.'
+
+/** A late hand-in: the student's week turns red at once (what the mentor wrote stays). */
+export function markLate(studentId: number, week: number, taskTitle: string, now: Date = new Date()): void {
+  const store = load(now)
+  const before = store[keyOf(studentId, week)]
+  const lateTasks = [...new Set([...(before?.lateTasks ?? []), taskTitle])]
+  store[keyOf(studentId, week)] = {
+    ...before,
+    week,
+    studentId,
+    level: 'red',
+    assessedAt: before?.assessedAt ?? now.toISOString(),
+    lateTasks,
+  }
+  save(store)
+}
 
 /** A student's own weekly grades, oldest week first. */
 export function standingsOf(studentId: number, now: Date = new Date()): WeeklyStanding[] {
@@ -147,11 +170,14 @@ export function gradeWeek(
   const store = load(now)
   const text = note.trim()
   if (!text) throw new Error('Write the module feedback first: it is required with a week grade.')
+  const lateTasks = store[keyOf(studentId, week)]?.lateTasks
+  if (lateTasks?.length && level !== 'red') throw new Error(LATE_WEEK_IS_RED)
   store[keyOf(studentId, week)] = {
     week,
     level,
     assessedAt: now.toISOString(),
     ...(text ? { note: text } : {}),
+    ...(lateTasks?.length ? { lateTasks } : {}),
     studentId,
     gradedBy: { id: mentor.id, name: mentor.name },
   }

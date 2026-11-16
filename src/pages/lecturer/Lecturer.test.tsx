@@ -202,7 +202,9 @@ describe('Module editor: tasks', () => {
 
     await user.type(within(dialog()).getByLabelText('Title'), 'Concurrency kata')
     await user.type(within(dialog()).getByLabelText(/What to hand in/), 'Push to the repo{enter}Explain your channels')
-    fireEvent.change(within(dialog()).getByLabelText('Date'), { target: { value: '2026-11-07' } })
+    // no deadline to pick: each student's work is due at 08:00 on the day of their 1:1
+    expect(within(dialog()).queryByLabelText('Date')).not.toBeInTheDocument()
+    expect(within(dialog()).getByText(/each student's work is due at 08:00 on the day of their 1:1/)).toBeInTheDocument()
     await user.click(within(dialog()).getByRole('button', { name: 'Add task' }))
 
     await status('Task added.')
@@ -221,19 +223,9 @@ describe('Module editor: tasks', () => {
     const user = userEvent.setup()
     renderAs(LECTURER, '/courses/m6')
     await user.click(await screen.findByRole('button', { name: 'New task' }))
-    fireEvent.change(within(dialog()).getByLabelText('Time'), { target: { value: '' } })
     await user.click(within(dialog()).getByRole('button', { name: 'Add task' }))
     expect(within(dialog()).getByText('Give it a title.')).toBeInTheDocument()
-    expect(within(dialog()).getByText('Pick a due date and time.')).toBeInTheDocument()
     expect(within(dialog()).getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true')
-  })
-
-  it('warns when the deadline falls outside the module week', async () => {
-    const user = userEvent.setup()
-    renderAs(LECTURER, '/courses/m6')
-    await user.click(await screen.findByRole('button', { name: 'New task' }))
-    fireEvent.change(within(dialog()).getByLabelText('Date'), { target: { value: '2026-11-20' } })
-    expect(within(dialog()).getByRole('list', { name: 'Please check' })).toHaveTextContent('due after the module closes')
   })
 
   it('a link from the dashboard opens the form straight away', async () => {

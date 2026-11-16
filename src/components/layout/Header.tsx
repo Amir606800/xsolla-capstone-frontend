@@ -12,6 +12,7 @@ import { XsollaLogo } from '../XsollaLogo'
 import { NotificationsModal } from '../notifications/NotificationsModal'
 import { CommandPalette } from '../search/CommandPalette'
 import { CurrentModuleChip } from './CurrentModuleChip'
+import { ReportButton } from '../report/ReportButton'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -118,6 +119,8 @@ function HeaderBase({ onMenuClick }: HeaderProps) {
         >
           <Icon name="search" />
         </button>
+
+        <ReportButton />
 
         <button
           type="button"

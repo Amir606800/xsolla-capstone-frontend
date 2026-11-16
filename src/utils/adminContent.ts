@@ -1,7 +1,7 @@
 import type { ContentItem, CourseModule } from '../types/course'
 import { MATERIAL_KINDS } from './authoring'
 import { contentCounts } from './content'
-import { formatDateTime, formatShortDate } from './date'
+import { formatShortDate } from './date'
 
 /** Shared text for the admin's Modules pages. */
 
@@ -27,7 +27,8 @@ export function itemSummary(item: ContentItem): string {
   switch (item.type) {
     case 'assignment': {
       const reqs = item.requirements?.length ?? 0
-      return `Due ${formatDateTime(item.dueAt)}${reqs ? ` · ${plural(reqs, 'requirement')}` : ''}`
+      // a task has no deadline of its own: each student's work is due at their 1:1
+      return reqs ? plural(reqs, 'requirement') : 'Task'
     }
     case 'resource': {
       if (item.kind === 'link') return item.url ? `Link · ${hostOf(item.url)}` : 'Link'

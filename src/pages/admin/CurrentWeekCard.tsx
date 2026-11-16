@@ -3,6 +3,7 @@ import { Icon } from '../../components/Icon'
 import { KIND_LABEL } from '../../utils/adminCalendar'
 import type { WeekSummary } from '../../utils/adminWeek'
 import { formatClockTime, formatShortDate } from '../../utils/date'
+import { oneOnOneWeek, weekDeadlineText } from '../../utils/deadline'
 
 const dayFmt = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric' })
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
@@ -111,19 +112,22 @@ export function CurrentWeekCard({ summary, nameOf, now }: { summary: WeekSummary
           {summary.tasks.length === 0 ? (
             <p className="admin-muted">No tasks in this week.</p>
           ) : (
-            <ul className="admin-week__list" aria-label="Tasks of the week">
-              {summary.tasks.map((t) => {
-                const over = new Date(t.dueAt) < now
-                return (
-                  <li key={t.id} className={over ? 'is-past' : undefined}>
-                    <span className="admin-week__what">{t.title}</span>
-                    <span className="admin-muted">
-                      {over ? 'Was due' : 'Due'} {dayFmt.format(new Date(t.dueAt))}, {formatClockTime(t.dueAt)}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
+            <>
+              {summary.module && weekDeadlineText(summary.module) && (
+                <p className="admin-muted">Due {weekDeadlineText(summary.module)}: each student by the day of their 1:1.</p>
+              )}
+              <ul className="admin-week__list" aria-label="Tasks of the week">
+                {summary.tasks.map((t) => {
+                  const opensAt = summary.module?.opensAt
+                  const over = !!opensAt && new Date(oneOnOneWeek(opensAt).monday) < now
+                  return (
+                    <li key={t.id} className={over ? 'is-past' : undefined}>
+                      <span className="admin-week__what">{t.title}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </>
           )}
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { checkLateHandIn } from '../mocks/lateWork'
 import {
   addModule,
   listModules,
@@ -84,8 +85,10 @@ export async function submitWork(assignmentId: string, payload: SubmitPayload, c
     textBody: payload.textBody || undefined,
     files: [...(payload.keep ?? []), ...payload.files.map((f) => ({ name: f.name, sizeBytes: f.size }))],
   }
-  // kept so the student's mentor can review it
-  return ctx.studentId === undefined ? submission : handIn(ctx.studentId, assignmentId, submission)
+  if (ctx.studentId === undefined) return submission
+  // late work is accepted: it is marked, and the week grade turns red (the server does the same); then it is kept so the
+  // student's mentor can review it
+  return handIn(ctx.studentId, assignmentId, checkLateHandIn(ctx.studentId, assignmentId, submission))
 }
 
 export async function saveModule(id: string, patch: ModulePatch): Promise<CourseModule[]> {

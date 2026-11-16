@@ -373,7 +373,7 @@ function ItemForm({
           now={now}
           item={item?.type === 'assignment' ? item : undefined}
           onCancel={onCancel}
-          onSave={(d) => onSave(finish(draftToTask(d, module.id, id)), `Task ${verb}.`)}
+          onSave={(d) => onSave(finish(draftToTask(d, module, id)), `Task ${verb}.`)}
         />
       )
     case 'resource':

@@ -3,6 +3,8 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import { buildMockModules } from '../../mocks/courses'
 import type { CourseModule } from '../../types/course'
+import { formatDateTime } from '../../utils/date'
+import { withStudentDeadlines } from '../../utils/deadline'
 import { isModuleLocked, overallStats, recentGrades, upcomingDeadlines } from '../../utils/progress'
 import { DeadlinesCard } from './DeadlinesCard'
 import { JourneyPath } from './JourneyPath'
@@ -13,7 +15,8 @@ import { ScoreCard } from './ScoreCard'
 import { StatBar } from './StatBar'
 
 const NOW = new Date('2026-11-04T12:00:00Z')
-const modules = buildMockModules(NOW)
+// as a student with no 1:1 booked sees the course: each week's work is due Monday 08:00
+const modules = withStudentDeadlines(buildMockModules(NOW), [])
 
 describe('JourneyPath', () => {
   // student view: modules that open in the future are locked
@@ -210,10 +213,12 @@ describe('DeadlinesCard', () => {
   })
 
   it('shows the exact due date AND time, not just the day', () => {
-    render(<DeadlinesCard entries={upcomingDeadlines(modules, NOW, 5)} now={NOW} />)
+    const entries = upcomingDeadlines(modules, NOW, 5)
+    render(<DeadlinesCard entries={entries} now={NOW} />)
     const rows = screen.getAllByRole('listitem')
     for (const row of rows) expect(row).toHaveTextContent(/[A-Z][a-z]{2} \d+, \d\d:\d\d/)
-    expect(rows[1]).toHaveTextContent('18:00')
+    // 08:00 school time on the day of the student's 1:1 (Monday without one)
+    expect(rows[1]).toHaveTextContent(formatDateTime(entries[1].item.dueAt as string))
   })
 
   it('shows an empty state', () => {

@@ -43,7 +43,7 @@ describe('the week on the admin overview', () => {
     expect(s.lecturerId).toBe(902)
     expect(s.day).toEqual({ number: 3, of: 7 })
     expect(s.events.map((e) => e.id)).toEqual(['l1']) // Nov 2, inside the week; Nov 9 and 20 are outside
-    expect(s.tasks.map((t) => t.title)).toEqual(['CLI tool', 'HTTP server']) // by deadline
+    expect(s.tasks.map((t) => t.title)).toEqual(['HTTP server', 'CLI tool']) // in the module's order: tasks have no deadline of their own
     expect([s.resources, s.quizzes]).toEqual([1, 1])
   })
 

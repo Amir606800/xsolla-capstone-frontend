@@ -22,9 +22,8 @@ describe('contentCounts / lists', () => {
   it('counts each kind', () => {
     expect(contentCounts(m('m6'))).toEqual({ materials: 2, tasks: 2, quizzes: 0 })
   })
-  it('tasks are sorted by deadline', () => {
-    const tasks = tasksOf(m('m3'))
-    expect(tasks.map((t) => t.dueAt)).toEqual([...tasks.map((t) => t.dueAt)].sort())
+  it('lists the tasks and quizzes', () => {
+    expect(tasksOf(m('m3')).length).toBeGreaterThan(0)
     expect(quizzesOf(m('m3'))).toEqual([])
   })
 })
@@ -34,17 +33,10 @@ describe('contentGaps', () => {
     expect(contentGaps(modules, NOW)).toEqual([])
   })
 
-  it('flags missing tasks, materials and dates, and tasks due outside the week', () => {
+  it('flags missing tasks, materials and dates', () => {
     const m7 = m('m7')
     const empty: CourseModule = { ...m7, items: [] }
     expect(contentGaps([empty], NOW).map((g) => g.text)).toEqual(['No materials yet', 'No tasks yet'])
-
-    const late: CourseModule = {
-      ...m7,
-      items: m7.items.map((i) => (i.type === 'assignment' && i.id === 'm7-a1' ? { ...i, dueAt: new Date(2027, 0, 1).toISOString() } : i)),
-    }
-    expect(contentGaps([late], NOW).map((g) => g.text)).toEqual(['"Schema design" is due after the module closes'])
-
     expect(contentGaps([{ ...m7, opensAt: undefined }], NOW).map((g) => g.text)).toContain('Has no start or end date')
   })
 
@@ -54,11 +46,12 @@ describe('contentGaps', () => {
 })
 
 describe('nextDueTasks', () => {
-  it('lists the next deadlines across all modules, including ones not open to students yet', () => {
+  it("lists the next deadlines across all modules: each week's Friday 08:00, or its Monday once Friday has passed", () => {
     const due = nextDueTasks(modules, NOW, 4)
     expect(due).toHaveLength(4)
-    expect(due.every((d) => new Date(d.task.dueAt) > NOW)).toBe(true)
-    expect(due.map((d) => d.task.dueAt)).toEqual([...due.map((d) => d.task.dueAt)].sort())
+    expect(due.every((d) => new Date(d.dueAt) > NOW)).toBe(true)
+    expect(due.map((d) => d.dueAt)).toEqual([...due.map((d) => d.dueAt)].sort())
+    expect(due.every((d) => new Date(d.dueAt).getUTCHours() === 4)).toBe(true) // 08:00 in Baku
     expect(due.some((d) => d.module.id === 'm7')).toBe(true)
   })
 })

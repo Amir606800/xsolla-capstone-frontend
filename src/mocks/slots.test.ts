@@ -9,29 +9,30 @@ const other: Actor = { id: 901, name: 'Another Mentor', roles: ['mentor'] }
 const admin: Actor = { id: 1000, name: 'Admin', roles: ['admin'] }
 const sam: Actor = { id: 1, name: 'Sam', roles: ['student'] }
 const eli: Actor = { id: 2, name: 'Eli', roles: ['student'] }
-const win = { date: '2026-11-06', start: '15:00', end: '18:00' }
+// a Thursday: the demo's own times are on the 1:1 days (Friday 6 and Monday 9 Nov)
+const win = { date: '2026-11-05', start: '15:00', end: '18:00' }
 
 describe('demo data', () => {
   const slots = buildMockSlots(NOW)
-  it('opens two Thursdays: 15:00-18:00, then 15:00-17:00', () => {
+  it('opens the 1:1 days: next Friday 15:00-18:00, then the Monday after, 15:00-17:00', () => {
     expect(slots).toHaveLength(6 + 4)
-    expect(new Date(slots[0].startsAt).getDate()).toBe(5)
+    expect(new Date(slots[0].startsAt).getDate()).toBe(6)
     expect(slotLabel(slots[0])).toBe('15:00 - 15:30')
-    expect(new Date(slots[6].startsAt).getDate()).toBe(12)
+    expect(new Date(slots[6].startsAt).getDate()).toBe(9)
   })
   it('has one time already taken by a teammate, and everything in the future', () => {
     expect(slots.filter((s) => s.booked)).toHaveLength(1)
     expect(slots.every((s) => new Date(s.startsAt) > NOW)).toBe(true)
   })
-  it('a Thursday morning rolls over to the next Thursday', () => {
-    const thu = new Date(2026, 10, 5, 9, 0)
-    expect(new Date(buildMockSlots(thu)[0].startsAt).getDate()).toBe(12)
+  it('a Friday morning rolls over to the next Friday', () => {
+    const fri = new Date(2026, 10, 6, 9, 0)
+    expect(new Date(buildMockSlots(fri)[0].startsAt).getDate()).toBe(13)
   })
 })
 
 describe('a mentor adds a window', () => {
   it('creates one slot per 30 minutes', () => {
-    const slots = addWindow(mentor, win, NOW).filter((s) => s.startsAt.startsWith('2026-11-06') || new Date(s.startsAt).getDate() === 6)
+    const slots = addWindow(mentor, win, NOW).filter((s) => new Date(s.startsAt).getDate() === 5)
     expect(slots.map(slotLabel)).toEqual([
       '15:00 - 15:30',
       '15:30 - 16:00',
@@ -56,7 +57,7 @@ describe('a mentor adds a window', () => {
 
   it('persists, and students see it', () => {
     addWindow(mentor, win, NOW)
-    expect(listSlots(sam, NOW).filter((s) => new Date(s.startsAt).getDate() === 6)).toHaveLength(6)
+    expect(listSlots(sam, NOW).filter((s) => new Date(s.startsAt).getDate() === 5)).toHaveLength(6)
   })
 })
 
@@ -135,7 +136,7 @@ describe('cancelling', () => {
 describe('removing a time', () => {
   it('removes a free one', () => {
     const slots = addWindow(mentor, win, NOW)
-    const id = slots.find((s) => new Date(s.startsAt).getDate() === 6)!.id
+    const id = slots.find((s) => new Date(s.startsAt).getDate() === 5)!.id
     expect(deleteSlot(mentor, id, NOW).some((s) => s.id === id)).toBe(false)
   })
 

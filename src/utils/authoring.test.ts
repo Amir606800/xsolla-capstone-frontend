@@ -18,7 +18,6 @@ import {
   quizToDraft,
   splitLines,
   taskToDraft,
-  defaultDue,
   taskWarnings,
   toDateInput,
   toTimeInput,
@@ -29,7 +28,6 @@ import {
   validateTask,
 } from './authoring'
 
-const NOW = new Date(2026, 10, 4, 12, 0)
 const module: CourseModule = {
   id: 'm6',
   position: 6,
@@ -107,40 +105,29 @@ describe('material', () => {
 })
 
 describe('task', () => {
-  it('a new task is due by default on Friday 08:00 of this week', () => {
-    const d = taskToDraft(undefined, NOW) // Wednesday 4 Nov
-    expect(d.dueDate).toBe('2026-11-06')
-    expect(d.dueTime).toBe('08:00')
+  it('has no deadline to set: only a title is required', () => {
+    const d = taskToDraft(undefined)
+    expect(d).toEqual({ title: '', description: '', requirements: '' })
     expect(validateTask(d).title).toBeDefined()
     expect(hasErrors(validateTask({ ...d, title: 'CLI' }))).toBe(false)
-    expect(validateTask({ ...d, title: 'CLI', dueTime: '' }).due).toBe('Pick a due date and time.')
-  })
-  it('the default due moves to next Friday once this Friday 08:00 has passed', () => {
-    expect(defaultDue(new Date(2026, 10, 2, 9))).toEqual({ date: '2026-11-06', time: '08:00', nextWeek: false }) // Monday
-    expect(defaultDue(new Date(2026, 10, 6, 7, 59))).toEqual({ date: '2026-11-06', time: '08:00', nextWeek: false }) // Friday, just before
-    expect(defaultDue(new Date(2026, 10, 6, 9))).toEqual({ date: '2026-11-13', time: '08:00', nextWeek: true }) // Friday, after
-    expect(defaultDue(new Date(2026, 10, 14, 12))).toEqual({ date: '2026-11-20', time: '08:00', nextWeek: true }) // Saturday
-    expect(defaultDue(new Date(2026, 10, 15, 12))).toEqual({ date: '2026-11-20', time: '08:00', nextWeek: true }) // Sunday
   })
   it('turns lines into requirements and drops empty ones', () => {
-    const t = draftToTask({ title: 'CLI', description: '', requirements: ' Push it \n\n README ', dueDate: '2026-11-06', dueTime: '18:00' }, 'm6', 'a1')
+    const t = draftToTask({ title: 'CLI', description: '', requirements: ' Push it \n\n README ' }, module, 'a1')
     expect(t.requirements).toEqual(['Push it', 'README'])
     expect(t.description).toBeUndefined()
     expect(splitLines('')).toEqual([])
-    expect(draftToTask({ title: 'x', description: '', requirements: '  ', dueDate: '2026-11-06', dueTime: '18:00' }, 'm6', 'a').requirements).toBeUndefined()
+    expect(draftToTask({ title: 'x', description: '', requirements: '  ' }, module, 'a').requirements).toBeUndefined()
   })
-  it('editing keeps the task values', () => {
-    const t = draftToTask({ title: 'CLI', description: 'Do it', requirements: 'A\nB', dueDate: '2026-11-06', dueTime: '09:30' }, 'm6', 'a1')
-    expect(taskToDraft(t, NOW)).toEqual({ title: 'CLI', description: 'Do it', requirements: 'A\nB', dueDate: '2026-11-06', dueTime: '09:30' })
+  it("is saved with the week's Friday 08:00, only as the server's anchor for each student's 1:1 deadline", () => {
+    const t = draftToTask({ title: 'CLI', description: 'Do it', requirements: 'A\nB' }, module, 'a1')
+    // the week opens Monday 2 Nov: its 1:1 Friday is 6 Nov, 08:00 in Baku
+    expect(t.dueAt).toBe('2026-11-06T04:00:00.000Z')
+    expect(taskToDraft(t)).toEqual({ title: 'CLI', description: 'Do it', requirements: 'A\nB' })
+    expect(draftToTask({ title: 'x', description: '', requirements: '' }, { id: 'm', opensAt: undefined }, 'a').dueAt).toBeUndefined()
   })
-  it('warns about deadlines in the past or outside the module week', () => {
-    const base = { title: 'x', description: '', requirements: '' }
-    expect(taskWarnings({ ...base, dueDate: '2026-11-06', dueTime: '18:00' }, module, NOW)).toEqual([])
-    expect(taskWarnings({ ...base, dueDate: '2026-11-10', dueTime: '18:00' }, module, NOW)).toEqual(['The task is due after the module closes.'])
-    expect(taskWarnings({ ...base, dueDate: '2026-11-01', dueTime: '18:00' }, module, NOW)).toEqual([
-      'This deadline has already passed, so students will see the task as overdue.',
-      'The task is due before the module opens.',
-    ])
+  it('warns when the week has no dates (then its students get no deadline)', () => {
+    expect(taskWarnings(module)).toEqual([])
+    expect(taskWarnings({ opensAt: undefined })).toEqual(['This week has no opening date yet, so its students get no deadline. Give the week its dates first.'])
   })
 })
 
