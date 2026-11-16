@@ -2,6 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubHttp } from '../test/stubHttp'
 import { saveTokens } from './session'
 
+// the real module: these tests check its HTTP calls (test/setup.ts fakes it for everything else)
+vi.unmock('./directory')
+
 const BASE = 'https://api.test'
 type Call = { method: string; path: string; body?: unknown }
 let calls: Call[]
@@ -75,13 +78,12 @@ describe('teams on the real backend', () => {
   it('GET /teams: ids become strings, mentor and students numbers, null lists are empty', async () => {
     teams.push({ id: 3, name: 'Team 3', mentor_id: null, student_ids: null as unknown as number[] })
     await server()
-    const { fetchTeams, teamsAreDemoData } = await import('./directory')
+    const { fetchTeams } = await import('./directory')
     expect(await fetchTeams()).toEqual([
       { id: '1', name: 'Team 1', mentorId: 903, studentIds: [121, 122] },
       { id: '2', name: 'Team 2', mentorId: 904, studentIds: [131] },
       { id: '3', name: 'Team 3', mentorId: null, studentIds: [] },
     ])
-    expect(teamsAreDemoData()).toBe(false)
   })
 
   it('adds one team: POST /teams with the name and students, then the mentor with PUT /teams/:id/mentor', async () => {

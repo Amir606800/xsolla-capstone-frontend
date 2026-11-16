@@ -2,10 +2,11 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { standingsOf } from '../../mocks/standings'
-import { handIn, submissionsOf } from '../../mocks/submissions'
+import { standingsOf } from '../../test/fixtures/standings'
+import { handIn, submissionsOf } from '../../test/fixtures/submissions'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import type { Role } from '../../types/user'
+import { fetchTeamQuizResults } from '../../api/quizResults'
 
 // Wed 4 Nov 2026: module 6 runs this week, week 5 is finished
 beforeEach(() => {
@@ -184,7 +185,8 @@ describe('Grading page: what is not there', () => {
   })
 
   it('on the real server: the module feedback is asked for too, the team hand-ins are shown, quiz results are not', async () => {
-    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    // the server has no route for the students' quiz results yet
+    vi.mocked(fetchTeamQuizResults).mockResolvedValue(null)
     const user = userEvent.setup()
     renderAs(['mentor'], '/grading?week=m5')
     await openStudent(user, 'Leyla Hasanova')

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from '../api/notifications'
 import { useNotifications } from '../hooks/useNotifications'
-import { buildMockNotifications } from '../mocks/notifications'
+import { buildMockNotifications } from '../test/fixtures/notifications'
 import { AuthProvider } from './AuthProvider'
 import { NotificationsProvider } from './NotificationsProvider'
 
@@ -20,12 +20,12 @@ async function loaded() {
 }
 
 describe('NotificationsProvider', () => {
-  it('a lecturer gets none of the demo (student) notifications and nothing is fetched', async () => {
+  it("a lecturer's bell asks the server too (the fixture school has no notifications for them)", async () => {
     localStorage.setItem('auth_user', JSON.stringify({ id: 900, name: 'Rashad', email: 'l@x.co', role: 'teacher' }))
     vi.mocked(fetchNotifications).mockClear()
     const { result } = await loaded()
     expect(result.current.notifications).toEqual([])
-    expect(fetchNotifications).not.toHaveBeenCalled()
+    expect(fetchNotifications).toHaveBeenCalled()
   })
 
   it('starts loading, then exposes the notifications newest first', async () => {

@@ -1,10 +1,10 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchReviewedWeeks } from '../api/mentorReviews'
 import { fetchMyTeam } from '../api/teams'
 import App from '../App'
-import { listReviews } from '../mocks/mentorReviews'
+import { listReviews } from '../test/fixtures/mentorReviews'
 import { renderWithProviders } from '../test/renderWithProviders'
 
 vi.setConfig({ testTimeout: 20_000 })
@@ -80,6 +80,13 @@ describe('weekly mentor review: the lock', () => {
 })
 
 describe('weekly mentor review: the weekend reminder', () => {
+  // a Saturday: the running week's review is open
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 21, 12, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
   it('shows on top of the page with a link to the form, and locks nothing', async () => {
     signIn()
     demo('reminder')

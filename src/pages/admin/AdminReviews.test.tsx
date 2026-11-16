@@ -7,11 +7,7 @@ import { clearFilters, filterOptions, pickFilter } from '../../test/filters'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import type { AdminReview, MissingReview } from '../../types/mentorReview'
 
-// the real list (the demo reviews) is the default; a test says what the server sends when it needs exact rows
-vi.mock('../../api/adminReviews', async (importActual) => {
-  const actual = await importActual<typeof import('../../api/adminReviews')>()
-  return { ...actual, fetchAllReviews: vi.fn(actual.fetchAllReviews), fetchMissingReviews: vi.fn(actual.fetchMissingReviews) }
-})
+// the setup fakes this module with vi.fn functions over the fixture school
 const serverSends = (rows: AdminReview[] | null) => vi.mocked(fetchAllReviews).mockResolvedValue(rows)
 
 // Wed 4 Nov 2026: weeks 1-5 are over

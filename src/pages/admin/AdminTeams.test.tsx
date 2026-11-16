@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../../App'
-import { listTeams } from '../../mocks/directory'
+import { listTeams } from '../../test/fixtures/directory'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 beforeEach(() => {

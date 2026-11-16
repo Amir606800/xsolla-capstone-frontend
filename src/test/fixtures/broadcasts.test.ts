@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import type { CalendarEvent } from '../types/calendar'
-import { addBroadcast, announcementsFor, isAnnouncementId, listBroadcasts, markAnnouncementsRead, noticeForSavedEvent } from './broadcasts'
+import type { CalendarEvent } from '../../types/calendar'
+import {
+  addBroadcast,
+  announcementsFor,
+  isAnnouncementId,
+  listBroadcasts,
+  markAnnouncementsRead,
+  noticeForSavedEvent,
+} from './broadcasts'
 
 const NOW = new Date('2026-11-07T12:00:00Z')
 const student = { id: 1, roles: ['student' as const] }
 const mentor = { id: 2, roles: ['mentor' as const] }
-const sent = (audience: 'all' | 'students' | 'mentors' | 'lecturers', message: string, at = NOW) => addBroadcast({ message, link: '', audience }, 10, 'Admin', at)
+const sent = (audience: 'all' | 'students' | 'mentors' | 'lecturers', message: string, at = NOW) =>
+  addBroadcast({ message, link: '', audience }, 10, 'Admin', at)
 
 describe('announcements store', () => {
   it('keeps what was sent, newest first', () => {
@@ -18,7 +26,11 @@ describe('announcements store', () => {
   it('each person gets only the announcements meant for them, as notifications', () => {
     sent('all', 'for all')
     sent('students', 'for students')
-    expect(announcementsFor(student, NOW).map((n) => n.message).sort()).toEqual(['for all', 'for students'])
+    expect(
+      announcementsFor(student, NOW)
+        .map((n) => n.message)
+        .sort(),
+    ).toEqual(['for all', 'for students'])
     expect(announcementsFor(mentor, NOW).map((n) => n.message)).toEqual(['for all'])
     expect(announcementsFor({ id: 9, roles: ['admin'] }, NOW)).toEqual([])
     expect(announcementsFor(student, NOW)[0]).toMatchObject({ type: 'announcement', readAt: null })
@@ -48,14 +60,25 @@ describe('announcements store', () => {
 })
 
 describe('lecture link notices', () => {
-  const lecture: CalendarEvent = { id: 'lec', title: 'Lecture', kind: 'lecture', startsAt: new Date(2026, 10, 9, 10).toISOString(), endsAt: new Date(2026, 10, 9, 12).toISOString() }
+  const lecture: CalendarEvent = {
+    id: 'lec',
+    title: 'Lecture',
+    kind: 'lecture',
+    startsAt: new Date(2026, 10, 9, 10).toISOString(),
+    endsAt: new Date(2026, 10, 9, 12).toISOString(),
+  }
   const LINK = 'https://meet.google.com/abc-defg-hij'
   const SOON = new Date(2026, 10, 8, 9)
 
   it('adding a link tells the students: it opens the calendar and is not in the admin history', () => {
     noticeForSavedEvent(lecture, { ...lecture, meetingUrl: LINK }, SOON)
     const [n] = announcementsFor(student, SOON)
-    expect(n).toMatchObject({ type: 'event', link: '/calendar', message: 'Lecture, Mon, Nov 9, 10:00: the meeting link is ready.', readAt: null })
+    expect(n).toMatchObject({
+      type: 'event',
+      link: '/calendar',
+      message: 'Lecture, Mon, Nov 9, 10:00: the meeting link is ready.',
+      readAt: null,
+    })
     expect(listBroadcasts()).toEqual([]) // the admin did not send it
     expect(announcementsFor(mentor, SOON)).toEqual([]) // lecture links are for students
   })

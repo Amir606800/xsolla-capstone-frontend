@@ -2,7 +2,7 @@ import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from '../App'
-import { putEvent } from '../mocks/contentEdits'
+import { putEvent } from '../test/fixtures/contentEdits'
 import { renderWithProviders } from '../test/renderWithProviders'
 
 const STUDENT = { id: 1, name: 'Sam Student', email: 'student@xsolla.school', roles: ['student'] }

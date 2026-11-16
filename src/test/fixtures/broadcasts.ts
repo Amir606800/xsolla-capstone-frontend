@@ -1,29 +1,15 @@
-import type { CalendarEvent } from '../types/calendar'
-import type { AppNotification } from '../types/notification'
-import type { User } from '../types/user'
-import { type Audience, inAudience } from '../utils/adminNotifications'
-import { publish } from '../sync/bus'
+import type { CalendarEvent } from '../../types/calendar'
+import type { AppNotification } from '../../types/notification'
+import type { User } from '../../types/user'
+import { type Audience, inAudience } from '../../utils/adminNotifications'
+import { publish } from '../../sync/bus'
 
 /**
  * Offline stand-in for announcements the admin sends to everyone (or to students / mentors / lecturers).
  * They are kept in localStorage, so a person who signs in later in the same browser sees them in their bell.
  */
-export interface Broadcast {
-  id: string
-  message: string
-  /** In-app route the notification opens, or ''. */
-  link: string
-  audience: Audience
-  sentAt: string // ISO
-  sentBy: string
-  recipients: number
-  /**
-   * 'lecture-link': made by the system when a lecturer adds or changes a lecture's meeting link. It reaches
-   * students' bells like an announcement but is not something the admin sent, so it is not in their history.
-   */
-  kind?: 'lecture-link'
-  eventId?: string
-}
+export type { Broadcast } from '../../types/broadcast'
+import type { Broadcast } from '../../types/broadcast'
 
 const KEY = 'broadcasts'
 const READ_KEY = 'broadcast_reads'
@@ -49,10 +35,19 @@ const newestFirst = (a: Broadcast, b: Broadcast) => b.sentAt.localeCompare(a.sen
 
 /** Every announcement the admin sent, newest first (not the system messages). */
 export function listBroadcasts(): Broadcast[] {
-  return read<Broadcast[]>(KEY, []).filter((b) => !b.kind).sort(newestFirst)
+  return read<Broadcast[]>(KEY, [])
+    .filter((b) => !b.kind)
+    .sort(newestFirst)
 }
 
-const dayTime = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+const dayTime = new Intl.DateTimeFormat('en', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+})
 
 /**
  * A lecturer added (or changed) the meeting link of a lecture: tell the students. Offline only: with a

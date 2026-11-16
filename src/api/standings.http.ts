@@ -3,7 +3,7 @@ import { parseStandingLevel } from '../utils/standing'
 import { authedRequest } from './authed'
 import { ApiError } from './http'
 import { mapModules } from './mappers'
-import type { StoredStanding } from '../mocks/standings'
+import type { StoredStanding } from '../types/standing'
 import type { ApiModule } from './types'
 
 /**
@@ -27,7 +27,7 @@ interface EnrollmentDto {
   graded_at?: string | null
   /** The user id of whoever gave the grade (a mentor or an admin). */
   graded_by?: number | string | null
-  /** Proposed (BACKEND_REQ_ONE_ON_ONE_DEADLINES.md): the week's tasks handed in late, which made the grade red. */
+  /** Proposed (backend_requirements/BACKEND_REQ_ONE_ON_ONE_DEADLINES.md): the week's tasks handed in late, which made the grade red. */
   late_submissions?: { content_item_id: number | string; title: string; submitted_at?: string; due_at?: string }[] | null
   created_at: string
 }

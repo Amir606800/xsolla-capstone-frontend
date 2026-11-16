@@ -1,5 +1,5 @@
-import { publish } from '../sync/bus'
-import type { AdminReport, ReportChange, ReportPerson } from '../types/report'
+import { publish } from '../../sync/bus'
+import type { AdminReport, ReportChange, ReportPerson } from '../../types/report'
 
 /**
  * Offline stand-in for the reports table (backend docs/reports.md): what people report in the demo, kept in this browser
@@ -72,7 +72,14 @@ export function addReport(subject: string, message: string, reporter?: ReportPer
   const s = subject.trim()
   const m = message.trim()
   if (!s || !m) throw new Error('Write a subject and a message.')
-  const report: AdminReport = { id: `r-${now.getTime().toString(36)}`, subject: s, message: m, status: 'open', reporter: reporter ?? null, createdAt: now.toISOString() }
+  const report: AdminReport = {
+    id: `r-${now.getTime().toString(36)}`,
+    subject: s,
+    message: m,
+    status: 'open',
+    reporter: reporter ?? null,
+    createdAt: now.toISOString(),
+  }
   save([report, ...load(now)])
   return report
 }
@@ -90,7 +97,8 @@ export function changeReport(id: string, change: ReportChange, admin: ReportPers
     if (note) next.adminNote = note
     else delete next.adminNote
   }
-  if (change.status === 'resolved' && found.status !== 'resolved') next = { ...next, status: 'resolved', resolvedBy: admin, resolvedAt: now.toISOString() }
+  if (change.status === 'resolved' && found.status !== 'resolved')
+    next = { ...next, status: 'resolved', resolvedBy: admin, resolvedAt: now.toISOString() }
   if (change.status === 'open') {
     next = { ...next, status: 'open' }
     delete next.resolvedBy

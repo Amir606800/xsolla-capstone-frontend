@@ -1,20 +1,16 @@
-import { addFeedback, pendingLectures } from '../mocks/lectureFeedback'
 import type { FormQuestion, LectureAnswers, PendingLecture } from '../types/lectureFeedback'
-import { cleanAnswers, LECTURE_FORM, SENT_ALREADY } from '../utils/lectureFeedback'
+import { cleanAnswers, LECTURE_FORM } from '../utils/lectureFeedback'
 import { authedRequest } from './authed'
-import { ApiError, hasBackend } from './http'
+import { ApiError } from './http'
 
 /**
- * Lecture feedback (backend docs/lecture_feedback.md). Real backend when VITE_API_URL is set, the demo store otherwise.
+ * Lecture feedback (backend docs/lecture_feedback.md).
  *   GET  /lecture-feedback/form      the questions, in order (any signed-in user)
  *   GET  /lecture-feedback/pending   the lectures whose form is open for the student and not yet sent (students only)
  *   POST /lecture-feedback           { event_id, overall, clarity, practice, pace, confidence, liked?, improve? }
  * Students only: a server without the routes (404/405/501), or an account that is not only a student (403), means
  * "no feedback to give", so the page shows nothing instead of an error.
  */
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
-
 interface QuestionDto {
   id: string
   type: string
@@ -66,31 +62,25 @@ export const mapPending = (p: PendingDto): PendingLecture => ({
 
 /** The questions: the server's, or the built-in copy when it cannot send them. */
 export async function fetchLectureForm(): Promise<FormQuestion[]> {
-  if (hasBackend()) {
-    try {
-      const questions = (await authedRequest<QuestionDto[] | null>('/lecture-feedback/form')) ?? []
-      const form = questions.map(mapQuestion).filter((q): q is FormQuestion => q !== null)
-      return form.length > 0 ? form : LECTURE_FORM
-    } catch {
-      return LECTURE_FORM
-    }
+  try {
+    const questions = (await authedRequest<QuestionDto[] | null>('/lecture-feedback/form')) ?? []
+    const form = questions.map(mapQuestion).filter((q): q is FormQuestion => q !== null)
+    return form.length > 0 ? form : LECTURE_FORM
+  } catch {
+    return LECTURE_FORM
   }
-  return LECTURE_FORM
 }
 
 /** The lectures to rate now, or `null` when this server or account has no lecture feedback. */
 export async function fetchPendingLectures(studentId: number): Promise<PendingLecture[] | null> {
-  if (hasBackend()) {
-    try {
-      const rows = (await authedRequest<PendingDto[] | null>('/lecture-feedback/pending')) ?? []
-      return rows.map(mapPending)
-    } catch (e) {
-      if (notThere(e)) return null
-      throw e
-    }
+  void studentId // the server knows the student from the session
+  try {
+    const rows = (await authedRequest<PendingDto[] | null>('/lecture-feedback/pending')) ?? []
+    return rows.map(mapPending)
+  } catch (e) {
+    if (notThere(e)) return null
+    throw e
   }
-  await wait()
-  return pendingLectures(studentId)
 }
 
 /**
@@ -103,26 +93,14 @@ export async function sendLectureFeedback(
   form: FormQuestion[],
   answers: LectureAnswers,
 ): Promise<void> {
+  void studentId
   const body = cleanAnswers(form, answers)
-  if (hasBackend()) {
-    try {
-      await authedRequest('/lecture-feedback', {
-        method: 'POST',
-        body: {
-          event_id: /^\d+$/.test(eventId) ? Number(eventId) : eventId,
-          ...body,
-        },
-      })
-    } catch (e) {
-      if (!(e instanceof ApiError && e.status === 409)) throw e
-    }
-    return
-  }
-  await wait()
   try {
-    addFeedback(studentId, eventId, body)
+    await authedRequest('/lecture-feedback', {
+      method: 'POST',
+      body: { event_id: /^\d+$/.test(eventId) ? Number(eventId) : eventId, ...body },
+    })
   } catch (e) {
-    if (e instanceof Error && e.message === SENT_ALREADY) return
-    throw e
+    if (!(e instanceof ApiError && e.status === 409)) throw e
   }
 }

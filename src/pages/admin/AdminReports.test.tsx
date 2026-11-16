@@ -3,15 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchReports } from '../../api/reports'
 import App from '../../App'
-import { addReport } from '../../mocks/reports'
+import { addReport } from '../../test/fixtures/reports'
 import { clearFilters, pickFilter } from '../../test/filters'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
-// the demo reports are the default (two open, one resolved); a test can make the server answer differently
-vi.mock('../../api/reports', async (importActual) => {
-  const actual = await importActual<typeof import('../../api/reports')>()
-  return { ...actual, fetchReports: vi.fn(actual.fetchReports) }
-})
+// the setup fakes this module with vi.fn functions over the fixture school
 
 beforeEach(() => {
   vi.mocked(fetchReports).mockClear()

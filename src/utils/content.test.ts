@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildMockModules } from '../mocks/courses'
+import { buildMockModules } from '../test/fixtures/courses'
 import type { CourseModule } from '../types/course'
 import { contentCounts, contentGaps, modulePhase, nextDueTasks, quizzesOf, tasksOf } from './content'
 

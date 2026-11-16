@@ -1,7 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+import { restoreFakes } from './realApi'
 import { restoreHttp } from './stubHttp'
+
+/** Every function of a fake as a vi.fn (with the fake as its implementation), so a test can steer it with vi.mocked(...). */
+const { spied } = vi.hoisted(() => ({
+  spied: <T extends object>(fake: T): T =>
+    Object.fromEntries(Object.entries(fake).map(([k, v]) => [k, typeof v === 'function' ? vi.fn(v as (...a: unknown[]) => unknown) : v])) as T,
+}))
 
 // pages load several mock APIs at once; on a busy machine 1 s (the default) is sometimes too short
 configure({ asyncUtilTimeout: 4000 })
@@ -21,9 +28,13 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-// Make the mock API instant so tests don't wait on simulated latency
+/*
+ * The app only ever talks to the server. In the tests a made-up school (./fixtures, kept in localStorage and cleared after
+ * each test) stands in for it: every API module that reaches the server is replaced by a fake (./fakes, or inline below)
+ * with the same functions, answering at once. A test of a module's real HTTP calls uses vi.unmock (or importActual).
+ */
 vi.mock('../api/auth', async () => {
-  const { DEMO_ACCOUNTS, DEMO_ADMIN } = await import('../api/auth.mock')
+  const { DEMO_ACCOUNTS, DEMO_ADMIN } = await import('./fixtures/auth')
   return {
   login: vi.fn(async (email: string, password: string) => {
     if (!password) throw new Error('Invalid email or password')
@@ -39,7 +50,7 @@ vi.mock('../api/auth', async () => {
 
 // lecturer edits live in localStorage, which is cleared after each test
 vi.mock('../api/courses', async () => {
-  const store = await import('../mocks/contentEdits')
+  const store = await import('./fixtures/contentEdits')
   return {
     fetchModules: vi.fn(async (opts?: { student?: boolean; userId?: number }) => {
       const modules = store.listModules(new Date())
@@ -57,9 +68,9 @@ vi.mock('../api/courses', async () => {
         files: [...(p.keep ?? []), ...p.files.map((f) => ({ name: f.name, sizeBytes: f.size }))],
       }
       // like the offline API: a late hand-in is accepted, marked, and turns the week grade red
-      return ctx?.studentId === undefined ? sub : (await import('../mocks/lateWork')).checkLateHandIn(ctx.studentId, id, sub)
+      return ctx?.studentId === undefined ? sub : (await import('./fixtures/lateWork')).checkLateHandIn(ctx.studentId, id, sub)
     }),
-    saveModule: vi.fn(async (id: string, patch: import('../mocks/contentEdits').ModulePatch) => store.putModule(id, patch)),
+    saveModule: vi.fn(async (id: string, patch: import('./fixtures/contentEdits').ModulePatch) => store.putModule(id, patch)),
     saveItem: vi.fn(async (item: import('../types/course').ContentItem) => store.putItem(item)),
     deleteItem: vi.fn(async (id: string) => store.removeItem(id)),
     deleteModule: vi.fn(async (id: string) => store.removeModule(id)),
@@ -105,17 +116,17 @@ vi.mock('../api/courses', async () => {
 })
 
 vi.mock('../api/events', async () => {
-  const store = await import('../mocks/contentEdits')
+  const store = await import('./fixtures/contentEdits')
   return {
     fetchEvents: vi.fn(async () => store.listEvents(new Date())),
     saveEvent: vi.fn(async (e: import('../types/calendar').CalendarEvent, options: import('../types/google').SaveOptions = {}) => {
       const before = store.listEvents().find((x) => x.id === e.id)
       // the same rules as the offline API: only a new event can go to Google, and only when connected
       const asked = !!options.syncToGoogle && !before
-      const synced = asked && (await import('../mocks/google')).mockGoogleIsReady()
+      const synced = asked && (await import('./fixtures/google')).mockGoogleIsReady()
       const googleEventId = synced ? `mock-${e.id}` : before?.googleEventId
       const events = store.putEvent(googleEventId ? { ...e, googleEventId } : e)
-      ;(await import('../mocks/broadcasts')).noticeForSavedEvent(before, e)
+      ;(await import('./fixtures/broadcasts')).noticeForSavedEvent(before, e)
       return { events, google: asked ? (synced ? 'synced' : 'failed') : 'not-asked' }
     }),
     deleteEvent: vi.fn(async (id: string) => store.removeEvent(id)),
@@ -123,8 +134,8 @@ vi.mock('../api/events', async () => {
 })
 
 vi.mock('../api/standings', async () => {
-  const m = await import('../mocks/standings')
-  type M = import('../mocks/standings').Mentor
+  const m = await import('./fixtures/standings')
+  type M = import('./fixtures/standings').Mentor
   return {
     fetchStandings: vi.fn(async (id = 1) => m.standingsOf(id)),
     fetchTeamStandings: vi.fn(async (g: M) => m.teamStandings(g)),
@@ -135,7 +146,7 @@ vi.mock('../api/standings', async () => {
 })
 
 vi.mock('../api/teams', async () => {
-  const { buildMentorTeam, buildMockTeam } = await import('../mocks/teams')
+  const { buildMentorTeam, buildMockTeam } = await import('./fixtures/teams')
   type P = { id: number; name: string; email: string }
   return {
     fetchMyTeam: vi.fn(async (user: P) => buildMockTeam(user)),
@@ -145,7 +156,7 @@ vi.mock('../api/teams', async () => {
 
 // weekly mentor reviews: the demo store without the latency (nothing is due unless a test sets the demo flag)
 vi.mock('../api/mentorReviews', async () => {
-  const m = await import('../mocks/mentorReviews')
+  const m = await import('./fixtures/mentorReviews')
   type R = import('../types/mentorReview').MentorReview
   return {
     fetchReviewedWeeks: vi.fn(async (studentId: number) => m.reviewedWeeks(studentId)),
@@ -155,7 +166,7 @@ vi.mock('../api/mentorReviews', async () => {
 
 // lecture feedback: the demo store without the latency (the form is the built-in copy of the server's)
 vi.mock('../api/lectureFeedback', async () => {
-  const m = await import('../mocks/lectureFeedback')
+  const m = await import('./fixtures/lectureFeedback')
   const { LECTURE_FORM } = await import('../utils/lectureFeedback')
   type Answers = import('../types/lectureFeedback').LectureAnswers
   return {
@@ -166,10 +177,10 @@ vi.mock('../api/lectureFeedback', async () => {
 })
 
 // the slot store lives in localStorage, which is cleared after each test
-type Actor = import('../mocks/slots').Actor
+type Actor = import('./fixtures/slots').Actor
 type Win = import('../types/slots').AvailabilityWindow
 vi.mock('../api/slots', async () => {
-  const m = await import('../mocks/slots')
+  const m = await import('./fixtures/slots')
   return {
     fetchSlots: vi.fn(async (a: Actor) => m.listSlots(a)),
     createAvailability: vi.fn(async (a: Actor, w: Win) => m.addWindow(a, w)),
@@ -181,8 +192,8 @@ vi.mock('../api/slots', async () => {
 
 // every student's work lives in localStorage, which is cleared after each test
 vi.mock('../api/reviews', async () => {
-  const m = await import('../mocks/submissions')
-  type G = import('../mocks/submissions').Grader
+  const m = await import('./fixtures/submissions')
+  type G = import('./fixtures/submissions').Grader
   return {
     fetchTeamSubmissions: vi.fn(async (g: G) => m.teamSubmissions(g)),
     commentOnSubmission: vi.fn(async (g: G, studentId: number, assignmentId: string, text: string) =>
@@ -192,20 +203,21 @@ vi.mock('../api/reviews', async () => {
 })
 
 vi.mock('../api/notifications', async () => {
-  const { buildMockNotifications } = await import('../mocks/notifications')
-  const store = await import('../mocks/broadcasts')
-  const { listUsers } = await import('../mocks/directory')
+  const { isStaff, normalizeUser } = await import('../utils/roles')
+  const isStaffSignedIn = () => isStaff(normalizeUser(JSON.parse(localStorage.getItem('auth_user') ?? 'null')))
+  const { buildMockNotifications } = await import('./fixtures/notifications')
+  const store = await import('./fixtures/broadcasts')
+  const { listUsers } = await import('./fixtures/directory')
   const { inAudience } = await import('../utils/adminNotifications')
   return {
-    fetchNotifications: vi.fn(async () => buildMockNotifications(new Date())),
+    // the fixture notifications are a student's; staff have none of their own in the fixture school
+    fetchNotifications: vi.fn(async () => (isStaffSignedIn() ? [] : buildMockNotifications(new Date()))),
     markNotificationRead: vi.fn(async () => undefined),
     markAllNotificationsRead: vi.fn(async () => undefined),
     // announcements from the admin: the real offline store, without the simulated delay
     fetchAnnouncements: vi.fn(async (user: Parameters<typeof store.announcementsFor>[0]) => store.announcementsFor(user)),
     markAnnouncementsAsRead: vi.fn(async (userId: number, ids: string[]) => store.markAnnouncementsRead(userId, ids)),
     isAnnouncementId: store.isAnnouncementId,
-    // the offline demo notifications are a student's
-    serverNotifications: () => false,
     fetchBroadcasts: vi.fn(async () => store.listBroadcasts()),
     sendBroadcast: vi.fn(async (input: { message: string; link: string; audience: import('../utils/adminNotifications').Audience }, sentBy: string) =>
       store.addBroadcast(input, listUsers().filter((u) => !u.leftAt && inAudience(u, input.audience)).length, sentBy),
@@ -213,9 +225,83 @@ vi.mock('../api/notifications', async () => {
   }
 })
 
+// people and teams, the person's own account, the admin's read-side pages, reports and quiz results
+vi.mock('../api/directory', async (importOriginal) => ({ ...(await importOriginal<object>()), ...spied(await import('./fakes/directory')) }))
+vi.mock('../api/password', async (importOriginal) => ({ ...(await importOriginal<object>()), ...spied({ changeOwnPassword: (await import('./fakes/account')).changeOwnPassword }) }))
+vi.mock('../api/profile', async (importOriginal) => {
+  const f = await import('./fakes/account')
+  return {
+    ...(await importOriginal<object>()),
+    ...spied({
+      fetchProfile: f.fetchProfile,
+      saveProfile: f.saveProfile,
+      uploadAvatar: f.uploadAvatar,
+      removeAvatar: f.removeAvatar,
+      fetchPreferences: f.fetchPreferences,
+      savePreferences: f.savePreferences,
+    }),
+  }
+})
+vi.mock('../api/google', async () => {
+  const f = await import('./fakes/account')
+  return spied({
+    fetchGoogleStatus: f.fetchGoogleStatus,
+    disconnectGoogle: f.disconnectGoogle,
+    revokeGoogle: f.revokeGoogle,
+    connectGoogle: f.connectGoogle,
+    fetchGoogleCalendar: f.fetchGoogleCalendar,
+  })
+})
+vi.mock('../api/adminReviews', async (importOriginal) => {
+  const f = await import('./fakes/admin')
+  return { ...(await importOriginal<object>()), ...spied({ fetchAllReviews: f.fetchAllReviews, fetchMissingReviews: f.fetchMissingReviews }) }
+})
+vi.mock('../api/adminLectureReviews', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  ...spied({ fetchLectureReviews: (await import('./fakes/admin')).fetchLectureReviews }),
+}))
+vi.mock('../api/studentReviews', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../api/studentReviews')>()
+  const f = await import('./fakes/admin')
+  // the fixture grades, named by the real module (from the faked people and teams)
+  return { ...real, ...spied({ fetchStudentReviews: async () => real.withNames(f.fixtureGrades()) }) }
+})
+vi.mock('../api/analytics', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../api/analytics')>()
+  const f = await import('./fakes/admin')
+  return {
+    ...real,
+    ...spied({
+      fetchOverview: f.fetchOverview,
+      fetchStudent: f.fetchStudent,
+      fetchMentor: f.fetchMentor,
+      fetchAiSummary: f.fetchAiSummary,
+      fetchLectureExpected: f.fetchLectureExpected,
+      // lecturers come from the (faked) people list, as in the real module
+      fetchPeople: (role: import('../types/analytics').AnalyticsRole, q: string, limit: number, offset: number) =>
+        role === 'lecturers' ? real.fetchPeople(role, q, limit, offset) : f.fetchStaffPeople(role, q, limit, offset),
+    }),
+  }
+})
+vi.mock('../api/reports', async (importOriginal) => {
+  const f = await import('./fakes/admin')
+  return {
+    ...(await importOriginal<object>()),
+    ...spied({
+      sendReport: f.sendReport,
+      fetchReports: f.fetchReports,
+      fetchOpenReportCount: f.fetchOpenReportCount,
+      updateReport: f.updateReport,
+      deleteReport: f.deleteReport,
+    }),
+  }
+})
+vi.mock('../api/quizResults', async () => spied({ fetchTeamQuizResults: (await import('./fakes/admin')).fetchTeamQuizResults }))
+
 afterEach(() => {
   cleanup()
   restoreHttp()
+  restoreFakes()
   localStorage.clear()
   delete document.documentElement.dataset.theme
 })

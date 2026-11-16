@@ -2,8 +2,8 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { putEvent } from '../../mocks/contentEdits'
-import { addFeedback, listFeedback, pendingLectures } from '../../mocks/lectureFeedback'
+import { putEvent } from '../../test/fixtures/contentEdits'
+import { addFeedback, listFeedback, pendingLectures } from '../../test/fixtures/lectureFeedback'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 // Wed 4 Nov 2026, 12:00: Monday's lecture (2 Nov, 10:00-12:00) is over and its form is open until 9 Nov.

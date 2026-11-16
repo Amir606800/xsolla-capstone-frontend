@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { slotLabel } from '../utils/slots'
+import { slotLabel } from '../../utils/slots'
 import { addWindow, buildMockSlots, deleteSlot, listSlots, release, reserve } from './slots'
 import type { Actor } from './slots'
 

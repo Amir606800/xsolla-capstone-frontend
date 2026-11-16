@@ -18,7 +18,7 @@ import {
   setTeamMentor,
   updateUser,
 } from './directory'
-import { canMentor, hasRole, isStudent } from '../utils/roles'
+import { canMentor, hasRole, isStudent } from '../../utils/roles'
 
 describe('admin directory mock', () => {
   const users = listUsers()
@@ -53,7 +53,12 @@ describe('admin directory mock', () => {
 
   it('has mentors, lecturers (one does both) and the admin', () => {
     expect(users.filter(canMentor)).toHaveLength(6)
-    expect(users.filter((u) => hasRole(u, 'lecturer')).map((u) => u.id).sort()).toEqual([900, 902, 907])
+    expect(
+      users
+        .filter((u) => hasRole(u, 'lecturer'))
+        .map((u) => u.id)
+        .sort(),
+    ).toEqual([900, 902, 907])
     expect(users.filter((u) => hasRole(u, 'admin')).map((u) => u.email)).toEqual(['admin@xsolla.school'])
   })
 
@@ -71,7 +76,9 @@ describe('admin changes to the directory', () => {
     expect(ann).toMatchObject({ name: 'Ann Lee', email: 'ann@example.com', roles: ['student'] })
     expect(ann.id).toBeGreaterThan(2000)
     expect(listUsers().find((u) => u.id === ann.id)).toEqual(ann)
-    expect(() => addUser({ name: 'Ann again', email: 'ANN@example.com', roles: ['student'] })).toThrow('There is already an account with this email.')
+    expect(() => addUser({ name: 'Ann again', email: 'ANN@example.com', roles: ['student'] })).toThrow(
+      'There is already an account with this email.',
+    )
     expect(() => addUser({ name: 'Sam copy', email: 'student@xsolla.school', roles: ['student'] })).toThrow('already an account')
     const bob = addUser({ name: 'Bob', email: 'bob@example.com', roles: ['student'] })
     expect(bob.id).toBe(ann.id + 1)
@@ -91,7 +98,11 @@ describe('admin changes to the directory', () => {
   })
 
   it('corrects a name or e-mail; the e-mail stays unique, its own is fine', () => {
-    expect(updateUser(101, { name: ' Leyla Hasanli ', email: 'Leyla@Example.com' })).toMatchObject({ id: 101, name: 'Leyla Hasanli', email: 'leyla@example.com' })
+    expect(updateUser(101, { name: ' Leyla Hasanli ', email: 'Leyla@Example.com' })).toMatchObject({
+      id: 101,
+      name: 'Leyla Hasanli',
+      email: 'leyla@example.com',
+    })
     expect(updateUser(101, { email: 'leyla@example.com' }).email).toBe('leyla@example.com')
     expect(() => updateUser(101, { email: 'student@xsolla.school' })).toThrow('already an account')
     expect(() => updateUser(9999, { name: 'x' })).toThrow('does not exist')
@@ -122,7 +133,10 @@ describe('admin changes to the directory', () => {
     const until = '2026-12-01T23:59:59.000Z'
     setRoles(901, ['mentor', 'lecturer'], { lecturer: until })
     const before = new Date('2026-11-20T12:00:00Z')
-    expect(listUsers(before).find((u) => u.id === 901)).toMatchObject({ roles: ['mentor', 'lecturer'], roleUntil: { lecturer: until } })
+    expect(listUsers(before).find((u) => u.id === 901)).toMatchObject({
+      roles: ['mentor', 'lecturer'],
+      roleUntil: { lecturer: until },
+    })
     const after = new Date('2026-12-02T00:00:00Z')
     const aysel = listUsers(after).find((u) => u.id === 901)!
     expect(aysel.roles).toEqual(['mentor'])
@@ -152,7 +166,10 @@ describe('admin changes to the directory', () => {
 
     // a lecturer can be given the mentor role, for a while, and loses it again
     setRoles(902, ['lecturer', 'mentor'], { mentor: '2030-01-01T00:00:00Z' })
-    expect(listUsers().find((u) => u.id === 902)).toMatchObject({ roles: ['lecturer', 'mentor'], roleUntil: { mentor: '2030-01-01T00:00:00Z' } })
+    expect(listUsers().find((u) => u.id === 902)).toMatchObject({
+      roles: ['lecturer', 'mentor'],
+      roleUntil: { mentor: '2030-01-01T00:00:00Z' },
+    })
     setRoles(902, ['lecturer'])
     expect(listUsers().find((u) => u.id === 902)!.roles).toEqual(['lecturer'])
 

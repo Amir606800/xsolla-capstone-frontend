@@ -1,8 +1,8 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../../App'
-import { listTeams, listUsers, setRoles } from '../../mocks/directory'
+import { listTeams, listUsers, setRoles } from '../../test/fixtures/directory'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { dayInput } from '../../utils/adminRoles'
 
@@ -191,10 +191,9 @@ describe('Admin: resetting a password', () => {
     await user.click(form.getByRole('button', { name: 'Done' }))
     expect(await screen.findByText('Aysel Mammadova has a new password.')).toBeInTheDocument()
 
-    // offline sign-in: the old password no longer works, the new one does
-    const { login } = await vi.importActual<typeof import('../../api/auth.mock')>('../../api/auth.mock')
-    await expect(login('mentor@xsolla.school', 'demo')).rejects.toThrow('Invalid email or password')
-    await expect(login('mentor@xsolla.school', 'Fresh-Start-7q')).resolves.toMatchObject({ id: 901 })
+    // the (fake) server keeps the new password
+    const { passwordMatches } = await import('../../test/fixtures/directory')
+    expect(passwordMatches(901, 'Fresh-Start-7q')).toBe(true)
   })
 
   it('Generate fills in a strong password and shows it; Cancel changes nothing', async () => {

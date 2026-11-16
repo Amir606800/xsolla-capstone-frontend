@@ -1,7 +1,7 @@
-import type { SchoolTeam, SchoolUser } from '../types/admin'
-import type { CourseModule } from '../types/course'
-import { NO_SESSION_REASONS, REVIEW_STATEMENTS, REVIEW_TOPICS } from '../types/mentorReview'
-import type { AdminReview, MissingReview, ReviewStatement, ReviewTopic, Score } from '../types/mentorReview'
+import type { SchoolTeam, SchoolUser } from '../../types/admin'
+import type { CourseModule } from '../../types/course'
+import { NO_SESSION_REASONS, REVIEW_STATEMENTS, REVIEW_TOPICS } from '../../types/mentorReview'
+import type { AdminReview, MissingReview, ReviewStatement, ReviewTopic, Score } from '../../types/mentorReview'
 import { listModules } from './contentEdits'
 import { listTeams, listUsers } from './directory'
 import { listReviews } from './mentorReviews'
@@ -43,9 +43,7 @@ function demoReview(student: SchoolUser, mentor: SchoolUser, team: SchoolTeam, m
   const mood = lean * 0.9 + (next() - 0.5) * 2.2
   const hadSession = next() > 0.14
   const base = 3.8 + mood
-  const topics: ReviewTopic[] = hadSession
-    ? REVIEW_TOPICS.filter((_, i) => next() > 0.62 + i * 0.03).slice(0, 3)
-    : []
+  const topics: ReviewTopic[] = hadSession ? REVIEW_TOPICS.filter((_, i) => next() > 0.62 + i * 0.03).slice(0, 3) : []
   if (hadSession && topics.length === 0) topics.push('homework')
   const ratings: Partial<Record<ReviewStatement, Score>> = {}
   if (hadSession) for (const s of REVIEW_STATEMENTS) ratings[s] = clamp(base + (next() - 0.5) * 1.6)
@@ -127,7 +125,11 @@ export function adminReviews(now: Date = new Date()): AdminReview[] {
 /** The students in a team with a mentor who have no review for the week (like the server: today's teams, nothing about whether the week is open). */
 export function missingReviews(moduleId: string, now: Date = new Date()): MissingReview[] {
   const users = new Map(listUsers(now).map((u) => [u.id, u]))
-  const sent = new Set(adminReviews(now).filter((r) => r.moduleId === moduleId).map((r) => r.studentId))
+  const sent = new Set(
+    adminReviews(now)
+      .filter((r) => r.moduleId === moduleId)
+      .map((r) => r.studentId),
+  )
   const out: MissingReview[] = []
   for (const team of listTeams(now)) {
     const mentor = team.mentorId === null ? undefined : users.get(team.mentorId)

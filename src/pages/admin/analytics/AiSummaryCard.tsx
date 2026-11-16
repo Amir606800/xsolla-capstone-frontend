@@ -49,11 +49,6 @@ export function AiSummaryCard({ state, source, missing }: { state: SummaryState;
                 {data.cached && ' · saved copy'}
               </p>
             )}
-            {data.demo && (
-              <p className="admin-muted ai-summary__meta">
-                Demo text made by the app. With a server the AI writes it from the real feedback.
-              </p>
-            )}
           </>
         )}
 

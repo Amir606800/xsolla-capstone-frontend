@@ -1,20 +1,16 @@
-import { adminLectureReviews } from '../mocks/adminLectureReviews'
 import { PACES } from '../types/lectureReview'
 import type { AdminLectureReview, Pace } from '../types/lectureReview'
 import type { Score } from '../types/mentorReview'
 import { authedRequest } from './authed'
-import { ApiError, hasBackend } from './http'
+import { ApiError } from './http'
 
 /**
  * Every lecture feedback, for the admin's Lecture reviews page (backend docs/lecture_feedback.md, admin only).
  *   GET /lecture-feedback   every form with all answers, the lecture, and the lecturers of the lecture's week
  * The page filters, averages and groups them itself, so no filter is sent. (`GET /lecture-feedback/summary` has the same
  * numbers per lecture plus how many students were expected; the page does not use it yet.) A server without the route
- * answers 404/405/501: `null`, and the page says so. With no backend at all the demo reviews are shown.
+ * answers 404/405/501: `null`, and the page says so.
  */
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
-
 interface PersonDto {
   id: number
   name: string
@@ -83,15 +79,11 @@ export function mapLectureReview(d: LectureFeedbackDto): AdminLectureReview | nu
 
 /** All the lecture reviews, or `null` when the server has no such route yet. */
 export async function fetchLectureReviews(): Promise<AdminLectureReview[] | null> {
-  if (hasBackend()) {
-    try {
-      const rows = (await authedRequest<LectureFeedbackDto[] | null>('/lecture-feedback')) ?? []
-      return rows.map(mapLectureReview).filter((r): r is AdminLectureReview => r !== null)
-    } catch (e) {
-      if (missingRoute(e)) return null
-      throw e
-    }
+  try {
+    const rows = (await authedRequest<LectureFeedbackDto[] | null>('/lecture-feedback')) ?? []
+    return rows.map(mapLectureReview).filter((r): r is AdminLectureReview => r !== null)
+  } catch (e) {
+    if (missingRoute(e)) return null
+    throw e
   }
-  await wait()
-  return adminLectureReviews()
 }

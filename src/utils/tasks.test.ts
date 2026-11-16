@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildMockModules } from '../mocks/courses'
+import { buildMockModules } from '../test/fixtures/courses'
 import type { AssignmentItem, CourseModule } from '../types/course'
 import { collectTasks, countTasks, filterTasks, isTaskFilter, sortTasks } from './tasks'
 import { withStudentDeadlines } from './deadline'

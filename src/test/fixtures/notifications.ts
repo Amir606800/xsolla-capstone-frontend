@@ -1,4 +1,4 @@
-import type { AppNotification } from '../types/notification'
+import type { AppNotification } from '../../types/notification'
 
 const MIN = 60_000
 const HOUR = 60 * MIN

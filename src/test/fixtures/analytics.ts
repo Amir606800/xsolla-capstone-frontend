@@ -9,11 +9,11 @@ import type {
   OverviewReport,
   QuizAccuracy,
   StudentReport,
-} from '../types/analytics'
-import { REVIEW_STATEMENTS } from '../types/mentorReview'
-import type { SchoolUser } from '../types/admin'
-import { analyseStandings } from '../utils/standing'
-import { canMentor, isStudent } from '../utils/roles'
+} from '../../types/analytics'
+import { REVIEW_STATEMENTS } from '../../types/mentorReview'
+import type { SchoolUser } from '../../types/admin'
+import { analyseStandings } from '../../utils/standing'
+import { canMentor, isStudent } from '../../utils/roles'
 import { adminLectureReviews } from './adminLectureReviews'
 import { adminReviews } from './adminReviews'
 import { buildMockModules } from './courses'
@@ -150,7 +150,6 @@ const none = (now: Date, what: string): AiSummary => ({
   generatedAt: null,
   cached: false,
   period: period(now),
-  demo: true,
 })
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
@@ -183,7 +182,6 @@ export async function mockAiSummary(role: AnalyticsRole, id: number, now: Date =
       generatedAt: now.toISOString(),
       cached: false,
       period: period(now),
-      demo: true,
     }
   }
   if (role === 'mentors') {
@@ -208,7 +206,6 @@ export async function mockAiSummary(role: AnalyticsRole, id: number, now: Date =
       generatedAt: now.toISOString(),
       cached: false,
       period: period(now),
-      demo: true,
     }
   }
   const lectures = adminLectureReviews(now).filter((r) => r.lecturers.some((l) => l.id === id))
@@ -229,7 +226,6 @@ export async function mockAiSummary(role: AnalyticsRole, id: number, now: Date =
     generatedAt: now.toISOString(),
     cached: false,
     period: period(now),
-    demo: true,
   }
 }
 

@@ -4,9 +4,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
 import { NOT_SUPPORTED, WRONG_CURRENT } from '../../api/password'
 import { saveTokens } from '../../api/session'
-import { passwordMatches } from '../../mocks/directory'
+import { passwordMatches } from '../../test/fixtures/directory'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { stubHttp } from '../../test/stubHttp'
+import * as passwordApi from '../../api/password'
+import { useRealApi } from '../../test/realApi'
 
 vi.setConfig({ testTimeout: 20_000 })
 
@@ -92,6 +94,7 @@ describe('everyone changes their own password with the current one', () => {
 
   it('real server, a student: POST /auth/password-reset with the current and the new password', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
+    useRealApi(passwordApi, await vi.importActual<typeof passwordApi>('../../api/password'))
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
     const sent: { body: unknown; auth: unknown }[] = []
     await stubHttp(
@@ -112,6 +115,7 @@ describe('everyone changes their own password with the current one', () => {
 
   it('real server: a wrong current password is said in words, and a server without the route says so', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
+    useRealApi(passwordApi, await vi.importActual<typeof passwordApi>('../../api/password'))
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
     const calls: string[] = []
     let answer = new Response(JSON.stringify({ error: 'invalid_credentials', message: 'current password is incorrect' }), { status: 401 })
@@ -139,6 +143,7 @@ describe('everyone changes their own password with the current one', () => {
 
   it('real server, an admin: the same route, and the admin stays signed in', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
+    useRealApi(passwordApi, await vi.importActual<typeof passwordApi>('../../api/password'))
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
     const sent: { path: string; method?: string; body?: unknown }[] = []
     await stubHttp(

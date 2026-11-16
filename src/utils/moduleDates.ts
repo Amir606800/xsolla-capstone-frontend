@@ -1,4 +1,4 @@
-import type { ModulePatch } from '../mocks/contentEdits'
+import type { ModulePatch } from '../types/course'
 import type { CourseModule } from '../types/course'
 
 /** The same moment, whatever the format the server writes it in. */

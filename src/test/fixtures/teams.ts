@@ -1,5 +1,5 @@
-import type { Person, Team } from '../types/team'
-import type { User } from '../types/user'
+import type { Person, Team } from '../../types/team'
+import type { User } from '../../types/user'
 
 /** Every demo team has a mentor (a real one may not have one yet). */
 export type DemoTeam = Team & { mentor: Person }
@@ -42,7 +42,21 @@ export function buildMockTeam(user: Pick<User, 'id' | 'name' | 'email'>): DemoTe
 export function buildMentorTeam(mentor: Pick<User, 'id' | 'name' | 'email'>): DemoTeam {
   const self = { id: mentor.id, name: mentor.name, email: mentor.email }
   if (mentor.id === MENTOR.id) {
-    return { id: 't3', name: 'Team 3', mentor: self, members: [SAM, ...TEAMMATES].sort(byName), cohortSize: COHORT_SIZE, teamCount: TEAM_COUNT }
+    return {
+      id: 't3',
+      name: 'Team 3',
+      mentor: self,
+      members: [SAM, ...TEAMMATES].sort(byName),
+      cohortSize: COHORT_SIZE,
+      teamCount: TEAM_COUNT,
+    }
   }
-  return { id: 't4', name: 'Team 4', mentor: self, members: [...TEAM_4].sort(byName), cohortSize: COHORT_SIZE, teamCount: TEAM_COUNT }
+  return {
+    id: 't4',
+    name: 'Team 4',
+    mentor: self,
+    members: [...TEAM_4].sort(byName),
+    cohortSize: COHORT_SIZE,
+    teamCount: TEAM_COUNT,
+  }
 }

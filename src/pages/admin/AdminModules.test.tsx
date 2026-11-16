@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as courses from '../../api/courses'
 import App from '../../App'
-import { listModules } from '../../mocks/contentEdits'
+import { listModules } from '../../test/fixtures/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 beforeEach(() => {
@@ -112,7 +112,7 @@ describe('Admin: creating content', () => {
   it('says so when the server did not keep the week dates (it ignores fields it does not know)', async () => {
     // a server without date columns: the module comes back without its dates
     vi.mocked(courses.createModule).mockImplementationOnce(async (patch) => {
-      const { addModule } = await import('../../mocks/contentEdits')
+      const { addModule } = await import('../../test/fixtures/contentEdits')
       const made = addModule({ title: patch.title }, 1000)
       return { ...made, modules: made.modules.map((m) => (m.id === made.id ? { ...m, opensAt: undefined, closesAt: undefined } : m)) }
     })

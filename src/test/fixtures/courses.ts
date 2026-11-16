@@ -1,4 +1,4 @@
-import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission } from '../types/course'
+import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission } from '../../types/course'
 
 /**
  * Mock course: 12 modules (weeks). Dates are built relative to `now` so the
@@ -70,7 +70,14 @@ const TASKS: string[][] = [
  * the pages can be checked with a lot of content. The other modules stay small.
  */
 function busyResources(id: string): ResourceItem[] {
-  const file = (n: number, title: string, kind: ResourceItem['kind'], name: string, kb: number, description?: string): ResourceItem => ({
+  const file = (
+    n: number,
+    title: string,
+    kind: ResourceItem['kind'],
+    name: string,
+    kb: number,
+    description?: string,
+  ): ResourceItem => ({
     id: `${id}-f${n}`,
     moduleId: id,
     type: 'resource',
@@ -91,15 +98,33 @@ function busyResources(id: string): ResourceItem[] {
   return [
     file(1, 'Hooks in depth - workshop slides', 'pptx', 'react-hooks-workshop.pptx', 4820, 'Second lecture of the week'),
     file(2, 'Component patterns cheat sheet', 'pdf', 'component-patterns.pdf', 312),
-    file(3, 'State management: when to lift state up, when to reach for context, and when a store is worth it', 'pdf', 'state-management-guide.pdf', 1290, 'Long read, worth it before the State management task'),
+    file(
+      3,
+      'State management: when to lift state up, when to reach for context, and when a store is worth it',
+      'pdf',
+      'state-management-guide.pdf',
+      1290,
+      'Long read, worth it before the State management task',
+    ),
     file(4, 'Lecture notes', 'md', 'week-5-notes.md', 18),
-    file(5, 'Starter project for the Routing app', 'zip', 'routing-app-starter.zip', 2240, 'Unzip, run npm install, then npm run dev'),
+    file(
+      5,
+      'Starter project for the Routing app',
+      'zip',
+      'routing-app-starter.zip',
+      2240,
+      'Unzip, run npm install, then npm run dev',
+    ),
     file(6, 'Accessibility checklist for components', 'pdf', 'a11y-checklist.pdf', 205),
     file(7, 'Testing React components', 'pptx', 'testing-react.pptx', 3100),
     link(1, 'React docs: Thinking in React', 'https://react.dev/learn/thinking-in-react', 'Official tutorial'),
     link(2, 'React docs: Rules of Hooks', 'https://react.dev/reference/rules/rules-of-hooks'),
     link(3, 'React Router tutorial', 'https://reactrouter.com/start/framework/installation', 'For the Routing app task'),
-    link(4, 'Video: a complete guide to useEffect (about 50 minutes, watch before Thursday)', 'https://www.youtube.com/results?search_query=useEffect+guide'),
+    link(
+      4,
+      'Video: a complete guide to useEffect (about 50 minutes, watch before Thursday)',
+      'https://www.youtube.com/results?search_query=useEffect+guide',
+    ),
     link(5, 'MDN: Using the Fetch API', 'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch'),
   ]
 }
@@ -116,9 +141,24 @@ function busyQuizzes(id: string, now: Date, weekOffset: number): QuizItem[] {
       dueAt: dayAt(now, weekOffset + 3, 18),
       questions: [
         q(1, 'Which hook keeps a value between renders and re-renders when it changes?', ['useRef', 'useState', 'useMemo'], 1),
-        q(2, 'When does an effect with an empty dependency list run?', ['On every render', 'Once, after the first render', 'Never'], 1),
-        q(3, 'Where may hooks be called?', ['Inside loops', 'At the top level of a component or custom hook', 'Inside conditions'], 1),
-        q(4, 'What does the cleanup function of an effect do?', ['Runs before the next effect and on unmount', 'Clears the state', 'Nothing'], 0),
+        q(
+          2,
+          'When does an effect with an empty dependency list run?',
+          ['On every render', 'Once, after the first render', 'Never'],
+          1,
+        ),
+        q(
+          3,
+          'Where may hooks be called?',
+          ['Inside loops', 'At the top level of a component or custom hook', 'Inside conditions'],
+          1,
+        ),
+        q(
+          4,
+          'What does the cleanup function of an effect do?',
+          ['Runs before the next effect and on unmount', 'Clears the state', 'Nothing'],
+          0,
+        ),
         q(5, 'Which hook avoids recalculating an expensive value?', ['useCallback', 'useMemo', 'useId', 'useEffect'], 1),
       ],
     },
@@ -130,7 +170,12 @@ function busyQuizzes(id: string, now: Date, weekOffset: number): QuizItem[] {
       dueAt: dayAt(now, weekOffset + 5, 18),
       questions: [
         q(1, 'Props are...', ['Mutable by the child', 'Read-only inputs from the parent', 'Global'], 1),
-        q(2, 'Two siblings need the same data. Where should it live?', ['In both', 'In their closest common parent', 'In a global variable'], 1),
+        q(
+          2,
+          'Two siblings need the same data. Where should it live?',
+          ['In both', 'In their closest common parent', 'In a global variable'],
+          1,
+        ),
         q(3, 'Which is NOT a reason to use context?', ['Theme', 'Signed-in user', 'Every piece of local form state'], 2),
       ],
     },
@@ -140,7 +185,10 @@ function busyQuizzes(id: string, now: Date, weekOffset: number): QuizItem[] {
       type: 'quiz',
       title: 'Routing',
       description: 'Optional practice.',
-      questions: [q(1, 'Which component renders the matched child route?', ['Link', 'Outlet', 'Route'], 1), q(2, 'How do you read :id from the URL?', ['useParams', 'useLocation', 'useNavigate'], 0)],
+      questions: [
+        q(1, 'Which component renders the matched child route?', ['Link', 'Outlet', 'Route'], 1),
+        q(2, 'How do you read :id from the URL?', ['useParams', 'useLocation', 'useNavigate'], 0),
+      ],
     },
   ]
 }

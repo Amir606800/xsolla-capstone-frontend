@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from '../App'
-import { listEvents } from '../mocks/contentEdits'
+import { listEvents } from '../test/fixtures/contentEdits'
 import { renderWithProviders } from '../test/renderWithProviders'
 import { fullDateLabel } from '../utils/calendar'
 

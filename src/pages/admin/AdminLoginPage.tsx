@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
-import { DEMO_ADMIN } from '../../api/auth.mock'
-import { hasBackend } from '../../api/http'
 import { Icon } from '../../components/Icon'
 import { XsollaLogo } from '../../components/XsollaLogo'
 import { useAuth } from '../../hooks/useAuth'
@@ -69,23 +67,6 @@ export default function AdminLoginPage() {
         {notice && (
           <p className="admin-auth__demo" role="status">
             {notice}
-          </p>
-        )}
-
-        {!hasBackend() && (
-          <p className="admin-auth__demo">
-            Offline demo:{' '}
-            <button
-              type="button"
-              className="admin-link"
-              onClick={() => {
-                setEmail(DEMO_ADMIN.email)
-                setPassword('demo')
-                setFormError('')
-              }}
-            >
-              use the demo admin account
-            </button>
           </p>
         )}
 

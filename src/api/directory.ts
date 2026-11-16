@@ -1,35 +1,15 @@
-import type { TeamPlan } from '../mocks/directory'
-import {
-  addTeam,
-  addUser,
-  clearTeams,
-  createTeams,
-  deleteTeam,
-  deleteUser,
-  listTeams,
-  listUsers,
-  setLeft,
-  setMentorTeam,
-  setPassword,
-  setRoles,
-  setTeam,
-  setTeamMentor,
-  updateUser,
-} from '../mocks/directory'
-import type { NewTeam } from '../mocks/directory'
 import { emailError, nameError, passwordError } from '../utils/credentials'
-import type { SchoolTeam, SchoolUser } from '../types/admin'
+import type { NewTeam, SchoolTeam, SchoolUser, TeamPlan } from '../types/admin'
 import type { Role, User } from '../types/user'
 import { type UserDto, mapUser } from './auth.http'
 import { authedRequest } from './authed'
-import { ApiError, hasBackend } from './http'
+import { ApiError } from './http'
 import * as teamsApi from './teams.http'
 
 /**
  * The admin section's directory of people and teams.
- *  - Users: GET /users?search= (API_CONTRACT.md, admin only) with a backend, the offline mock otherwise.
- *    The backend does not serve that route yet, so with a backend this fails until it does.
- *  - Teams: the backend's /teams routes (./teams.http) with a backend, the offline mock otherwise.
+ *  - Users: GET /users?search= (admin, mentor, lecturer).
+ *  - Teams: the backend's /teams routes (./teams.http).
  *  - New students: POST /auth/signup (it makes a student account with the chosen password). The session
  *    signup opens for the new student is closed straight away; the admin stays signed in as themselves.
  *  - Changing or removing an account is not in the backend yet. These calls use the shape proposed to it:
@@ -41,9 +21,6 @@ import * as teamsApi from './teams.http'
  *      PUT    /users/:id/password { password }       (the admin sets a new password; sessions end)
  *    and say so plainly while the server does not have them.
  */
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
-
 /**
  * A user row, plus when they left the school (proposed: `left_at`, set while `active` is false) and
  * the role the account was created with (proposed: `main_role`, it never changes).
@@ -62,22 +39,13 @@ const toSchoolUser = (d: DirectoryDto): SchoolUser => {
 }
 
 export async function fetchUsers(): Promise<SchoolUser[]> {
-  if (hasBackend()) {
-    const list = await authedRequest<DirectoryDto[]>('/users?search=')
-    return list.map(toSchoolUser).sort((a, b) => a.name.localeCompare(b.name))
-  }
-  await wait()
-  return listUsers()
+  const list = await authedRequest<DirectoryDto[]>('/users?search=')
+  return list.map(toSchoolUser).sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export async function fetchTeams(): Promise<SchoolTeam[]> {
-  if (hasBackend()) return teamsApi.listTeams()
-  await wait()
-  return listTeams()
+  return teamsApi.listTeams()
 }
-
-/** Teams used to be demo data even with a backend; the server has them now, so never. */
-export const teamsAreDemoData = () => false
 
 /** A team route the server rejects: say what it is about, in plain words (422 and the like pass through). */
 function teamCall<T>(run: () => Promise<T>, what: string): Promise<T> {
@@ -109,25 +77,17 @@ function checkNewAccount(input: { name: string; email: string; password: string 
 export async function createStudent(input: NewStudent): Promise<User> {
   checkNewAccount(input)
   let user: User
-  if (hasBackend()) {
-    try {
-      const dto = await authedRequest<UserDto>('/users', {
-        method: 'POST',
-        body: { email: input.email.trim(), name: input.name.trim(), password: input.password, roles: ['student'] },
-      })
-      user = mapUser(dto)
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 409) throw new ApiError(409, 'conflict', TAKEN)
-      throw e
-    }
-  } else {
-    await wait()
-    user = addUser({ name: input.name, email: input.email, roles: ['student'] })
+  try {
+    const dto = await authedRequest<UserDto>('/users', {
+      method: 'POST',
+      body: { email: input.email.trim(), name: input.name.trim(), password: input.password, roles: ['student'] },
+    })
+    user = mapUser(dto)
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 409) throw new ApiError(409, 'conflict', TAKEN)
+    throw e
   }
-  if (input.teamId) {
-    if (hasBackend()) await teamsApi.placeStudent(user.id, input.teamId)
-    else setTeam(user.id, input.teamId)
-  }
+  if (input.teamId) await teamsApi.placeStudent(user.id, input.teamId)
   return user
 }
 
@@ -148,48 +108,32 @@ export interface StudentChanges {
 
 /** Corrects a student's name / e-mail and moves them to another team (or none). */
 export async function updateStudent(id: number, changes: StudentChanges): Promise<void> {
-  if (hasBackend()) {
-    try {
-      await authedRequest(`/users/${id}`, { method: 'PATCH', body: { name: changes.name.trim(), email: changes.email.trim() } })
-    } catch (e) {
-      notYet(e, 'change accounts')
-    }
-  } else {
-    await wait()
-    updateUser(id, { name: changes.name, email: changes.email })
+  try {
+    await authedRequest(`/users/${id}`, { method: 'PATCH', body: { name: changes.name.trim(), email: changes.email.trim() } })
+  } catch (e) {
+    notYet(e, 'change accounts')
   }
-  if (hasBackend()) await teamsApi.placeStudent(id, changes.teamId)
-  else setTeam(id, changes.teamId)
+  await teamsApi.placeStudent(id, changes.teamId)
 }
 
 /** The student left the school (they can no longer sign in, their work is kept), or comes back. */
 export async function setStudentLeft(id: number, left: boolean): Promise<void> {
-  if (hasBackend()) {
-    try {
-      await authedRequest(`/users/${id}`, { method: 'PATCH', body: { active: !left } })
-    } catch (e) {
-      notYet(e, 'mark students as left')
-    }
-    // the server takes a student who left out of their team
-    return
+  try {
+    await authedRequest(`/users/${id}`, { method: 'PATCH', body: { active: !left } })
+  } catch (e) {
+    notYet(e, 'mark students as left')
   }
-  await wait()
-  setLeft(id, left)
+  // the server takes a student who left out of their team
 }
 
 /** Deletes an account for good (a student or a staff member). */
 export async function deleteAccount(id: number): Promise<void> {
-  if (hasBackend()) {
-    try {
-      await authedRequest<void>(`/users/${id}`, { method: 'DELETE' })
-    } catch (e) {
-      notYet(e, 'delete accounts')
-    }
-    // the server frees their team slot (or leaves the team without a mentor)
-    return
+  try {
+    await authedRequest<void>(`/users/${id}`, { method: 'DELETE' })
+  } catch (e) {
+    notYet(e, 'delete accounts')
   }
-  await wait()
-  deleteUser(id)
+  // the server frees their team slot (or leaves the team without a mentor)
 }
 export const deleteStudent = deleteAccount
 
@@ -205,24 +149,16 @@ export interface NewMentor {
 export async function createStaff(input: NewMentor, role: 'mentor' | 'lecturer'): Promise<User> {
   checkNewAccount(input)
   let user: User
-  if (hasBackend()) {
-    try {
-      const dto = await authedRequest<UserDto>('/users', {
-        method: 'POST',
-        body: { email: input.email.trim(), name: input.name.trim(), password: input.password, roles: [role] },
-      })
-      user = mapUser(dto)
-    } catch (e) {
-      notYet(e, `create ${role} accounts`)
-    }
-  } else {
-    await wait()
-    user = addUser({ name: input.name, email: input.email, roles: [role] })
+  try {
+    const dto = await authedRequest<UserDto>('/users', {
+      method: 'POST',
+      body: { email: input.email.trim(), name: input.name.trim(), password: input.password, roles: [role] },
+    })
+    user = mapUser(dto)
+  } catch (e) {
+    notYet(e, `create ${role} accounts`)
   }
-  if (role === 'mentor' && input.teamId) {
-    if (hasBackend()) await teamsApi.placeMentor(user.id, input.teamId)
-    else setMentorTeam(user.id, input.teamId)
-  }
+  if (role === 'mentor' && input.teamId) await teamsApi.placeMentor(user.id, input.teamId)
   return user
 }
 
@@ -236,18 +172,12 @@ export interface MentorChanges {
 
 /** Corrects a mentor's name / e-mail and sets the team they mentor (or none). */
 export async function updateMentor(id: number, changes: MentorChanges): Promise<void> {
-  if (hasBackend()) {
-    try {
-      await authedRequest(`/users/${id}`, { method: 'PATCH', body: { name: changes.name.trim(), email: changes.email.trim() } })
-    } catch (e) {
-      notYet(e, 'change accounts')
-    }
-  } else {
-    await wait()
-    updateUser(id, { name: changes.name, email: changes.email })
+  try {
+    await authedRequest(`/users/${id}`, { method: 'PATCH', body: { name: changes.name.trim(), email: changes.email.trim() } })
+  } catch (e) {
+    notYet(e, 'change accounts')
   }
-  if (hasBackend()) await teamsApi.placeMentor(id, changes.teamId)
-  else setMentorTeam(id, changes.teamId)
+  await teamsApi.placeMentor(id, changes.teamId)
 }
 
 /**
@@ -258,16 +188,11 @@ export async function updateMentor(id: number, changes: MentorChanges): Promise<
 export async function resetPassword(id: number, password: string): Promise<void> {
   const weak = passwordError(password)
   if (weak) throw new ApiError(400, 'bad_request', weak)
-  if (hasBackend()) {
-    try {
-      await authedRequest<void>(`/users/${id}/password`, { method: 'PUT', body: { password } })
-    } catch (e) {
-      notYet(e, 'reset passwords')
-    }
-    return
+  try {
+    await authedRequest<void>(`/users/${id}/password`, { method: 'PUT', body: { password } })
+  } catch (e) {
+    notYet(e, 'reset passwords')
   }
-  await wait()
-  setPassword(id, password)
 }
 
 /**
@@ -276,76 +201,44 @@ export async function resetPassword(id: number, password: string): Promise<void>
  */
 export async function setUserRoles(id: number, roles: Role[], until: Partial<Record<Role, string>> = {}): Promise<void> {
   if (roles.length === 0) throw new ApiError(400, 'bad_request', 'Keep at least one role.')
-  if (hasBackend()) {
-    try {
-      await authedRequest(`/users/${id}/roles`, { method: 'PUT', body: { roles, expires_at: until } })
-    } catch (e) {
-      notYet(e, 'change roles')
-    }
-    return
+  try {
+    await authedRequest(`/users/${id}/roles`, { method: 'PUT', body: { roles, expires_at: until } })
+  } catch (e) {
+    notYet(e, 'change roles')
   }
-  await wait()
-  setRoles(id, roles, until)
 }
 
-// ---------- teams (the server's /teams routes, or the demo store offline) ----------
+// ---------- teams (the server's /teams routes) ----------
 
 /** Replaces every team with these: random teams the admin has looked at and agreed to (PUT /teams). */
 export async function buildTeams(plan: TeamPlan[]): Promise<void> {
-  if (hasBackend()) {
-    await teamCall(() => teamsApi.replaceTeams(plan), 'make teams')
-    return
-  }
-  await wait()
-  createTeams(plan)
+  await teamCall(() => teamsApi.replaceTeams(plan), 'make teams')
 }
 
 /** Adds one team: a name, optionally a mentor and students without a team (POST /teams). */
 export async function createTeam(team: NewTeam): Promise<SchoolTeam> {
-  if (hasBackend()) return teamCall(() => teamsApi.createTeam(team), 'add a team')
-  await wait()
-  return addTeam(team)
+  return teamCall(() => teamsApi.createTeam(team), 'add a team')
 }
 
 /**
- * Deletes one team; its students and mentor are left without a team. The server has no route for this
- * yet (proposed: DELETE /teams/:id), so with a backend this says so instead of pretending.
+ * Deletes one team; its students and mentor are left without a team (DELETE /teams/:id; a server without the route
+ * says so instead of pretending).
  */
 export async function removeTeam(teamId: string): Promise<void> {
-  if (hasBackend()) {
-    await teamCall(() => teamsApi.deleteTeam(teamId), 'delete a single team')
-    return
-  }
-  await wait()
-  deleteTeam(teamId)
+  await teamCall(() => teamsApi.deleteTeam(teamId), 'delete a single team')
 }
 
 /** Removes every team (PUT /teams with no teams). */
 export async function removeAllTeams(): Promise<void> {
-  if (hasBackend()) {
-    await teamCall(() => teamsApi.replaceTeams([]), 'remove teams')
-    return
-  }
-  await wait()
-  clearTeams()
+  await teamCall(() => teamsApi.replaceTeams([]), 'remove teams')
 }
 
 /** Puts a student in a team, or takes them out of theirs (null). */
 export async function moveStudent(studentId: number, teamId: string | null): Promise<void> {
-  if (hasBackend()) {
-    await teamCall(() => teamsApi.placeStudent(studentId, teamId), 'change teams')
-    return
-  }
-  await wait()
-  setTeam(studentId, teamId)
+  await teamCall(() => teamsApi.placeStudent(studentId, teamId), 'change teams')
 }
 
 /** Sets a team's mentor (they leave their old team); null leaves the team without one. */
 export async function changeTeamMentor(teamId: string, mentorId: number | null): Promise<void> {
-  if (hasBackend()) {
-    await teamCall(() => teamsApi.setTeamMentor(teamId, mentorId), 'change mentors')
-    return
-  }
-  await wait()
-  setTeamMentor(teamId, mentorId)
+  await teamCall(() => teamsApi.setTeamMentor(teamId, mentorId), 'change mentors')
 }

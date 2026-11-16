@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
-import { DEMO_ACCOUNTS } from '../api/auth.mock'
-import { hasBackend } from '../api/http'
-import { roleLabel } from '../utils/roles'
 import { goTo } from '../utils/teleport'
 import officePhoto from '../assets/images/CrescentOfficesPhoto.webp'
 import { XsollaLogo } from '../components/XsollaLogo'
@@ -82,25 +79,6 @@ export default function AuthPage() {
         <div className="auth__card">
           <h1 className="auth__title">Welcome</h1>
 
-          {!hasBackend() && (
-            <div className="auth__demo" role="group" aria-label="Demo accounts">
-              <span>Offline demo, sign in as:</span>
-              {Object.values(DEMO_ACCOUNTS).map((a) => (
-                <button
-                  key={a.email}
-                  type="button"
-                  className="auth__demo-btn"
-                  onClick={() => {
-                    setEmail(a.email)
-                    setPassword('demo')
-                    setFormError('')
-                  }}
-                >
-                  {roleLabel(a)}
-                </button>
-              ))}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} noValidate>
             <label className="auth__label" htmlFor="email">

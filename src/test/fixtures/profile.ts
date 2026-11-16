@@ -1,6 +1,6 @@
-import { DEFAULT_PREFERENCES, EMPTY_PROFILE, readPreferences } from '../types/profile'
-import type { Preferences, PreferencesPatch, Profile, ProfilePatch } from '../types/profile'
-import { publish } from '../sync/bus'
+import { DEFAULT_PREFERENCES, EMPTY_PROFILE, readPreferences } from '../../types/profile'
+import type { Preferences, PreferencesPatch, Profile, ProfilePatch } from '../../types/profile'
+import { publish } from '../../sync/bus'
 
 /**
  * Offline demo of the profile routes: one profile and one set of look settings per person, kept in this browser.

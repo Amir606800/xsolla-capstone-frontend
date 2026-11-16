@@ -1,7 +1,7 @@
 /**
  * The "something changed" bus that keeps every screen in step.
  *
- * Whenever data is saved (a request that is not a plain read, or a change in the offline demo store) the topics it touches are
+ * Whenever data is saved (a request that is not a plain read) the topics it touches are
  * published here. Every screen that shows such data listens and quietly loads it again, so a change made on one page shows on the
  * others at once, with no reload, and in the other tabs of this browser too. Changes made by other people (other computers) cannot
  * be pushed by the server yet; those are caught by the polling in `useLive`.

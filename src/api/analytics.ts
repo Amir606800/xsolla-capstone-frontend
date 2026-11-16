@@ -1,13 +1,11 @@
-import { mockAiSummary, mockLectureExpected, mockMentor, mockOverview, mockPeople, mockStudent } from '../mocks/analytics'
 import type { AiSummary, AnalyticsPerson, AnalyticsRole } from '../types/analytics'
 import { hasRole } from '../utils/roles'
 import { fetchUsers } from './directory'
-import { hasBackend } from './http'
 import * as http from './analytics.http'
 
-/** Real backend when VITE_API_URL is set, the offline demo otherwise. */
+/** The backend's admin analytics routes (./analytics.http). */
 export async function fetchOverview(from?: string, to?: string) {
-  return hasBackend() ? http.fetchOverview(from, to) : mockOverview()
+  return http.fetchOverview(from, to)
 }
 
 /**
@@ -25,15 +23,15 @@ export async function fetchPeople(role: AnalyticsRole, q: string, limit: number,
       .slice(offset, offset + limit)
       .map((u) => ({ id: u.id, name: u.name, email: u.email }))
   }
-  return hasBackend() ? http.fetchPeople(role, q, limit, offset) : mockPeople(role, q, limit, offset)
+  return http.fetchPeople(role, q, limit, offset)
 }
 
 export async function fetchStudent(id: number, from?: string, to?: string) {
-  return hasBackend() ? http.fetchStudent(id, from, to) : mockStudent(id)
+  return http.fetchStudent(id, from, to)
 }
 
 export async function fetchMentor(id: number, from?: string, to?: string) {
-  return hasBackend() ? http.fetchMentor(id, from, to) : mockMentor(id)
+  return http.fetchMentor(id, from, to)
 }
 
 /** The AI summary of what was said to / about this person in the period. `force` asks for a new one instead of the cached one. */
@@ -42,10 +40,10 @@ export async function fetchAiSummary(
   id: number,
   opts: { from?: string; to?: string; force?: boolean } = {},
 ): Promise<AiSummary> {
-  return hasBackend() ? http.fetchAiSummary(role, id, opts) : mockAiSummary(role, id)
+  return http.fetchAiSummary(role, id, opts)
 }
 
 /** How many students could answer each lecture, keyed like `lectureKey`; `{}` when the server cannot say. */
 export async function fetchLectureExpected(): Promise<Record<string, number>> {
-  return hasBackend() ? http.fetchLectureExpected() : mockLectureExpected()
+  return http.fetchLectureExpected()
 }

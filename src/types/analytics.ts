@@ -93,8 +93,6 @@ export interface AiSummary {
   generatedAt: string | null
   cached: boolean
   period: AnalyticsPeriod
-  /** Offline demo only: the app wrote this text from the demo data; no AI was asked. */
-  demo?: boolean
 }
 
 /** One lecture of a lecturer, with what its students said. */

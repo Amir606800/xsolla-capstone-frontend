@@ -17,15 +17,21 @@ describe('demo data', () => {
   })
 
   it("last week's work of Sam's teammates has no comment yet, and one task was missed", () => {
-    const week5 = Object.values(store).filter((s) => s.assignmentId.startsWith('m5-') && [101, 102, 103, 104].includes(s.studentId))
+    const week5 = Object.values(store).filter(
+      (s) => s.assignmentId.startsWith('m5-') && [101, 102, 103, 104].includes(s.studentId),
+    )
     expect(week5).toHaveLength(4 * 3 - 1)
     expect(week5.every((s) => !s.feedback)).toBe(true)
   })
 
-  it('earlier work has a comment, and nobody else\'s task is graded', () => {
+  it("earlier work has a comment, and nobody else's task is graded", () => {
     const old = Object.values(store).filter((s) => s.assignmentId.startsWith('m2-') && s.studentId === 101)
     expect(old.every((s) => s.feedback && s.commentedBy?.id === 900)).toBe(true)
-    expect(Object.values(store).filter((s) => s.studentId !== 1).some((s) => s.gradedAt)).toBe(false)
+    expect(
+      Object.values(store)
+        .filter((s) => s.studentId !== 1)
+        .some((s) => s.gradedAt),
+    ).toBe(false)
   })
 })
 

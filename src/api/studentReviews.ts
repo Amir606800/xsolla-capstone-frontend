@@ -1,20 +1,14 @@
-import { buildMockModules } from '../mocks/courses'
-import { allStandings } from '../mocks/standings'
 import type { StudentReview } from '../types/studentReview'
 import { fetchTeams, fetchUsers } from './directory'
-import { hasBackend } from './http'
 import * as http from './standings.http'
 
 /**
  * Every mentor's grade of every student, for the admin's Student reviews page. On the real backend a grade is the `grade`
  * (and `feedback`) of a student's enrollment in a week's module, so this reads every week's enrollments
  * (GET /modules/:id/enrollments) and puts names to the ids from the people and teams lists. `null` = the server lets
- * this person read none of them. Offline, the demo grades are listed.
+ * this person read none of them.
  */
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
-
-interface Grade {
+export interface Grade {
   studentId: number
   week: number
   moduleId: string
@@ -28,18 +22,12 @@ interface Grade {
 }
 
 export async function fetchStudentReviews(): Promise<StudentReview[] | null> {
-  let grades: Grade[] | null
-  if (hasBackend()) grades = await http.fetchEveryGrade()
-  else {
-    await wait()
-    const modules = buildMockModules(new Date())
-    grades = allStandings().map((g) => {
-      const m = modules.find((x) => x.position === g.week)
-      return { ...g, moduleId: m?.id ?? String(g.week), moduleTitle: m?.title }
-    })
-  }
-  if (grades === null) return null
+  const grades = await http.fetchEveryGrade()
+  return grades === null ? null : withNames(grades)
+}
 
+/** The grades with the names of the students, their mentor and their team, from the people and teams lists. */
+export async function withNames(grades: Grade[]): Promise<StudentReview[]> {
   // names are optional: a list that cannot be loaded leaves "Student #7" instead of failing the page
   const [users, teams] = await Promise.all([fetchUsers().catch(() => []), fetchTeams().catch(() => [])])
   const nameOf = new Map(users.map((u) => [u.id, u.name]))

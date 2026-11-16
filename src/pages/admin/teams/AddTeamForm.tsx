@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import type { FormEvent } from 'react'
-import type { NewTeam } from '../../../mocks/directory'
+import type { NewTeam } from '../../../types/admin'
 import type { SchoolTeam, SchoolUser } from '../../../types/admin'
 import { TEAM_LIMIT } from '../../../utils/adminPeople'
 import { nextTeamName } from '../../../utils/adminTeams'

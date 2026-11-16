@@ -1,7 +1,7 @@
-import type { StandingLevel, WeeklyStanding } from '../types/standing'
+import type { StandingLevel, WeeklyStanding } from '../../types/standing'
 import { buildMockModules } from './courses'
 import { buildMentorTeam, MENTOR } from './teams'
-import { publish } from '../sync/bus'
+import { publish } from '../../sync/bus'
 
 /**
  * Stand-in for the backend's weekly grades: every student's green / yellow / red grade per week,
@@ -14,10 +14,8 @@ import { publish } from '../sync/bus'
  *   stands the mentor can only keep it red (adding their feedback)
  */
 
-export interface StoredStanding extends WeeklyStanding {
-  studentId: number
-  gradedBy?: { id: number; name: string }
-}
+export type { StoredStanding } from '../../types/standing'
+import type { Mentor, StoredStanding } from '../../types/standing'
 
 const KEY = 'standings'
 const keyOf = (studentId: number, week: number) => `${studentId}:${week}`
@@ -136,10 +134,7 @@ export function standingsOf(studentId: number, now: Date = new Date()): WeeklySt
     .map(plain)
 }
 
-export interface Mentor {
-  id: number
-  name: string
-}
+export type { Mentor } from '../../types/standing'
 
 const teamIds = (mentor: Mentor) => new Set(buildMentorTeam({ ...mentor, email: '' }).members.map((m) => m.id))
 

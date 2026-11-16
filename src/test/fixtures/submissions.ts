@@ -1,10 +1,10 @@
-import type { AssignmentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
-import type { TeamSubmission } from '../types/review'
-import type { Person } from '../types/team'
+import type { AssignmentItem, CourseModule, Submission, SubmissionVersion } from '../../types/course'
+import type { TeamSubmission } from '../../types/review'
+import type { Person } from '../../types/team'
 import { buildMockModules } from './courses'
 import { buildMentorTeam, MENTOR } from './teams'
-import { publish } from '../sync/bus'
-import { oneOnOneWeek } from '../utils/deadline'
+import { publish } from '../../sync/bus'
+import { oneOnOneWeek } from '../../utils/deadline'
 
 /**
  * Stand-in for the backend's submissions table: every student's work on every task, kept in
@@ -31,13 +31,20 @@ const FEEDBACK = [
   'Solid work - split the long function into smaller ones.',
 ]
 
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
 
 function work(task: AssignmentItem, student: Person, team: string, submittedAt: Date): Submission {
   return {
     submittedAt: submittedAt.toISOString(),
     textBody: `Repo: https://github.com/xsolla-school/${team}/${slug(task.title)}\nI finished the main part; notes are in the README.`,
-    files: (student.id + task.title.length) % 2 === 0 ? [{ name: `${slug(task.title)}.zip`, sizeBytes: 48_200 + student.id * 37 }] : [],
+    files:
+      (student.id + task.title.length) % 2 === 0
+        ? [{ name: `${slug(task.title)}.zip`, sizeBytes: 48_200 + student.id * 37 }]
+        : [],
   }
 }
 
@@ -67,7 +74,10 @@ export function buildMockSubmissions(now: Date = new Date()): Store {
     }
   }
 
-  const teams = [buildMentorTeam({ ...MENTOR }), buildMentorTeam({ id: 901, name: 'Aysel Mammadova', email: 'mentor@xsolla.school' })]
+  const teams = [
+    buildMentorTeam({ ...MENTOR }),
+    buildMentorTeam({ id: 901, name: 'Aysel Mammadova', email: 'mentor@xsolla.school' }),
+  ]
   for (const team of teams) {
     const label = team.name.toLowerCase().replace(' ', '-')
     team.members.forEach((student, si) => {
@@ -92,7 +102,11 @@ export function buildMockSubmissions(now: Date = new Date()): Store {
             const at = si === 2 && ti === 0 ? due + 3 * 3_600_000 : due - (si + 1) * 3_600_000
             put({ ...work(t, student, label, new Date(at)), assignmentId: t.id, studentId: student.id })
           } else if (week === 6 && ti === 0 && si % 2 === 0 && new Date(due) > now) {
-            put({ ...work(t, student, label, new Date(now.getTime() - (si + 2) * 3_600_000)), assignmentId: t.id, studentId: student.id })
+            put({
+              ...work(t, student, label, new Date(now.getTime() - (si + 2) * 3_600_000)),
+              assignmentId: t.id,
+              studentId: student.id,
+            })
           }
         })
       }
@@ -167,10 +181,8 @@ export function handIn(studentId: number, assignmentId: string, submission: Subm
   return { ...next, ...(before?.feedback ? { feedback: before.feedback } : {}) }
 }
 
-export interface Grader {
-  id: number
-  name: string
-}
+export type { Grader } from '../../types/review'
+import type { Grader } from '../../types/review'
 
 const teamIds = (mentor: Grader) => new Set(buildMentorTeam({ ...mentor, email: '' }).members.map((m) => m.id))
 

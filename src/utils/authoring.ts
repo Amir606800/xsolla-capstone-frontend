@@ -186,7 +186,7 @@ export const splitLines = (text: string) =>
 /**
  * The task to save. It has no deadline of its own; `dueAt` is only the week's anchor for the server: the backend still
  * asks for a due_at, and with the week's Friday 08:00 it works each student's deadline out from their 1:1 (Friday or
- * Monday 08:00). See BACKEND_REQ_ONE_ON_ONE_DEADLINES.md.
+ * Monday 08:00). See backend_requirements/BACKEND_REQ_ONE_ON_ONE_DEADLINES.md.
  */
 export function draftToTask(d: TaskDraft, module: Pick<CourseModule, 'id' | 'opensAt'>, id: string): AssignmentItem {
   const requirements = splitLines(d.requirements)

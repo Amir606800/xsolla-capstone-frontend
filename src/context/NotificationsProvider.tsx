@@ -7,10 +7,8 @@ import {
   markAllNotificationsRead,
   markAnnouncementsAsRead,
   markNotificationRead,
-  serverNotifications,
 } from '../api/notifications'
 import { sameData } from '../utils/same'
-import { isStaff } from '../utils/roles'
 import { useAuth } from '../hooks/useAuth'
 import { useLive } from '../hooks/useLive'
 import type { AppNotification } from '../types/notification'
@@ -28,9 +26,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [attempt, setAttempt] = useState(0)
 
-  // the demo notifications are a student's ("your task was graded"); staff get only the admin's announcements
   const { user } = useAuth()
-  const staff = isStaff(user)
   const userId = user?.id
   const roles = user?.roles
   const roleUntil = user?.roleUntil
@@ -39,12 +35,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     // announcements are optional: if they cannot be loaded the rest of the bell still works
     const announcements =
       userId === undefined || !roles ? Promise.resolve([]) : fetchAnnouncements({ id: userId, roles, roleUntil }).catch(() => [])
-    // the offline demo notifications are a student's; a real server has some for every role (a mentor: "a hand-in came")
-    const own = staff && !serverNotifications() ? Promise.resolve([]) : fetchNotifications()
+    // every role has its own notifications (a mentor: "a hand-in came", a student: "your week was graded")
+    const own = fetchNotifications()
     return Promise.all([own, announcements]).then(([own, announced]) =>
       [...own, ...announced].sort(byNewest),
     )
-  }, [staff, userId, roles, roleUntil])
+  }, [userId, roles, roleUntil])
 
   useEffect(() => {
     let cancelled = false
@@ -79,7 +75,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     load().then(
       (fresh) => {
         if (version.current !== started) return
-        // what this person already read stays read, even where the source does not remember it (the offline demo)
+        // what this person already read stays read, even where the source does not remember it (e.g. announcements)
         const read = new Map(shown.current.filter((n) => n.readAt).map((n) => [n.id, n.readAt]))
         const list = fresh.map((n) => (!n.readAt && read.has(n.id) ? { ...n, readAt: read.get(n.id)! } : n))
         // the server only lists the unread: what was read here stays on the list until the page is reloaded
@@ -121,13 +117,13 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => prev.map((n) => (n.readAt ? n : { ...n, readAt })))
     try {
       // the server first: when it refuses, nothing was marked, here or there
-      if (!staff || serverNotifications()) await markAllNotificationsRead()
+      await markAllNotificationsRead()
       if (userId !== undefined) await markAnnouncementsAsRead(userId, before.map((n) => n.id))
     } catch (err) {
       setNotifications(before)
       throw err
     }
-  }, [notifications, userId, staff])
+  }, [notifications, userId])
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.readAt).length, [notifications])
 

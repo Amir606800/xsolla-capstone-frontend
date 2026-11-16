@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { mentorSeesTeamWork } from '../../api/capabilities'
-import { hasBackend } from '../../api/http'
 import { fetchTeamQuizResults } from '../../api/quizResults'
 import type { TeamQuizResults } from '../../api/quizResults'
 import { useCourses } from '../../hooks/useCourses'
@@ -129,7 +128,7 @@ export default function GradingPage() {
       {!loading && !failed && myTeam.team && !week && (
         <p className="card card__empty">
           There are no weeks to grade yet.
-          {hasBackend() && ' The server shows you only the weeks you are enrolled in: ask an admin to add you to the course weeks.'}
+          {' The server shows you only the weeks you are enrolled in: ask an admin to add you to the course weeks.'}
         </p>
       )}
 

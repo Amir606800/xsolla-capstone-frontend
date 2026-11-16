@@ -1,7 +1,7 @@
-import type { CourseModule } from '../types/course'
-import type { MentorReview, ReviewedWeek } from '../types/mentorReview'
+import type { CourseModule } from '../../types/course'
+import type { MentorReview, ReviewedWeek } from '../../types/mentorReview'
 import { listModules } from './contentEdits'
-import { publish } from '../sync/bus'
+import { publish } from '../../sync/bus'
 
 /**
  * Demo store of the weekly mentor reviews (localStorage). So the demo is usable out of the box, every demo student
@@ -35,11 +35,17 @@ export function demoMode(): 'locked' | 'reminder' | null {
 }
 
 /** The weeks this student has reviewed: what they sent, plus the demo's "already done" weeks. */
-export function reviewedWeeks(studentId: number, now: Date = new Date(), modules: CourseModule[] = listModules(now)): ReviewedWeek[] {
+export function reviewedWeeks(
+  studentId: number,
+  now: Date = new Date(),
+  modules: CourseModule[] = listModules(now),
+): ReviewedWeek[] {
   const sent = load().filter((r) => r.studentId === studentId)
   const out: ReviewedWeek[] = sent.map((r) => ({ moduleId: r.moduleId, submittedAt: r.submittedAt }))
   const started = modules.filter((m) => m.opensAt && new Date(m.opensAt) <= now)
-  const finished = started.filter((m) => m.closesAt && new Date(m.closesAt) < now).sort((a, b) => (b.closesAt as string).localeCompare(a.closesAt as string))
+  const finished = started
+    .filter((m) => m.closesAt && new Date(m.closesAt) < now)
+    .sort((a, b) => (b.closesAt as string).localeCompare(a.closesAt as string))
   const running = started.find((m) => !m.closesAt || new Date(m.closesAt) >= now)
   const mode = demoMode()
   const missing = mode === 'locked' ? finished[0]?.id : mode === 'reminder' ? running?.id : undefined

@@ -1,8 +1,8 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from '../App'
-import { addBroadcast } from '../mocks/broadcasts'
-import { putModule } from '../mocks/contentEdits'
+import { addBroadcast } from '../test/fixtures/broadcasts'
+import { putModule } from '../test/fixtures/contentEdits'
 import { renderWithProviders } from '../test/renderWithProviders'
 
 const STUDENT = { id: 1, name: 'Sam Student', email: 'student@xsolla.school', roles: ['student'] }

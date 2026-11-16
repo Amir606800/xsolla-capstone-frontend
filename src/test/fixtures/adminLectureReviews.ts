@@ -1,8 +1,8 @@
-import type { AdminLectureReview, LectureLecturer, Pace } from '../types/lectureReview'
-import { PACES } from '../types/lectureReview'
-import type { Score } from '../types/mentorReview'
-import { lecturersOf } from '../utils/content'
-import { isStudent } from '../utils/roles'
+import type { AdminLectureReview, LectureLecturer, Pace } from '../../types/lectureReview'
+import { PACES } from '../../types/lectureReview'
+import type { Score } from '../../types/mentorReview'
+import { lecturersOf } from '../../utils/content'
+import { isStudent } from '../../utils/roles'
 import { listEvents, listModules } from './contentEdits'
 import { listUsers } from './directory'
 import { listFeedback } from './lectureFeedback'
@@ -48,8 +48,12 @@ export function adminLectureReviews(now: Date = new Date()): AdminLectureReview[
     .filter((e) => e.kind === 'lecture' && !e.source && new Date(e.endsAt) < now)
     .map((e) => {
       // a lecture without a week goes with the week it happens in
-      const module = modules.find((m) => m.id === e.moduleId) ?? modules.find((m) => m.opensAt && m.closesAt && e.startsAt >= m.opensAt && e.startsAt <= m.closesAt)
-      const lecturers: LectureLecturer[] = lecturersOf(module).flatMap((id) => (names.has(id) ? [{ id, name: names.get(id) as string }] : []))
+      const module =
+        modules.find((m) => m.id === e.moduleId) ??
+        modules.find((m) => m.opensAt && m.closesAt && e.startsAt >= m.opensAt && e.startsAt <= m.closesAt)
+      const lecturers: LectureLecturer[] = lecturersOf(module).flatMap((id) =>
+        names.has(id) ? [{ id, name: names.get(id) as string }] : [],
+      )
       return { event: e, module, lecturers }
     })
 

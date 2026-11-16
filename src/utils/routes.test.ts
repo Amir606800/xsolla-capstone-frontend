@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildMockModules } from '../mocks/courses'
+import { buildMockModules } from '../test/fixtures/courses'
 import { describeRoute } from './routes'
 
 const modules = buildMockModules(new Date(2026, 10, 5))

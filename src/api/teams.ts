@@ -1,17 +1,13 @@
-import { buildMentorTeam, buildMockTeam } from '../mocks/teams'
 import type { Person, Team } from '../types/team'
 import type { User } from '../types/user'
 import { authedRequest } from './authed'
-import { ApiError, hasBackend } from './http'
+import { ApiError } from './http'
 
 /**
  * The signed-in user's own team (the admin's team calls are in ./teams.http):
  *   GET /teams/me          student: their team -> { id, name, mentor?, members[], cohort_size, team_count }; 404 = no team
  *   GET /mentors/me/team   mentor: the team they look after (same shape); 404 = no team
- * Offline, the demo store builds one.
  */
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
 
 interface PersonDto {
   id: number | string
@@ -54,14 +50,14 @@ async function myTeam(path: string): Promise<Team | null> {
   }
 }
 
+/** The signed-in student's team (the user argument says who; the server knows it from the session). */
 export async function fetchMyTeam(user: Pick<User, 'id' | 'name' | 'email'>): Promise<Team | null> {
-  if (hasBackend()) return myTeam('/teams/me')
-  await wait()
-  return buildMockTeam(user)
+  void user
+  return myTeam('/teams/me')
 }
 
+/** The team the signed-in mentor looks after. */
 export async function fetchMentorTeam(user: Pick<User, 'id' | 'name' | 'email'>): Promise<Team | null> {
-  if (hasBackend()) return myTeam('/mentors/me/team')
-  await wait()
-  return buildMentorTeam(user)
+  void user
+  return myTeam('/mentors/me/team')
 }

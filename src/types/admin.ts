@@ -19,3 +19,16 @@ export interface SchoolTeam {
   mentorId: number | null
   studentIds: number[]
 }
+
+/** One team to create: its mentor (or none yet) and its students. */
+export interface TeamPlan {
+  mentorId: number | null
+  studentIds: number[]
+}
+
+/** A team the admin adds by hand. */
+export interface NewTeam {
+  name: string
+  mentorId: number | null
+  studentIds: number[]
+}

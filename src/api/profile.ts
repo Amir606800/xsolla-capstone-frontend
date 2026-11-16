@@ -1,11 +1,10 @@
-import { mockPreferences, mockProfile, mockSavePreferences, mockSaveProfile, mockSetAvatar } from '../mocks/profile'
 import type { Preferences, PreferencesPatch, Profile, ProfilePatch } from '../types/profile'
-import { ApiError, hasBackend } from './http'
+import { ApiError } from './http'
 import * as http from './profile.http'
 
 /**
- * The signed-in person's profile (About me) and look settings. With a server these are its routes
- * (see profile.http.ts); without one they live in this browser. A server that does not have the routes yet
+ * The signed-in person's profile (About me) and look settings: the server's routes (see profile.http.ts).
+ * The user argument says whose (the server knows it from the session). A server that does not have the routes yet
  * answers 404, 405 or 501: that becomes one "not supported" error the screen can explain.
  */
 export const NOT_SUPPORTED = 'The server cannot save this yet.'
@@ -23,33 +22,16 @@ async function call<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-export const fetchProfile = (userId: number): Promise<Profile> => (hasBackend() ? call(http.getProfile) : Promise.resolve(mockProfile(userId)))
+export const fetchProfile = (userId: number): Promise<Profile> => (void userId, call(http.getProfile))
 
-export const saveProfile = (userId: number, patch: ProfilePatch): Promise<Profile> =>
-  hasBackend() ? call(() => http.patchProfile(patch)) : Promise.resolve(mockSaveProfile(userId, patch))
+export const saveProfile = (userId: number, patch: ProfilePatch): Promise<Profile> => (void userId, call(() => http.patchProfile(patch)))
 
 /** The picture was already cropped and shrunk by the screen. Answers the new picture address. */
-export async function uploadAvatar(userId: number, picture: Blob): Promise<string | null> {
-  if (hasBackend()) return call(() => http.putAvatar(picture))
-  return mockSetAvatar(userId, await toDataUrl(picture)).avatarUrl
-}
+export const uploadAvatar = (userId: number, picture: Blob): Promise<string | null> => (void userId, call(() => http.putAvatar(picture)))
 
-export async function removeAvatar(userId: number): Promise<void> {
-  if (hasBackend()) return call(http.deleteAvatar)
-  mockSetAvatar(userId, null)
-}
+export const removeAvatar = (userId: number): Promise<void> => (void userId, call(http.deleteAvatar))
 
-export const fetchPreferences = (userId: number): Promise<Preferences> =>
-  hasBackend() ? call(http.getPreferences) : Promise.resolve(mockPreferences(userId))
+export const fetchPreferences = (userId: number): Promise<Preferences> => (void userId, call(http.getPreferences))
 
 export const savePreferences = (userId: number, patch: PreferencesPatch): Promise<Preferences> =>
-  hasBackend() ? call(() => http.patchPreferences(patch)) : Promise.resolve(mockSavePreferences(userId, patch))
-
-function toDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(new Error('Could not read the picture.'))
-    reader.readAsDataURL(blob)
-  })
-}
+  (void userId, call(() => http.patchPreferences(patch)))

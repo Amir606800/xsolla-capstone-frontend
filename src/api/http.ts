@@ -4,12 +4,13 @@ import { publish, topicsForPath } from '../sync/bus'
 
 /** Thin axios wrapper for the LMS backend: JSON in/out and one error type for every failure. */
 
-/** Base URL of the backend (no trailing slash). Empty = no backend configured, the mock API is used. */
+/**
+ * Base URL of the backend (no trailing slash). VITE_API_URL points at the Go server; without it the API is on this
+ * site under /api (a reverse proxy in production, or the Vite dev server's proxy, forwards it to the server).
+ */
 export function apiBaseUrl(): string {
-  return (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '')
+  return ((import.meta.env.VITE_API_URL ?? '').trim() || '/api').replace(/\/+$/, '')
 }
-
-export const hasBackend = () => apiBaseUrl() !== ''
 
 /** Matches the backend's `handlers.ErrorResponse`. */
 interface ErrorBody {

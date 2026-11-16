@@ -1,7 +1,7 @@
-import type { LectureAnswers, PendingLecture } from '../types/lectureFeedback'
-import { isFeedbackOpen, OPEN_FOR_MS, SENT_ALREADY } from '../utils/lectureFeedback'
+import type { LectureAnswers, PendingLecture } from '../../types/lectureFeedback'
+import { isFeedbackOpen, OPEN_FOR_MS, SENT_ALREADY } from '../../utils/lectureFeedback'
 import { listEvents } from './contentEdits'
-import { publish } from '../sync/bus'
+import { publish } from '../../sync/bus'
 
 /**
  * Demo store of the lecture feedback (localStorage; offline demo only, a real server keeps its own). The lectures are

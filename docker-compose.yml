@@ -4,7 +4,8 @@
 #   docker compose --profile dev up dev  the dev server with hot reload on http://localhost:5173
 #
 # VITE_* values are read from your .env (or the shell) and baked into the build, so after changing one, run
-# `docker compose up --build` again. Leave VITE_API_URL empty to use the built-in demo data.
+# `docker compose up --build` again. Leave VITE_API_URL empty: the app then calls /api on its own address, which is
+# forwarded to the Go server at API_UPSTREAM (default: port 8080 on this machine).
 services:
   web:
     build:
@@ -18,6 +19,10 @@ services:
     image: xsolla-lms-front
     ports:
       - '${WEB_PORT:-3000}:80'
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://host.docker.internal:8080}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     restart: unless-stopped
 
   dev:
@@ -32,8 +37,12 @@ services:
       VITE_SLACK_URL: ${VITE_SLACK_URL:-}
       VITE_GITLAB_URL: ${VITE_GITLAB_URL:-}
       VITE_OFFICE_TOUR_URL: ${VITE_OFFICE_TOUR_URL:-}
+      # where the dev server forwards /api
+      API_PROXY_TARGET: ${API_UPSTREAM:-http://host.docker.internal:8080}
       # file changes on a bind mount are not announced on Windows/macOS: poll for them
       CHOKIDAR_USEPOLLING: 'true'
     volumes:
       - .:/app
       - /app/node_modules
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

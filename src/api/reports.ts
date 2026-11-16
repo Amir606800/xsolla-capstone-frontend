@@ -1,8 +1,7 @@
-import { addReport, changeReport, listReports, removeReport } from '../mocks/reports'
 import type { AdminReport, ReportChange, ReportPerson, ReportStatus } from '../types/report'
 import { rolesFrom } from '../utils/roles'
 import { authedRequest } from './authed'
-import { ApiError, hasBackend } from './http'
+import { ApiError } from './http'
 
 /**
  * Reports to the school's admins (backend docs/reports.md).
@@ -11,7 +10,7 @@ import { ApiError, hasBackend } from './http'
  *   GET    /reports/summary  admin: { open, resolved, total }
  *   PATCH  /reports/{id}   admin: { status?, admin_note? } -> the report
  *   DELETE /reports/{id}   admin: 204
- * 422 answers list every problem in `details` (the ApiError message joins them). Offline, the reports live in this browser.
+ * 422 answers list every problem in `details` (the ApiError message joins them).
  */
 export interface SentReport {
   id: string
@@ -42,8 +41,6 @@ export interface ReportDto extends SentDto {
   resolved_at?: string | null
 }
 
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
 /** A server without the routes: the page says so instead of failing. */
 const missingRoute = (e: unknown) =>
   e instanceof ApiError && (e.status === 405 || e.status === 501 || (e.status === 404 && e.code !== 'not_found'))
@@ -72,60 +69,41 @@ export function mapReport(d: ReportDto): AdminReport {
 
 /** Anyone: send a report. */
 export async function sendReport(subject: string, message: string, reporter?: ReportPerson): Promise<SentReport> {
-  if (hasBackend()) {
-    const d = await authedRequest<SentDto>('/reports', { method: 'POST', body: { subject, message } })
-    return { id: String(d.id), subject: d.subject, message: d.message, createdAt: d.created_at }
-  }
-  await wait()
-  const r = addReport(subject, message, reporter)
-  return { id: r.id, subject: r.subject, message: r.message, createdAt: r.createdAt }
+  void reporter // the server knows the sender from the session
+  const d = await authedRequest<SentDto>('/reports', { method: 'POST', body: { subject, message } })
+  return { id: String(d.id), subject: d.subject, message: d.message, createdAt: d.created_at }
 }
 
 /** Admin: every report, newest first; `null` when the server has no such route yet. */
 export async function fetchReports(): Promise<AdminReport[] | null> {
-  if (hasBackend()) {
-    try {
-      return ((await authedRequest<ReportDto[] | null>('/reports')) ?? []).map(mapReport)
-    } catch (e) {
-      if (missingRoute(e)) return null
-      throw e
-    }
+  try {
+    return ((await authedRequest<ReportDto[] | null>('/reports')) ?? []).map(mapReport)
+  } catch (e) {
+    if (missingRoute(e)) return null
+    throw e
   }
-  await wait()
-  return listReports()
 }
 
 /** Admin: how many reports are still open (for the sidebar); 0 when the server cannot say. */
 export async function fetchOpenReportCount(): Promise<number> {
-  if (hasBackend()) {
-    try {
-      return (await authedRequest<{ open?: number }>('/reports/summary')).open ?? 0
-    } catch {
-      return 0
-    }
+  try {
+    return (await authedRequest<{ open?: number }>('/reports/summary')).open ?? 0
+  } catch {
+    return 0
   }
-  return listReports().filter((r) => r.status === 'open').length
 }
 
 /** Admin: mark resolved or open again, and/or change the note. Answers the report as it is now. */
 export async function updateReport(id: string, change: ReportChange, admin?: ReportPerson): Promise<AdminReport> {
-  if (hasBackend()) {
-    const body = {
-      ...(change.status ? { status: change.status } : {}),
-      ...(change.adminNote !== undefined ? { admin_note: change.adminNote } : {}),
-    }
-    return mapReport(await authedRequest<ReportDto>(`/reports/${encodeURIComponent(id)}`, { method: 'PATCH', body }))
+  void admin // the server records who resolved it from the session
+  const body = {
+    ...(change.status ? { status: change.status } : {}),
+    ...(change.adminNote !== undefined ? { admin_note: change.adminNote } : {}),
   }
-  await wait()
-  return changeReport(id, change, admin)
+  return mapReport(await authedRequest<ReportDto>(`/reports/${encodeURIComponent(id)}`, { method: 'PATCH', body }))
 }
 
 /** Admin: delete a report for good. */
 export async function deleteReport(id: string): Promise<void> {
-  if (hasBackend()) {
-    await authedRequest<unknown>(`/reports/${encodeURIComponent(id)}`, { method: 'DELETE' })
-    return
-  }
-  await wait()
-  removeReport(id)
+  await authedRequest<unknown>(`/reports/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }

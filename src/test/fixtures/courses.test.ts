@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildMockModules } from './courses'
-import { moduleProgress } from '../utils/progress'
-import { withStudentDeadlines } from '../utils/deadline'
+import { moduleProgress } from '../../utils/progress'
+import { withStudentDeadlines } from '../../utils/deadline'
 
 const NOW = new Date('2026-11-04T12:00:00Z')
 

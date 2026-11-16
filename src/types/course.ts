@@ -123,3 +123,6 @@ export interface CourseModule {
   createdAt?: string
   items: ContentItem[]
 }
+
+/** What a module edit changes (title, description, dates, lecturers). */
+export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt' | 'lecturerIds'>>

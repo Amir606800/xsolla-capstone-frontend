@@ -6,11 +6,7 @@ import { ApiError } from '../../api/http'
 import App from '../../App'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
-// the demo analytics are the default; a test can make one request fail
-vi.mock('../../api/analytics', async (importActual) => {
-  const actual = await importActual<typeof import('../../api/analytics')>()
-  return { ...actual, fetchOverview: vi.fn(actual.fetchOverview), fetchAiSummary: vi.fn(actual.fetchAiSummary) }
-})
+// the setup fakes this module with vi.fn functions over the fixture school
 
 beforeEach(() => {
   vi.mocked(fetchOverview).mockClear()
@@ -108,7 +104,7 @@ describe('Admin analytics: a student', () => {
     expect(top).toHaveTextContent('Rashad Aliyev')
 
     const summary = await panel('AI summary')
-    await waitFor(() => expect(summary).toHaveTextContent('Demo text made by the app'))
+    await waitFor(() => expect(summary).toHaveTextContent(/Based on \d+ records/))
     expect(fetchAiSummary).toHaveBeenCalledWith('students', 1, { from: undefined, to: undefined, force: false })
 
     // the latest four weeks first, the rest on request
@@ -138,7 +134,7 @@ describe('Admin analytics: a student', () => {
     await waitFor(() =>
       expect(fetchAiSummary).toHaveBeenLastCalledWith('students', 1, { from: undefined, to: undefined, force: true }),
     )
-    expect(await within(summary).findByText(/Demo text made by the app/)).toBeInTheDocument()
+    expect(await within(summary).findByText(/Based on \d+ records/)).toBeInTheDocument()
   })
 
   it('an unknown student is a not-found page', async () => {

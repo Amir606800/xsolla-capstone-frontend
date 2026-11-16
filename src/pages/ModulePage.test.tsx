@@ -6,7 +6,7 @@ import { downloadFile } from '../api/files'
 import App from '../App'
 import { renderWithProviders } from '../test/renderWithProviders'
 import { MAX_FILE_BYTES } from '../utils/files'
-import { standingsOf } from '../mocks/standings'
+import { standingsOf } from '../test/fixtures/standings'
 
 // the real download needs object URLs, which jsdom lacks; api/files has its own tests
 vi.mock('../api/files', () => ({ downloadFile: vi.fn(async () => undefined) }))

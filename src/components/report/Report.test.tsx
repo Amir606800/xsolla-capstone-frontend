@@ -3,13 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { sendReport } from '../../api/reports'
 import App from '../../App'
-import { listReports } from '../../mocks/reports'
+import { listReports } from '../../test/fixtures/reports'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
-vi.mock('../../api/reports', async (importActual) => {
-  const actual = await importActual<typeof import('../../api/reports')>()
-  return { ...actual, sendReport: vi.fn(actual.sendReport) }
-})
+// the setup fakes this module with vi.fn functions over the fixture school
 
 beforeEach(() => {
   vi.mocked(sendReport).mockClear()

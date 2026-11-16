@@ -1,4 +1,4 @@
-import type { User } from '../types/user'
+import type { User } from '../../types/user'
 
 /**
  * Demo accounts for working offline; any password works. Any other e-mail signs in as a student.

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from '../../api/notifications'
 import App from '../../App'
-import { buildMockNotifications } from '../../mocks/notifications'
+import { buildMockNotifications } from '../../test/fixtures/notifications'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 function renderApp(route = '/dashboard') {

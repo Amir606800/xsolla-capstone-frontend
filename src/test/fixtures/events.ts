@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '../types/calendar'
+import type { CalendarEvent } from '../../types/calendar'
 
 /**
  * Mock calendar events, built around `now`. Deliberately sparse so the

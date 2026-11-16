@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import type { CalendarEvent } from '../types/calendar'
-import type { AssignmentItem } from '../types/course'
-import { addModule, listEvents, listModules, putEvent, putItem, putModule, setLecturer, removeEvent, removeItem, removeModule } from './contentEdits'
+import type { CalendarEvent } from '../../types/calendar'
+import type { AssignmentItem } from '../../types/course'
+import {
+  addModule,
+  listEvents,
+  listModules,
+  putEvent,
+  putItem,
+  putModule,
+  setLecturer,
+  removeEvent,
+  removeItem,
+  removeModule,
+} from './contentEdits'
 
 const NOW = new Date(2026, 10, 4, 12, 0)
 const mod = (id: string) => listModules(NOW).find((m) => m.id === id)!
@@ -24,7 +35,11 @@ describe('course edits', () => {
     putItem(task(), NOW)
     const items = mod('m7').items
     expect(items[items.length - 1]).toMatchObject({ id: 'new-task', title: 'Indexes' })
-    expect(listModules(NOW).flatMap((m) => m.items).filter((i) => i.id === 'new-task')).toHaveLength(1)
+    expect(
+      listModules(NOW)
+        .flatMap((m) => m.items)
+        .filter((i) => i.id === 'new-task'),
+    ).toHaveLength(1)
   })
 
   it('edits an existing item in place and keeps the student work on it', () => {
@@ -120,7 +135,11 @@ describe('course edits', () => {
     expect(mod('m1')).toMatchObject({ createdBy: 900 })
     expect(mod('m2')).toMatchObject({ createdBy: 902 })
     expect(new Date(mod('m1').createdAt!).getTime()).toBeLessThan(new Date(mod('m1').opensAt!).getTime())
-    expect(mod('m5').items.filter((i) => i.type === 'quiz').every((q) => q.createdBy === 907)).toBe(true)
+    expect(
+      mod('m5')
+        .items.filter((i) => i.type === 'quiz')
+        .every((q) => q.createdBy === 907),
+    ).toBe(true)
   })
 
   it('survives broken storage', () => {

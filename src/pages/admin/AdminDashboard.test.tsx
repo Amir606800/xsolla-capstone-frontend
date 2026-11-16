@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as directory from '../../api/directory'
 import App from '../../App'
 import { ADMIN_SECTIONS } from '../../config/adminNav'
-import { listModules } from '../../mocks/contentEdits'
+import { listModules } from '../../test/fixtures/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 beforeEach(() => {
@@ -111,7 +111,7 @@ describe('Admin overview: the current week', () => {
   })
 
   it('says so, with a way to fix it, when the week has no lecturer', async () => {
-    const { putModule } = await import('../../mocks/contentEdits')
+    const { putModule } = await import('../../test/fixtures/contentEdits')
     putModule('m6', { lecturerIds: [] })
     renderWithProviders(<App />, { route: '/admin' })
     const card = within(await screen.findByRole('region', { name: 'Current week' }))

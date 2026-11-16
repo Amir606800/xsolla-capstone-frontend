@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../../App'
-import { listBroadcasts } from '../../mocks/broadcasts'
+import { listBroadcasts } from '../../test/fixtures/broadcasts'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 beforeEach(() => {

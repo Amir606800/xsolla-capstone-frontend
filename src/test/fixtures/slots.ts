@@ -1,16 +1,16 @@
-import type { AvailabilityWindow, MeetingSlot } from '../types/slots'
-import type { User } from '../types/user'
-import { canMentor, hasRole, isStudent } from '../utils/roles'
-import { sortSlots, upcomingSlotTimes, withoutClashes } from '../utils/slots'
+import type { AvailabilityWindow, MeetingSlot } from '../../types/slots'
+import { canMentor, hasRole, isStudent } from '../../utils/roles'
+import { sortSlots, upcomingSlotTimes, withoutClashes } from '../../utils/slots'
 import { MENTOR } from './teams'
-import { publish } from '../sync/bus'
+import { publish } from '../../sync/bus'
 
 /**
  * Stand-in for the backend: a small slot store kept in localStorage, so a mentor and a student
  * who use the same browser see each other's changes. Every rule below is a rule the real backend
  * must enforce too (the client checks are only for nice error messages).
  */
-export type Actor = Pick<User, 'id' | 'name' | 'roles'>
+export type { Actor } from '../../types/slots'
+import type { Actor } from '../../types/slots'
 
 const KEY = 'mentor_slots'
 const isAdmin = (a: Actor) => hasRole(a, 'admin')
@@ -25,24 +25,23 @@ const newId = () => `s-${Date.now().toString(36)}-${(seq++).toString(36)}`
  * 15:00-17:00. A student's work is due at 08:00 on the day of their 1:1 (utils/deadline).
  */
 export function buildMockSlots(now: Date = new Date()): MeetingSlot[] {
-  const toFriday = ((5 - now.getDay() + 7) % 7) || 7
+  const toFriday = (5 - now.getDay() + 7) % 7 || 7
   const day = (offset: number) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset)
-  const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const key = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
   const windows: AvailabilityWindow[] = [
     { date: key(day(toFriday)), start: '15:00', end: '18:00' },
     { date: key(day(toFriday + 3)), start: '15:00', end: '17:00' },
   ]
   const slots = windows.flatMap((w, wi) =>
-    upcomingSlotTimes(w, new Date(0)).map(
-      (t, i): MeetingSlot => ({
-        id: `seed-${wi}-${i}`,
-        mentorId: MENTOR.id,
-        mentorName: MENTOR.name,
-        ...t,
-        booked: false,
-      }),
-    ),
+    upcomingSlotTimes(w, new Date(0)).map((t, i): MeetingSlot => ({
+      id: `seed-${wi}-${i}`,
+      mentorId: MENTOR.id,
+      mentorName: MENTOR.name,
+      ...t,
+      booked: false,
+    })),
   )
   // a teammate already took the first time, so students can see what "taken" looks like
   slots[0] = { ...slots[0], booked: true, bookedBy: { id: 101, name: 'Leyla Hasanova' } }
@@ -98,9 +97,13 @@ export function addWindow(actor: Actor, window: AvailabilityWindow, now: Date = 
   if (!canMentor(actor)) throw new Error('Only mentors can add 1:1 times')
   const all = load(now)
   const mine = all.filter((s) => s.mentorId === actor.id)
-  const fresh = withoutClashes(upcomingSlotTimes(window, now), mine).map(
-    (t): MeetingSlot => ({ id: newId(), mentorId: actor.id, mentorName: actor.name, ...t, booked: false }),
-  )
+  const fresh = withoutClashes(upcomingSlotTimes(window, now), mine).map((t): MeetingSlot => ({
+    id: newId(),
+    mentorId: actor.id,
+    mentorName: actor.name,
+    ...t,
+    booked: false,
+  }))
   const next = [...all, ...fresh]
   save(next)
   return view(next, actor)

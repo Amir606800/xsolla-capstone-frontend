@@ -118,7 +118,7 @@ export interface ApiSubmission {
   grade?: number | null
   feedback?: string | null
   graded_at?: string | null
-  /** Proposed (BACKEND_REQ_ONE_ON_ONE_DEADLINES.md): handed in after the student's deadline. */
+  /** Proposed (backend_requirements/BACKEND_REQ_ONE_ON_ONE_DEADLINES.md): handed in after the student's deadline. */
   late?: boolean | null
   files?: ApiFile[] | null
   /** Proposed: the earlier attempts, newest first (on GET .../submissions/me). */

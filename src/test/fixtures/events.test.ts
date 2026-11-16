@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupByDay } from '../utils/calendar'
+import { groupByDay } from '../../utils/calendar'
 import { buildMockEvents } from './events'
 
 const NOW = new Date(2026, 10, 4, 12) // Wed 4 Nov 2026

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { buildMockStandings, buildMockStandingStore, gradeWeek, LATE_WEEK_IS_RED, markLate, standingsOf, teamStandings } from './standings'
+import {
+  buildMockStandings,
+  buildMockStandingStore,
+  gradeWeek,
+  LATE_WEEK_IS_RED,
+  markLate,
+  standingsOf,
+  teamStandings,
+} from './standings'
 
 const NOW = new Date(2026, 10, 4, 12, 0)
 const RASHAD = { id: 900, name: 'Rashad Aliyev' }
@@ -13,7 +21,9 @@ describe('demo data', () => {
   it("Sam's teammates are graded for weeks 1-4; week 5 is still to give", () => {
     const store = buildMockStandingStore(NOW)
     for (const id of [101, 102, 103, 104]) {
-      const weeks = Object.values(store).filter((s) => s.studentId === id).map((s) => s.week)
+      const weeks = Object.values(store)
+        .filter((s) => s.studentId === id)
+        .map((s) => s.week)
       expect(weeks.sort()).toEqual([1, 2, 3, 4])
     }
   })
@@ -51,6 +61,10 @@ describe('a late hand-in', () => {
     expect(standingsOf(101, NOW).find((w) => w.week === 3)).toMatchObject({ level: 'red', lateTasks: ['Promises'] })
     expect(() => gradeWeek(RASHAD, 101, 3, 'green', 'Good week', NOW)).toThrow(LATE_WEEK_IS_RED)
     gradeWeek(RASHAD, 101, 3, 'red', 'The Promises task came in late.', NOW)
-    expect(standingsOf(101, NOW).find((w) => w.week === 3)).toMatchObject({ level: 'red', note: 'The Promises task came in late.', lateTasks: ['Promises'] })
+    expect(standingsOf(101, NOW).find((w) => w.week === 3)).toMatchObject({
+      level: 'red',
+      note: 'The Promises task came in late.',
+      lateTasks: ['Promises'],
+    })
   })
 })

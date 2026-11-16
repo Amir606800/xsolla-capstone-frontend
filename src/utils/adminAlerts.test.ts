@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Broadcast } from '../mocks/broadcasts'
+import type { Broadcast } from '../test/fixtures/broadcasts'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { CalendarEvent } from '../types/calendar'
 import type { CourseModule } from '../types/course'

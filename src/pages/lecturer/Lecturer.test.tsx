@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { removeItem, setLecturer } from '../../mocks/contentEdits'
+import { listEvents, putEvent, removeItem, setLecturer } from '../../test/fixtures/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 // "Today" is Wed 4 Nov 2026: module 6 (Go Basics) is running, module 7 opens next week.
@@ -26,12 +26,11 @@ const dialog = () => screen.getByRole('dialog')
 const status = async (text: string | RegExp) => expect(await screen.findByRole('status')).toHaveTextContent(text)
 
 describe('Lecturer account', () => {
-  it('the login page offers the offline demo accounts, and the lecturer lands on their dashboard', async () => {
+  it('a lecturer who signs in lands on their dashboard', async () => {
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/login' })
-    const demo = await screen.findByRole('group', { name: 'Demo accounts' })
-    await user.click(within(demo).getByRole('button', { name: 'Mentor & lecturer' }))
-    expect(screen.getByLabelText('Email')).toHaveValue('lecturer@xsolla.school')
+    await user.type(await screen.findByLabelText('Email'), 'lecturer@xsolla.school')
+    await user.type(screen.getByLabelText('Password'), 'Some-Password-1')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(await screen.findByRole('heading', { name: 'Welcome, Rashad Aliyev', level: 1 })).toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem('auth_user')!).roles).toEqual(['mentor', 'lecturer'])
@@ -380,6 +379,8 @@ describe('Module editor: module details', () => {
 })
 
 describe('Calendar: lectures and events', () => {
+  // a lecturer schedules lectures of the weeks they teach (the server's rule), so Rashad teaches week 6 here
+  beforeEach(() => void setLecturer('m6', 900, true))
   // the day panel beside the month (the other tests in this file use pop-up dialogs)
   const dialog = () => screen.getByRole('region', { name: 'Day details' })
   const grid = () => screen.getByRole('group', { name: 'Month view' })
@@ -427,6 +428,9 @@ describe('Calendar: lectures and events', () => {
   })
 
   it('edits and deletes a lecture, but not deadlines', async () => {
+    // the lecture of Monday 9 November belongs to week 6, which Rashad teaches (a lecturer edits only those)
+    const lecture = listEvents().find((e) => e.id === 'lec-1')!
+    putEvent({ ...lecture, moduleId: 'm6' })
     const user = userEvent.setup()
     renderAs(LECTURER, '/calendar')
     await screen.findByRole('group', { name: 'Month view' })

@@ -1,10 +1,10 @@
-import type { CalendarEvent } from '../types/calendar'
-import type { ContentItem, CourseModule, QuizAttempt, QuizItem } from '../types/course'
+import type { CalendarEvent } from '../../types/calendar'
+import type { ContentItem, CourseModule, QuizAttempt, QuizItem } from '../../types/course'
 import { buildMockEvents } from './events'
-import { lecturersOf } from '../utils/content'
-import { orderByOpening } from '../utils/progress'
+import { lecturersOf } from '../../utils/content'
+import { orderByOpening } from '../../utils/progress'
 import { buildMockModules } from './courses'
-import { publish } from '../sync/bus'
+import { publish } from '../../sync/bus'
 
 /**
  * Stand-in for the backend while there is none: what a lecturer changes (modules, materials, tasks,
@@ -14,7 +14,8 @@ import { publish } from '../sync/bus'
  */
 
 /** `lecturerIds` replaces the week's lecturers (a week can have several). */
-export type ModulePatch = Partial<Pick<CourseModule, 'title' | 'description' | 'opensAt' | 'closesAt' | 'lecturerIds'>>
+export type { ModulePatch } from '../../types/course'
+import type { ModulePatch } from '../../types/course'
 
 interface CourseEdits {
   modules: Record<string, ModulePatch>
@@ -51,9 +52,9 @@ function write(key: string, value: unknown): void {
   }
 }
 
-let seq = 0
 /** A new id that cannot clash with the generated demo ids. */
-export const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}${(seq++).toString(36)}`
+export { newId } from '../../utils/ids'
+import { newId } from '../../utils/ids'
 
 const loadCourseEdits = (): CourseEdits => read<CourseEdits>(COURSE_KEY, { modules: {}, items: {} })
 
@@ -80,25 +81,27 @@ export function applyCourseEdits(demo: CourseModule[], edits: CourseEdits): Cour
   for (const m of base) for (const i of m.items) baseItems.set(i.id, i)
 
   const deleted = new Set(edits.deletedModules ?? [])
-  return base.filter((m) => !deleted.has(m.id)).map((m) => {
-    const items: ContentItem[] = []
-    for (const item of m.items) {
-      const edited = edits.items[item.id]
-      if (edited === null) continue // deleted
-      if (edited === undefined) items.push(item)
-      else if (edited.moduleId === m.id) items.push(merge(item, edited))
-      // else: moved to another module, added there below
-    }
-    for (const [id, edited] of Object.entries(edits.items)) {
-      if (!edited || edited.moduleId !== m.id) continue
-      const original = baseItems.get(id)
-      if (original && original.moduleId === m.id) continue // already placed above
-      items.push(merge(original, edited))
-    }
-    const { lecturerIds, ...patch } = edits.modules[m.id] ?? {}
-    const lecturers = lecturerIds ?? lecturersOf(m)
-    return { ...m, ...patch, lecturerIds: lecturers, createdBy: lecturers[0], items }
-  })
+  return base
+    .filter((m) => !deleted.has(m.id))
+    .map((m) => {
+      const items: ContentItem[] = []
+      for (const item of m.items) {
+        const edited = edits.items[item.id]
+        if (edited === null) continue // deleted
+        if (edited === undefined) items.push(item)
+        else if (edited.moduleId === m.id) items.push(merge(item, edited))
+        // else: moved to another module, added there below
+      }
+      for (const [id, edited] of Object.entries(edits.items)) {
+        if (!edited || edited.moduleId !== m.id) continue
+        const original = baseItems.get(id)
+        if (original && original.moduleId === m.id) continue // already placed above
+        items.push(merge(original, edited))
+      }
+      const { lecturerIds, ...patch } = edits.modules[m.id] ?? {}
+      const lecturers = lecturerIds ?? lecturersOf(m)
+      return { ...m, ...patch, lecturerIds: lecturers, createdBy: lecturers[0], items }
+    })
 }
 
 /** The course in the order the weeks open; each module's number follows that order. */
@@ -151,7 +154,11 @@ export function putItem(item: ContentItem, now: Date = new Date()): CourseModule
   if (!exists(item.moduleId, edits, now)) throw new Error('This module does not exist')
   // student work never travels with a lecturer edit; a picked File cannot be stored (the mock keeps name and size)
   const clean: ContentItem =
-    item.type === 'assignment' ? { ...item, submission: undefined } : item.type === 'resource' ? { ...item, upload: undefined } : item
+    item.type === 'assignment'
+      ? { ...item, submission: undefined }
+      : item.type === 'resource'
+        ? { ...item, upload: undefined }
+        : item
   edits.items[item.id] = clean
   write(COURSE_KEY, edits)
   return listModules(now)

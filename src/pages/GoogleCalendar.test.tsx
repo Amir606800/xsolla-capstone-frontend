@@ -2,7 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from '../App'
-import { listEvents } from '../mocks/contentEdits'
+import { listEvents } from '../test/fixtures/contentEdits'
 import { renderWithProviders } from '../test/renderWithProviders'
 
 const LECTURER = { id: 900, name: 'Rashad Aliyev', email: 'rashad@xsolla.school', roles: ['mentor', 'lecturer'] }

@@ -1,8 +1,7 @@
-import { adminReviews, missingReviews } from '../mocks/adminReviews'
 import { NO_SESSION_REASONS, REVIEW_STATEMENTS, REVIEW_TOPICS } from '../types/mentorReview'
 import type { AdminReview, MissingReview, NoSessionReason, ReviewStatement, ReviewTopic, Score } from '../types/mentorReview'
 import { authedRequest } from './authed'
-import { ApiError, hasBackend } from './http'
+import { ApiError } from './http'
 
 /**
  * The admin's Mentor reviews page (backend docs/mentor_reviews.md, "Reading the reviews", admin only).
@@ -10,11 +9,7 @@ import { ApiError, hasBackend } from './http'
  *   GET /mentor-reviews/missing?module_id=   the students who have not sent that week's review
  * (`GET /mentor-reviews/summary` exists too; the page works the same numbers out from the list, so it is not called.)
  * A server without a route answers 404/405/501: the page then says so (`null`) instead of showing an error.
- * With no backend at all the demo reviews are shown.
  */
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
-
 interface PersonDto {
   id: number
   name: string
@@ -91,17 +86,13 @@ export const mapMissingReview = (d: MissingReviewDto): MissingReview => ({
 
 /** All the reviews, or `null` when the server has no such route yet. */
 export async function fetchAllReviews(): Promise<AdminReview[] | null> {
-  if (hasBackend()) {
-    try {
-      const rows = (await authedRequest<AdminReviewDto[] | null>('/mentor-reviews')) ?? []
-      return rows.map(mapAdminReview).filter((r): r is AdminReview => r !== null)
-    } catch (e) {
-      if (missingRoute(e)) return null
-      throw e
-    }
+  try {
+    const rows = (await authedRequest<AdminReviewDto[] | null>('/mentor-reviews')) ?? []
+    return rows.map(mapAdminReview).filter((r): r is AdminReview => r !== null)
+  } catch (e) {
+    if (missingRoute(e)) return null
+    throw e
   }
-  await wait()
-  return adminReviews()
 }
 
 /**
@@ -109,15 +100,11 @@ export async function fetchAllReviews(): Promise<AdminReview[] | null> {
  * not know the week). The page leaves that part out then: it is an extra, not the page.
  */
 export async function fetchMissingReviews(moduleId: string): Promise<MissingReview[] | null> {
-  if (hasBackend()) {
-    try {
-      const rows = (await authedRequest<MissingReviewDto[] | null>(`/mentor-reviews/missing?module_id=${encodeURIComponent(moduleId)}`)) ?? []
-      return rows.map(mapMissingReview)
-    } catch (e) {
-      if (missingRoute(e)) return null
-      throw e
-    }
+  try {
+    const rows = (await authedRequest<MissingReviewDto[] | null>(`/mentor-reviews/missing?module_id=${encodeURIComponent(moduleId)}`)) ?? []
+    return rows.map(mapMissingReview)
+  } catch (e) {
+    if (missingRoute(e)) return null
+    throw e
   }
-  await wait()
-  return missingReviews(moduleId)
 }

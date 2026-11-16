@@ -1,63 +1,16 @@
-import { checkLateHandIn } from '../mocks/lateWork'
-import {
-  addModule,
-  listModules,
-  type ModulePatch,
-  putItem,
-  putModule,
-  quizAttemptsOf,
-  removeItem,
-  removeModule,
-  saveQuizAttempt,
-  setLecturer,
-} from '../mocks/contentEdits'
-import { handIn, submissionsOf } from '../mocks/submissions'
-import type { ContentItem, CourseModule, QuizAttempt, QuizItem, ResourceItem, Submission, SubmissionFile } from '../types/course'
-import { generateAiQuizFromMaterial } from '../utils/aiQuizClient'
+import type { ContentItem, CourseModule, ModulePatch, Submission, SubmissionFile } from '../types/course'
 import * as http from './courses.http'
-import { hasBackend } from './http'
 
 /**
- * Real backend when VITE_API_URL is set (./courses.http), the offline mock otherwise.
- * Real: loading the modules and their items, handing in work, module title/description, creating and
- * editing tasks, file materials and links, deleting items. The backend has no place yet for quizzes or
- * week dates: quizzes give a clear error, dates are sent and checked afterwards (datesNotKept).
- * Each authoring call returns the whole updated course (all modules), like a refetch would.
+ * The course: modules (weeks), their items, hand-ins and quizzes (./courses.http). Each authoring call returns the whole
+ * updated course (all modules), like a refetch would. The backend has no place yet for week dates on every server: they
+ * are sent and checked afterwards (datesNotKept).
  */
-const MOCK_LATENCY_MS = 300
-const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
-
 export type { ModulePatch }
 
-/** Puts this student's own work (from the submissions store) on the tasks; nobody else's. */
-function withWork(
-  modules: CourseModule[],
-  mine: Record<string, Submission>,
-  attempts: Record<string, QuizAttempt> = {},
-): CourseModule[] {
-  return modules.map((m) => ({
-    ...m,
-    items: m.items.map((i) => {
-      if (i.type === 'quiz') {
-        const attempt = attempts[i.id]
-        return attempt ? { ...i, attempt } : i
-      }
-      if (i.type !== 'assignment') return i
-      const { submission: _demo, ...task } = i
-      void _demo
-      return mine[i.id] ? { ...task, submission: mine[i.id] } : task
-    }),
-  }))
-}
-
-/** `student` + `userId`: also load the student's own hand-ins. Staff get the course without anyone's work. */
+/** `student`: the student's own hand-ins come with the tasks. Staff get the course without anyone's work. */
 export async function fetchModules(opts: { student?: boolean; userId?: number } = {}): Promise<CourseModule[]> {
-  if (hasBackend()) return http.fetchModules(opts.student ?? false)
-  await wait()
-  const modules = listModules()
-  const submissions = opts.student && opts.userId !== undefined ? submissionsOf(opts.userId) : {}
-  const attempts = opts.userId !== undefined ? quizAttemptsOf(opts.userId) : {}
-  return withWork(modules, submissions, attempts)
+  return http.fetchModules(opts.student ?? false)
 }
 
 export interface SubmitPayload {
@@ -75,42 +28,22 @@ export interface SubmitContext {
 }
 
 export async function submitWork(assignmentId: string, payload: SubmitPayload, ctx: SubmitContext = {}): Promise<Submission> {
-  if (hasBackend()) {
-    if (!ctx.moduleId) throw new Error('This task has no module')
-    return http.submitWork(ctx.moduleId, assignmentId, payload)
-  }
-  await wait()
-  const submission: Submission = {
-    submittedAt: new Date().toISOString(),
-    textBody: payload.textBody || undefined,
-    files: [...(payload.keep ?? []), ...payload.files.map((f) => ({ name: f.name, sizeBytes: f.size }))],
-  }
-  if (ctx.studentId === undefined) return submission
-  // late work is accepted: it is marked, and the week grade turns red (the server does the same); then it is kept so the
-  // student's mentor can review it
-  return handIn(ctx.studentId, assignmentId, checkLateHandIn(ctx.studentId, assignmentId, submission))
+  if (!ctx.moduleId) throw new Error('This task has no module')
+  return http.submitWork(ctx.moduleId, assignmentId, payload)
 }
 
 export async function saveModule(id: string, patch: ModulePatch): Promise<CourseModule[]> {
-  if (hasBackend()) return http.saveModule(id, patch)
-  await wait()
-  return putModule(id, patch)
+  return http.saveModule(id, patch)
 }
 
 export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
-  if (hasBackend()) return http.saveItem(item)
-  await wait()
-  return putItem(item)
+  return http.saveItem(item)
 }
 
-/** A new module after the last one. Returns its id and the whole course. */
-export async function createModule(
-  patch: ModulePatch & { title: string },
-  ctx: { createdBy?: number } = {},
-): Promise<{ id: string; modules: CourseModule[] }> {
-  if (hasBackend()) return http.createModule(patch)
-  await wait()
-  return addModule(patch, ctx.createdBy)
+/** A new module after the last one. Returns its id and the whole course. (`createdBy`: the server takes it from the session.) */
+export async function createModule(patch: ModulePatch & { title: string }, ctx: { createdBy?: number } = {}): Promise<{ id: string; modules: CourseModule[] }> {
+  void ctx
+  return http.createModule(patch)
 }
 
 /**
@@ -118,92 +51,38 @@ export async function createModule(
  * module): make a module and return its id, and save one item in it. The caller reloads once at the end.
  */
 export async function createModuleQuiet(patch: ModulePatch & { title: string }, ctx: { createdBy?: number } = {}): Promise<string> {
-  if (hasBackend()) return http.postModule(patch)
-  return addModule(patch, ctx.createdBy).id
+  void ctx
+  return http.postModule(patch)
 }
 
 export async function writeItemQuiet(item: ContentItem): Promise<void> {
-  if (hasBackend()) return http.writeItem(item)
-  putItem(item)
+  return http.writeItem(item)
 }
 
 /** Adds a lecturer to a week (module), or takes them off it (`assigned: false`); the others stay. Returns the whole course. */
 export async function assignLecturer(moduleId: string, lecturerId: number, assigned = true): Promise<CourseModule[]> {
-  if (hasBackend()) return http.assignLecturer(moduleId, lecturerId, assigned)
-  await wait()
-  return setLecturer(moduleId, lecturerId, assigned)
+  return http.assignLecturer(moduleId, lecturerId, assigned)
 }
 
 /** Admins (and the module's creator): the module and everything in it. */
 export async function deleteModule(id: string): Promise<CourseModule[]> {
-  if (hasBackend()) return http.deleteModule(id)
-  await wait()
-  return removeModule(id)
+  return http.deleteModule(id)
 }
 
 export async function deleteItem(id: string): Promise<CourseModule[]> {
-  if (hasBackend()) return http.deleteItem(id)
-  await wait()
-  return removeItem(id)
+  return http.deleteItem(id)
 }
 
+/** The server writes the quiz from the material (its AI); the quiz shows as "generating" until it is ready. */
 export async function generateAiQuiz(
   input: { moduleId: string; contentItemId: string; title?: string; dueAt?: string },
   ctx: { createdBy?: number } = {},
 ): Promise<{ quizId: string; modules: CourseModule[] }> {
-  if (hasBackend()) return http.generateAiQuiz(input)
-  await wait()
-  const mod = listModules().find((m) => m.id === input.moduleId)
-  const material = mod?.items.find((i): i is ResourceItem => i.type === 'resource' && i.id === input.contentItemId)
-  if (!material) throw new Error('Lesson material not found')
-
-  const quizId = `ai-quiz-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-  const pending: QuizItem = {
-    id: quizId,
-    moduleId: input.moduleId,
-    type: 'quiz',
-    title: input.title?.trim() || `AI Quiz: ${material.title}`,
-    description: 'Generating 10 multiple-choice questions from lesson material...',
-    dueAt: input.dueAt,
-    status: 'generating',
-    isAiGenerated: true,
-    sourceContentItemId: material.id,
-    createdBy: ctx.createdBy,
-    questions: [],
-  }
-  const modules = putItem(pending)
-
-  void generateAiQuizFromMaterial(material)
-    .then((gen) => {
-      putItem({
-        ...pending,
-        title: input.title?.trim() || gen.title,
-        description: gen.description,
-        status: 'ready',
-        questions: gen.questions,
-      })
-    })
-    .catch((err) => {
-      putItem({
-        ...pending,
-        status: 'failed',
-        errorMessage: err instanceof Error ? err.message : 'AI quiz generation failed',
-      })
-    })
-
-  return { quizId, modules }
+  void ctx
+  return http.generateAiQuiz(input)
 }
 
-export async function submitQuizAttempt(
-  quizId: string,
-  answers: number[],
-  ctx: { studentId?: number } = {},
-): Promise<CourseModule[]> {
-  if (hasBackend()) return http.submitQuizAttempt(quizId, answers)
-  await wait()
-  const userId = ctx.studentId ?? 0
-  saveQuizAttempt(userId, quizId, answers)
-  const submissions = submissionsOf(userId)
-  const attempts = quizAttemptsOf(userId)
-  return withWork(listModules(), submissions, attempts)
+export async function submitQuizAttempt(quizId: string, answers: number[], ctx: { studentId?: number } = {}): Promise<CourseModule[]> {
+  void ctx
+  return http.submitQuizAttempt(quizId, answers)
 }

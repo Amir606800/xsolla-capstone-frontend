@@ -18,3 +18,15 @@ export interface WeeklyStanding {
   /** Optional comment from the mentor. */
   note?: string
 }
+
+/** A week grade with the student it is for (and who gave it). */
+export interface StoredStanding extends WeeklyStanding {
+  studentId: number
+  gradedBy?: { id: number; name: string }
+}
+
+/** The mentor who grades: who they are, by name. */
+export interface Mentor {
+  id: number
+  name: string
+}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { fetchModules } from '../../api/courses'
-import { fetchTeams, fetchUsers, teamsAreDemoData } from '../../api/directory'
+import { fetchTeams, fetchUsers } from '../../api/directory'
 import { fetchEvents } from '../../api/events'
 import { Icon } from '../../components/Icon'
 import { adminSection } from '../../config/adminNav'
@@ -42,7 +42,7 @@ export default function AdminHomePage() {
   useLive(['courses', 'directory', 'events'], refresh, { enabled: data !== null })
 
   const [now] = useState(() => new Date())
-  const tiles = data ? overviewTiles(data, now, { demoTeams: teamsAreDemoData() }) : null
+  const tiles = data ? overviewTiles(data, now) : null
   const week = data?.modules.ok ? weekSummary(data.modules.value, data.events.ok ? data.events.value : [], now) : null
   const names = new Map((data?.users.ok ? data.users.value : []).map((u) => [u.id, u.name]))
 

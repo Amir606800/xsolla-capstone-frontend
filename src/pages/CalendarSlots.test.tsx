@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
-import { listSlots, reserve } from '../mocks/slots'
+import { listSlots, reserve } from '../test/fixtures/slots'
 import { renderWithProviders } from '../test/renderWithProviders'
 
 // "Today" is Wed 4 Nov 2026. The demo data opens the 1:1 days: Fri 6 Nov 15:00-18:00 (15:00 is taken by a teammate)

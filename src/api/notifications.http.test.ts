@@ -107,13 +107,3 @@ describe('announcements: with a backend', () => {
   })
 })
 
-describe('announcements: offline', () => {
-  it('sending counts the people it reaches from the demo directory', async () => {
-    vi.stubEnv('VITE_API_URL', '')
-    const { sendBroadcast, fetchBroadcasts, fetchAnnouncements } = await real()
-    const sent = await sendBroadcast({ message: 'Hi students', link: '', audience: 'students' }, 'School Admin')
-    expect(sent.recipients).toBe(29)
-    expect((await fetchBroadcasts()).map((b) => b.id)).toEqual([sent.id])
-    expect((await fetchAnnouncements({ id: 1, roles: ['student'] })).map((n) => n.message)).toEqual(['Hi students'])
-  })
-})

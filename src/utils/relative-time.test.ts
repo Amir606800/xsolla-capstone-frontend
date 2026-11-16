@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildMockNotifications } from '../mocks/notifications'
+import { buildMockNotifications } from '../test/fixtures/notifications'
 import { formatRelative } from './date'
 
 const NOW = new Date(2026, 10, 5, 12, 0)

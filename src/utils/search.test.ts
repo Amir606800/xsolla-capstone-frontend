@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { STUDENT_NAV } from '../config/nav'
-import { buildMockModules } from '../mocks/courses'
+import { buildMockModules } from '../test/fixtures/courses'
 import { isModuleLocked } from './progress'
 import { buildSearchItems, filterSearchItems } from './search'
 

@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
-import { buildMockModules } from '../../mocks/courses'
+import { buildMockModules } from '../../test/fixtures/courses'
 import type { CourseModule } from '../../types/course'
 import { formatDateTime } from '../../utils/date'
 import { withStudentDeadlines } from '../../utils/deadline'

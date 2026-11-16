@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import * as courses from '../../api/courses'
 import App from '../../App'
-import { listModules, putItem, setLecturer } from '../../mocks/contentEdits'
+import { listModules, putItem, setLecturer } from '../../test/fixtures/contentEdits'
 import type { QuizQuestion } from '../../types/course'
 import { renderWithProviders } from '../../test/renderWithProviders'
 

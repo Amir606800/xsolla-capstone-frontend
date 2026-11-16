@@ -30,6 +30,7 @@ The frontend uses all of this. What is still missing is below.
 when the stored `due_at` falls Friday to Monday; tasks due Tuesday to Thursday keep their own date.
 
 **Needed:**
+
 - Accept assignments without `due_at` on `POST /modules/{id}/content-items` and `PATCH /content-items/{id}`.
 - Anchor the 1:1 weekend on the **module's week**, not on the task: from the first Friday on or after
   `modules.opens_at` (00:00 school time) to the Tuesday after (00:00).
@@ -42,6 +43,7 @@ that gives exactly the new deadlines.
 ## 2. A late flag on each hand-in
 
 **Needed:**
+
 - A `late` boolean on the submission, worked out and **stored when the work is handed in**: `submitted_at` after the
   student's deadline at that moment.
 - Storing it keeps later changes from rewriting history: a 1:1 booked or cancelled afterwards does not change it. It
@@ -85,17 +87,20 @@ When a late hand-in is stored:
 ## What the frontend does today (no backend change needed)
 
 **Students:**
+
 - Their own deadline on every task, with why: "the day of your 1:1" or "no 1:1 booked yet".
 - Booking or cancelling a 1:1 moves the deadline at once.
 - The hand-in form stays open after the deadline and warns that late work turns the week red.
 - Late work is tagged "Late submission".
 
 **Mentors:**
+
 - Each student's own deadline on the Grading page, worked out from the slots they booked.
 - A red "Late submission" tag on late work.
 - Green and yellow are disabled for a week with a late hand-in, with the reason shown.
 
 **Lecturers:**
+
 - The task form has no due date any more. It explains that work is due at 08:00 on each student's 1:1 day (Friday or
   Monday).
 

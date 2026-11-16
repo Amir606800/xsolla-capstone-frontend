@@ -1,5 +1,5 @@
-import type { ApiGoogleCalendarEvent } from '../api/types'
-import type { GoogleAccount, GoogleStatus } from '../types/google'
+import type { ApiGoogleCalendarEvent } from '../../api/types'
+import type { GoogleAccount, GoogleStatus } from '../../types/google'
 
 /**
  * Offline stand-in for the Google connection, kept in this browser. It only exists so the demo and the
@@ -32,7 +32,9 @@ function write(value: Stored): void {
 export function mockGoogleStatus(): GoogleStatus {
   const s = read()
   // a revoked connection still remembers whose account it was
-  return s.connection === 'disconnected' ? { connection: 'disconnected' } : { connection: s.connection, ...(s.account ? { account: s.account } : {}) }
+  return s.connection === 'disconnected'
+    ? { connection: 'disconnected' }
+    : { connection: s.connection, ...(s.account ? { account: s.account } : {}) }
 }
 
 /** The "Connect" flow, done at once: a Google account named after the person. */
@@ -64,7 +66,8 @@ export function mockGoogleCalendar(now: Date = new Date()): ApiGoogleCalendarEve
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   }
-  const at = (offset: number, hour: number) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, hour).toISOString()
+  const at = (offset: number, hour: number) =>
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, hour).toISOString()
   return [
     {
       id: 'demo-dentist',
@@ -76,7 +79,14 @@ export function mockGoogleCalendar(now: Date = new Date()): ApiGoogleCalendarEve
       all_day: false,
       html_link: 'https://www.google.com/calendar/event?eid=demo-dentist',
     },
-    { id: 'demo-call', title: 'Call with family', starts_at: at(2, 19), ends_at: at(2, 20), all_day: false, meeting_url: 'https://meet.google.com/abc-defg-hij' },
+    {
+      id: 'demo-call',
+      title: 'Call with family',
+      starts_at: at(2, 19),
+      ends_at: at(2, 20),
+      all_day: false,
+      meeting_url: 'https://meet.google.com/abc-defg-hij',
+    },
     { id: 'demo-birthday', title: 'Friend\u2019s birthday', starts_at: day(3), ends_at: day(3), all_day: true },
     { id: 'demo-untitled', title: '', starts_at: at(4, 9), ends_at: at(4, 10), all_day: false },
   ]

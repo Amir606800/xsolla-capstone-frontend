@@ -1,6 +1,6 @@
-import { DEMO_ACCOUNTS, DEMO_ADMIN } from '../mocks/accounts'
-import { listUsers, passwordMatches } from '../mocks/directory'
-import type { User } from '../types/user'
+import { DEMO_ACCOUNTS, DEMO_ADMIN } from './accounts'
+import { listUsers, passwordMatches } from './directory'
+import type { User } from '../../types/user'
 
 /** Offline mock, used when no backend URL is configured (VITE_API_URL is empty). Same signatures as auth.http.ts. */
 
@@ -8,7 +8,7 @@ const MOCK_LATENCY_MS = 300
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // the demo accounts live with the other mocks; re-exported so existing imports keep working
-export { DEMO_ACCOUNTS, DEMO_ADMIN } from '../mocks/accounts'
+export { DEMO_ACCOUNTS, DEMO_ADMIN } from './accounts'
 
 function nameFromEmail(email: string): string {
   const local = email.split('@')[0] ?? 'Student'

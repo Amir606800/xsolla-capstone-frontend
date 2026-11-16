@@ -1,8 +1,8 @@
 import { DEMO_ACCOUNTS, DEMO_ADMIN } from './accounts'
-import type { SchoolTeam, SchoolUser } from '../types/admin'
-import type { Role, User } from '../types/user'
-import { isStaffRole, mainRoleOf, ROLE_NAMES } from '../utils/adminRoles'
-import { publish } from '../sync/bus'
+import type { SchoolTeam, SchoolUser } from '../../types/admin'
+import type { Role, User } from '../../types/user'
+import { isStaffRole, mainRoleOf, ROLE_NAMES } from '../../utils/adminRoles'
+import { publish } from '../../sync/bus'
 
 /**
  * Offline school directory for the admin section: every account and the six teams.
@@ -313,7 +313,8 @@ export function setRoles(id: number, roles: Role[], until: Partial<Record<Role, 
   const user = existing(id)
   if (roles.length === 0) throw new Error('Keep at least one role.')
   const main = mainRoleOf(user)
-  if (!roles.includes(main)) throw new Error(`${user.name} is a ${ROLE_NAMES[main].toLowerCase()}: that role cannot be taken away.`)
+  if (!roles.includes(main))
+    throw new Error(`${user.name} is a ${ROLE_NAMES[main].toLowerCase()}: that role cannot be taken away.`)
   if (until[main]) throw new Error(`${user.name}’s main role cannot end.`)
   if (isStaffRole(main) && roles.some((r) => !isStaffRole(r))) throw new Error('Only the mentor and lecturer roles can be given.')
   const edits = load()
@@ -343,10 +344,8 @@ export function setTeam(userId: number, teamId: string | null): void {
 }
 
 /** One team to create: who mentors it and which students are in it. */
-export interface TeamPlan {
-  mentorId: number | null
-  studentIds: number[]
-}
+export type { TeamPlan } from '../../types/admin'
+import type { NewTeam, TeamPlan } from '../../types/admin'
 
 /** Replaces every team with these (Team 1, Team 2, ...). Nobody is left in an old team. */
 export function createTeams(plan: TeamPlan[]): void {
@@ -385,11 +384,7 @@ function ownTeams(edits: DirectoryEdits): { id: string; name: string }[] {
   return edits.custom
 }
 
-export interface NewTeam {
-  name: string
-  mentorId: number | null
-  studentIds: number[]
-}
+export type { NewTeam } from '../../types/admin'
 
 /**
  * Adds one team. The name must be new. The mentor leaves the team they mentored before (it is left

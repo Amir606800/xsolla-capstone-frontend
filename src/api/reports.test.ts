@@ -3,6 +3,9 @@ import { stubHttp } from '../test/stubHttp'
 import { deleteReport, fetchOpenReportCount, fetchReports, sendReport, updateReport } from './reports'
 import { saveTokens } from './session'
 
+// the real module: these tests check its HTTP calls (test/setup.ts fakes it for everything else)
+vi.unmock('./reports')
+
 const BASE = 'https://api.test'
 type Call = { method: string; path: string; body?: unknown }
 let calls: Call[]
