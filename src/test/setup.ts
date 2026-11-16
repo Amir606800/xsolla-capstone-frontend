@@ -32,6 +32,8 @@ vi.mock('../api/auth', async () => {
   }),
   signup: vi.fn(async (email: string, name: string) => ({ id: 1, name, email, roles: ['student'] })),
   logout: vi.fn(async () => undefined),
+  // who the server says is signed in: nobody to ask offline
+  fetchMe: vi.fn(async () => null),
   }
 })
 

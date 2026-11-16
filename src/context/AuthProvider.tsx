@@ -1,8 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import * as authApi from '../api/auth'
+import { hasBackend } from '../api/http'
+import { useLive } from '../hooks/useLive'
 import type { User } from '../types/user'
 import { isAdmin, normalizeUser } from '../utils/roles'
+import { sameData } from '../utils/same'
 import { AuthContext } from './auth'
 
 const STORAGE_KEY = 'auth_user'
@@ -61,6 +64,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.logout()
     applyUser(null)
   }, [applyUser])
+
+  // An admin can change a person's roles, name or access while they are signed in: ask the server who they are now, so the menus
+  // and pages follow without signing out and in. (Offline there is no server to ask.)
+  const refreshMe = useCallback(() => {
+    if (!hasBackend()) return
+    authApi.fetchMe().then(
+      (me) => {
+        if (!me) return
+        const next = normalizeUser(me)
+        // (signed out meanwhile: nothing to update)
+        setUser((prev) => {
+          if (!prev || sameData(prev, next)) return prev
+          saveUser(next)
+          return next
+        })
+      },
+      () => undefined,
+    )
+  }, [])
+  useLive(['directory', 'profile'], refreshMe, { enabled: user !== null && hasBackend() })
 
   const value = useMemo(
     () => ({ user, isAuthenticated: user !== null, signIn, signInAdmin, signUp, signOut }),

@@ -88,11 +88,21 @@ describe('Student: booking a 1:1', () => {
   })
 
   it('says so, and refreshes, when someone else took the time first', async () => {
-    const { user, dialog } = await open(STUDENT, /^Thursday, November 5/)
-    reserve({ id: 2, name: 'Eli', roles: ['student'] }, listSlots(STUDENT as never)[1].id) // Eli is faster
-    await user.click(within(dialog).getByRole('button', { name: 'Book 15:30 - 16:00' }))
+    const { dialog } = await open(STUDENT, /^Thursday, November 5/)
+    const book = within(dialog).getByRole('button', { name: 'Book 15:30 - 16:00' })
+    // Eli is faster; the click comes in the same moment, before the screen has heard about it
+    reserve({ id: 2, name: 'Eli', roles: ['student'] }, listSlots(STUDENT as never)[1].id)
+    fireEvent.click(book)
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('someone just took this time')
+    await waitFor(() => expect(times(dialog)[1]).toHaveTextContent('Taken'))
+    expect(within(times(dialog)[1]).queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('shows a time that someone else takes as taken at once, without a reload or a click', async () => {
+    const { dialog } = await open(STUDENT, /^Thursday, November 5/)
+    expect(within(times(dialog)[1]).getByRole('button', { name: 'Book 15:30 - 16:00' })).toBeEnabled()
+    reserve({ id: 2, name: 'Eli', roles: ['student'] }, listSlots(STUDENT as never)[1].id)
     await waitFor(() => expect(times(dialog)[1]).toHaveTextContent('Taken'))
     expect(within(times(dialog)[1]).queryByRole('button')).not.toBeInTheDocument()
   })

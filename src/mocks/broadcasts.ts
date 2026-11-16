@@ -2,6 +2,7 @@ import type { CalendarEvent } from '../types/calendar'
 import type { AppNotification } from '../types/notification'
 import type { User } from '../types/user'
 import { type Audience, inAudience } from '../utils/adminNotifications'
+import { publish } from '../sync/bus'
 
 /**
  * Offline stand-in for announcements the admin sends to everyone (or to students / mentors / lecturers).
@@ -38,6 +39,7 @@ function read<T>(key: string, fallback: T): T {
 function write(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    publish(['notifications'])
   } catch {
     /* storage blocked or full: it lasts until the page reloads */
   }

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 /** How often a screen that is open and in front asks the server again. */
-export const REFRESH_EVERY_MS = 30_000
+export const REFRESH_EVERY_MS = 15_000
 
 /**
  * Keeps a screen up to date without the person pressing anything: `refresh` runs
@@ -23,10 +23,12 @@ export function useAutoRefresh(refresh: () => void, { everyMs = REFRESH_EVERY_MS
     const timer = window.setInterval(run, everyMs)
     document.addEventListener('visibilitychange', run)
     window.addEventListener('focus', run)
+    window.addEventListener('online', run)
     return () => {
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', run)
       window.removeEventListener('focus', run)
+      window.removeEventListener('online', run)
     }
   }, [enabled, everyMs])
 }

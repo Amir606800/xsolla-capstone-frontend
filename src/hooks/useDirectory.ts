@@ -5,6 +5,8 @@ import type { NewTeam, TeamPlan } from '../mocks/directory'
 import type { Role } from '../types/user'
 import type { LoadStatus } from '../context/courses'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
+import { keepIfSame } from '../utils/same'
+import { useLive } from './useLive'
 
 /**
  * The admin's people pages: everyone and the teams, loaded together. Teams are optional: if they
@@ -48,12 +50,14 @@ export function useDirectory() {
     return user
   }, [])
 
-  /** After a change: show the lists as the server has them now. */
+  /** After a change (and quietly, now and then): show the lists as the server has them now. Equal lists change nothing. */
   const refresh = useCallback(async () => {
     const [u, t] = await Promise.all([fetchUsers().catch(() => null), fetchTeams().catch(() => null)])
-    if (u) setUsers(u)
-    if (t) setTeams(t)
+    if (u) setUsers(keepIfSame(u))
+    if (t) setTeams(keepIfSame(t))
   }, [])
+  // what other pages or other people change (a new account, a team, a role) appears here without a reload
+  useLive(['directory', 'profile'], () => void refresh(), { enabled: status === 'ready' })
 
   const editStudent = useCallback(
     async (id: number, changes: StudentChanges) => {

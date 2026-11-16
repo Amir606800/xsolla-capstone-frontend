@@ -3,7 +3,9 @@ import { fetchMentorTeam, fetchMyTeam } from '../api/teams'
 import type { LoadStatus } from '../context/courses'
 import type { Team } from '../types/team'
 import { canMentor } from '../utils/roles'
+import { keepIfSame } from '../utils/same'
 import { useAuth } from './useAuth'
+import { useLive } from './useLive'
 
 /**
  * The signed-in user's team: a student's own team, or the team a mentor looks after.
@@ -42,6 +44,14 @@ export function useMyTeam() {
     setStatus('loading')
     setAttempt((a) => a + 1)
   }, [])
+
+  // the admin moving people between teams, or a profile picture changing, shows without a reload
+  const refresh = useCallback(() => {
+    if (!user) return
+    const load = canMentor(user) ? fetchMentorTeam(user) : user.roles.includes('student') ? fetchMyTeam(user) : null
+    load?.then((data) => setTeam(keepIfSame(data)), () => undefined)
+  }, [user])
+  useLive(['directory', 'profile'], refresh, { enabled: !!user && status === 'ready' })
 
   return { status, team, reload }
 }

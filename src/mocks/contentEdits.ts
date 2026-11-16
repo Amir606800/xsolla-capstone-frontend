@@ -4,6 +4,7 @@ import { buildMockEvents } from './events'
 import { lecturersOf } from '../utils/content'
 import { orderByOpening } from '../utils/progress'
 import { buildMockModules } from './courses'
+import { publish } from '../sync/bus'
 
 /**
  * Stand-in for the backend while there is none: what a lecturer changes (modules, materials, tasks,
@@ -44,6 +45,7 @@ function read<T>(key: string, fallback: T): T {
 function write(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    publish(key === EVENTS_KEY ? ['events', 'notifications'] : ['courses'])
   } catch {
     /* storage blocked or full: the change lasts until the page reloads */
   }

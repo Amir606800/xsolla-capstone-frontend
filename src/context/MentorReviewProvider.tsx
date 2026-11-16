@@ -5,10 +5,12 @@ import { fetchReviewedWeeks, submitReview } from '../api/mentorReviews'
 import { fetchMyTeam } from '../api/teams'
 import { useAuth } from '../hooks/useAuth'
 import { useCourses } from '../hooks/useCourses'
+import { useLive } from '../hooks/useLive'
 import { demoMode } from '../mocks/mentorReviews'
 import type { MentorReview, ReviewedWeek } from '../types/mentorReview'
 import type { Person } from '../types/team'
 import { reviewDue } from '../utils/mentorReview'
+import { sameData } from '../utils/same'
 import { isStaff, isStudent } from '../utils/roles'
 import type { LoadStatus } from './courses'
 import { MentorReviewContext } from './mentorReview'
@@ -51,6 +53,21 @@ export function MentorReviewProvider({ children }: { children: ReactNode }) {
     // the user object changes identity on every sign-in; the id is what matters
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asked, userId, attempt])
+
+  // the mentor changed (the admin moved the student) or the review was sent elsewhere: look again, quietly
+  const refresh = useCallback(() => {
+    if (!asked || !user) return
+    Promise.all([fetchMyTeam(user), fetchReviewedWeeks(user.id)]).then(
+      ([team, reviewed]) => {
+        const next = { reviewed, mentor: team?.mentor ?? null }
+        setData((prev) => (sameData(prev, next) ? prev : next))
+      },
+      () => undefined,
+    )
+    // the user object changes identity on every sign-in; the id is what matters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asked, userId])
+  useLive(['reviews', 'directory'], refresh, { enabled: asked && status === 'ready' })
 
   const due = useMemo(() => {
     if (!asked || status !== 'ready' || courses.status !== 'ready' || !data.reviewed || !data.mentor) return null

@@ -3,6 +3,7 @@ import type { User } from '../types/user'
 import { canMentor, hasRole, isStudent } from '../utils/roles'
 import { sortSlots, upcomingSlotTimes, withoutClashes } from '../utils/slots'
 import { MENTOR } from './teams'
+import { publish } from '../sync/bus'
 
 /**
  * Stand-in for the backend: a small slot store kept in localStorage, so a mentor and a student
@@ -60,6 +61,7 @@ function load(now: Date): MeetingSlot[] {
 function save(slots: MeetingSlot[]): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(slots))
+    publish(['slots', 'notifications'])
   } catch {
     /* storage full or blocked: changes last until the page reloads */
   }

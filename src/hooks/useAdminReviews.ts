@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchAllReviews, fetchMissingReviews } from '../api/adminReviews'
 import type { AdminReview, MissingReview } from '../types/mentorReview'
+import { keepIfSame } from '../utils/same'
+import { useLive } from './useLive'
 
 /** `unavailable` = the server has no mentor-review list yet (not an error: the page says so). */
 export type ReviewsStatus = 'loading' | 'ready' | 'unavailable' | 'error'
@@ -30,6 +32,17 @@ export function useAdminReviews() {
     setStatus('loading')
     setAttempt((a) => a + 1)
   }, [])
+
+  // a review a student sends shows on the page without pressing Refresh
+  const refresh = useCallback(() => {
+    fetchAllReviews().then(
+      (rows) => {
+        if (rows) setReviews(keepIfSame(rows))
+      },
+      () => undefined,
+    )
+  }, [])
+  useLive(['reviews', 'directory'], refresh, { enabled: status === 'ready' })
 
   return { status, reviews, reload }
 }

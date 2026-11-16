@@ -1,14 +1,16 @@
-import { useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchBroadcasts, sendBroadcast } from '../../../api/notifications'
 import { Icon } from '../../../components/Icon'
 import { useAuth } from '../../../hooks/useAuth'
 import { useDirectory } from '../../../hooks/useDirectory'
+import { useLive } from '../../../hooks/useLive'
 import { useSort } from '../../../hooks/useSort'
 import type { Broadcast } from '../../../mocks/broadcasts'
 import { AUDIENCE_LABEL, AUDIENCES, audienceCounts, LINK_CHOICES, MAX_MESSAGE, people } from '../../../utils/adminNotifications'
 import type { Audience } from '../../../utils/adminNotifications'
 import { formatDateTime } from '../../../utils/date'
+import { keepIfSame } from '../../../utils/same'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
 import { Loading } from '../../../components/loading/Loading'
@@ -40,6 +42,12 @@ export default function AdminAnnouncePage() {
       alive = false
     }
   }, [])
+
+  // what was sent (from this or another admin's screen) shows in the list without a reload
+  const refreshHistory = useCallback(() => {
+    fetchBroadcasts().then((rows) => setHistory((prev) => (prev === null ? prev : keepIfSame(rows)(prev))), () => undefined)
+  }, [])
+  useLive(['notifications'], refreshHistory, { enabled: history !== null })
 
   // how many people each choice reaches; unknown while the people list is not available
   const counts = peopleStatus === 'ready' ? audienceCounts(users) : null

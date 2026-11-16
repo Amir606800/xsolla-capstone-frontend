@@ -3,7 +3,7 @@ import { bookSlot, cancelBooking, createAvailability, fetchSlots, removeSlot } f
 import type { LoadStatus } from '../context/courses'
 import type { AvailabilityWindow, MeetingSlot } from '../types/slots'
 import { useAuth } from './useAuth'
-import { useAutoRefresh } from './useAutoRefresh'
+import { useLive } from './useLive'
 
 /**
  * The mentor 1:1 slots for the signed-in person: a student sees their mentor's times, a mentor sees
@@ -53,7 +53,7 @@ export function useMeetingSlots() {
       () => undefined,
     )
   }, [actor])
-  useAutoRefresh(refresh, { enabled: status === 'ready' && !!actor })
+  useLive(['slots', 'directory'], refresh, { enabled: status === 'ready' && !!actor })
 
   const run = useCallback(
     async (action: (a: NonNullable<typeof actor>) => Promise<MeetingSlot[]>): Promise<MeetingSlot[]> => {

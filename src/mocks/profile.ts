@@ -1,5 +1,6 @@
 import { DEFAULT_PREFERENCES, EMPTY_PROFILE, readPreferences } from '../types/profile'
 import type { Preferences, PreferencesPatch, Profile, ProfilePatch } from '../types/profile'
+import { publish } from '../sync/bus'
 
 /**
  * Offline demo of the profile routes: one profile and one set of look settings per person, kept in this browser.
@@ -20,6 +21,7 @@ function read(key: string): unknown {
 function write(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    publish(['profile', 'directory'])
   } catch {
     // storage unavailable or full: the change lasts until the page is closed
   }

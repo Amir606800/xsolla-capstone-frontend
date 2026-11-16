@@ -2,7 +2,9 @@ import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { fetchStandings } from '../api/standings'
 import type { WeeklyStanding } from '../types/standing'
+import { useLive } from '../hooks/useLive'
 import { analyseStandings } from '../utils/standing'
+import { keepIfSame } from '../utils/same'
 import { AuthContext } from './auth'
 import type { LoadStatus } from './courses'
 import { StandingsContext } from './standings'
@@ -35,6 +37,12 @@ export function StandingsProvider({ children }: { children: ReactNode }) {
     setStatus('loading')
     setAttempt((a) => a + 1)
   }, [])
+
+  // a grade the mentor gives shows on the student's screen without a reload
+  const refresh = useCallback(() => {
+    fetchStandings(studentId).then((data) => setRatings(keepIfSame(data)), () => undefined)
+  }, [studentId])
+  useLive(['standings', 'courses'], refresh, { enabled: status === 'ready' })
 
   const value = useMemo(
     () => ({ status, ratings, summary: analyseStandings(ratings), reload }),

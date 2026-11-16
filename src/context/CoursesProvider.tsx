@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   assignLecturer as apiAssignLecturer,
@@ -14,8 +14,10 @@ import {
 } from '../api/courses'
 import type { ModulePatch, SubmitPayload } from '../api/courses'
 import { useAuth } from '../hooks/useAuth'
+import { useLive } from '../hooks/useLive'
 import type { ContentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
 import { datesNotKept } from '../utils/moduleDates'
+import { sameData } from '../utils/same'
 import { DEADLINE_PASSED, isModuleLocked, isPastDue } from '../utils/progress'
 import { canAuthor, hasRole, isStudent } from '../utils/roles'
 import { CoursesContext } from './courses'
@@ -97,6 +99,29 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     setAttempt((a) => a + 1)
   }, [])
 
+  // Quiet refresh: what a lecturer changes, a mentor grades or a student hands in reaches every open screen without a reload. An answer
+  // that was still on its way when this person did something is older than what that action returned, so it is dropped; and a
+  // reload that finds nothing new changes nothing on screen.
+  const version = useRef(0)
+  const shown = useRef(modules)
+  useEffect(() => {
+    shown.current = modules
+  }, [modules])
+  const refresh = useCallback(() => {
+    const started = version.current
+    fetchModules({ student, userId: user?.id }).then(
+      (data) => {
+        if (version.current !== started) return
+        const next = forRole(data, student)
+        if (sameData(shown.current, next)) return
+        setModules(next)
+        setNow(new Date())
+      },
+      () => undefined,
+    )
+  }, [student, user?.id])
+  useLive(['courses', 'directory'], refresh, { enabled: status === 'ready' })
+
   const hasGeneratingQuiz = useMemo(
     () => modules.some((m) => m.items.some((i) => i.type === 'quiz' && i.status === 'generating')),
     [modules],
@@ -137,6 +162,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
         throw new Error(DEADLINE_PASSED)
       }
       const result = await submitWork(assignmentId, payload, { studentId: user?.id, moduleId: owner?.id })
+      version.current += 1
       setModules((prev) => withSubmission(prev, assignmentId, result))
       setNow(new Date())
     },
@@ -148,6 +174,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     async (run: () => Promise<CourseModule[]>) => {
       if (!mayAuthor) throw new Error('Only lecturers can change the course')
       const next = await run()
+      version.current += 1
       setModules(forRole(next, student))
       setNow(new Date())
     },
@@ -199,6 +226,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const submitQuizAttempt = useCallback(
     async (quizId: string, answers: number[]) => {
       const next = await apiSubmitQuizAttempt(quizId, answers, { studentId: user?.id })
+      version.current += 1
       setModules(forRole(next, student))
       setNow(new Date())
     },

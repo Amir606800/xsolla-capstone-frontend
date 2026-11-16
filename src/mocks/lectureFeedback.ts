@@ -1,6 +1,7 @@
 import type { LectureAnswers, PendingLecture } from '../types/lectureFeedback'
 import { isFeedbackOpen, OPEN_FOR_MS, SENT_ALREADY } from '../utils/lectureFeedback'
 import { listEvents } from './contentEdits'
+import { publish } from '../sync/bus'
 
 /**
  * Demo store of the lecture feedback (localStorage; offline demo only, a real server keeps its own). The lectures are
@@ -60,6 +61,7 @@ export function addFeedback(studentId: number, eventId: string, answers: Lecture
     KEY,
     JSON.stringify([...all, { studentId, eventId, startsAt: lecture.startsAt, answers, submittedAt: now.toISOString() }]),
   )
+  publish(['feedback'])
 }
 
 /** Every stored form (for tests). */

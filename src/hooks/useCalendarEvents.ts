@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteEvent, fetchEvents, saveEvent } from '../api/events'
-import { useAutoRefresh } from './useAutoRefresh'
+import { useLive } from './useLive'
 import { useGoogle } from './useGoogle'
 import type { LoadStatus } from '../context/courses'
 import type { CalendarEvent } from '../types/calendar'
@@ -49,7 +49,7 @@ export function useCalendarEvents() {
       () => undefined,
     )
   }, [])
-  useAutoRefresh(refresh, { enabled: status === 'ready' })
+  useLive(['events'], refresh, { enabled: status === 'ready' })
 
   /** Saves the event and says what happened to its Google copy (when one was asked for). */
   const save = useCallback(

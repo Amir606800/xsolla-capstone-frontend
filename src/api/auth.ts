@@ -13,6 +13,9 @@ export const login: typeof http.login = (email, password) =>
 export const signup: typeof http.signup = (email, name, password) =>
   hasBackend() ? http.signup(email, name, password) : mock.signup(email, name, password)
 
+/** The signed-in user as the server has them now (their roles may have been changed by an admin). Nothing offline. */
+export const fetchMe = async (): Promise<Awaited<ReturnType<typeof http.fetchMe>> | null> => (hasBackend() ? http.fetchMe() : null)
+
 export const logout: typeof http.logout = async () => {
   if (hasBackend()) return http.logout()
   clearTokens() // drop tokens left over from an earlier session with the real backend

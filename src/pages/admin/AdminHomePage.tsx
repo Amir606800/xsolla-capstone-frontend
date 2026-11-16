@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { fetchModules } from '../../api/courses'
 import { fetchTeams, fetchUsers, teamsAreDemoData } from '../../api/directory'
@@ -6,6 +6,8 @@ import { fetchEvents } from '../../api/events'
 import { Icon } from '../../components/Icon'
 import { adminSection } from '../../config/adminNav'
 import { useAuth } from '../../hooks/useAuth'
+import { useLive } from '../../hooks/useLive'
+import { sameData } from '../../utils/same'
 import { type Loaded, type OverviewData, overviewTiles } from '../../utils/adminOverview'
 import { weekSummary } from '../../utils/adminWeek'
 import { CurrentWeekCard } from './CurrentWeekCard'
@@ -18,16 +20,26 @@ export default function AdminHomePage() {
   const { user } = useAuth()
   const [data, setData] = useState<OverviewData | null>(null)
 
+  // each source on its own: one failing (e.g. a route the backend lacks) does not hide the others
+  const look = useCallback(
+    () =>
+      Promise.allSettled([fetchModules(), fetchUsers(), fetchTeams(), fetchEvents()]).then(
+        ([modules, users, teams, events]): OverviewData => ({ modules: settle(modules), users: settle(users), teams: settle(teams), events: settle(events) }),
+      ),
+    [],
+  )
   useEffect(() => {
     let alive = true
-    // each source on its own: one failing (e.g. a route the backend lacks) does not hide the others
-    Promise.allSettled([fetchModules(), fetchUsers(), fetchTeams(), fetchEvents()]).then(([modules, users, teams, events]) => {
-      if (alive) setData({ modules: settle(modules), users: settle(users), teams: settle(teams), events: settle(events) })
-    })
+    look().then((next) => alive && setData(next))
     return () => {
       alive = false
     }
-  }, [])
+  }, [look])
+  // the counts follow what is saved on the other pages and by other people, without a reload
+  const refresh = useCallback(() => {
+    look().then((next) => setData((prev) => (prev && sameData(prev, next) ? prev : next)))
+  }, [look])
+  useLive(['courses', 'directory', 'events'], refresh, { enabled: data !== null })
 
   const [now] = useState(() => new Date())
   const tiles = data ? overviewTiles(data, now, { demoTeams: teamsAreDemoData() }) : null

@@ -2,9 +2,11 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { ReactNode } from 'react'
 import { fetchPreferences, fetchProfile, isNotSupported, removeAvatar, savePreferences, saveProfile as sendProfile, uploadAvatar } from '../api/profile'
 import { useAuth } from '../hooks/useAuth'
+import { useLive } from '../hooks/useLive'
 import { useTheme } from '../hooks/useTheme'
 import { DEFAULT_PREFERENCES, EMPTY_PROFILE, readPreferences } from '../types/profile'
 import type { Preferences, PreferencesPatch, Profile, ProfilePatch } from '../types/profile'
+import { sameData } from '../utils/same'
 import { ProfileContext } from './profile'
 import type { ProfileContextValue } from './profile'
 
@@ -117,6 +119,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const mine = known && known.userId === userId ? known : null
   const profile = mine?.profile ?? EMPTY_PROFILE
   const status: ProfileContextValue['status'] = userId === null ? 'idle' : (mine?.outcome ?? 'loading')
+
+  // a picture or a handle changed on another device or tab shows here too (the look settings are left alone: they may be mid-edit)
+  const refreshProfile = useCallback(() => {
+    if (userId === null) return
+    fetchProfile(userId).then(
+      (profile) => {
+        if (current.current !== userId) return
+        setKnown((k) => (k && k.userId === userId && k.outcome === 'ready' && sameData(k.profile, profile) ? k : { userId, profile, outcome: 'ready' }))
+      },
+      () => undefined,
+    )
+  }, [userId])
+  useLive(['profile'], refreshProfile, { enabled: userId !== null && mine?.outcome === 'ready' })
 
   const saveProfile = useCallback(
     async (patch: ProfilePatch) => {

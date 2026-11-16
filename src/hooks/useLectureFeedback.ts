@@ -3,7 +3,9 @@ import { fetchLectureForm, fetchPendingLectures, sendLectureFeedback } from '../
 import type { FormQuestion, LectureAnswers, PendingLecture } from '../types/lectureFeedback'
 import { LECTURE_FORM } from '../utils/lectureFeedback'
 import { isStudent } from '../utils/roles'
+import { keepIfSame } from '../utils/same'
 import { useAuth } from './useAuth'
+import { useLive } from './useLive'
 
 /**
  * The lectures a student can give feedback on right now, and the form to do it with. Only students are asked; for
@@ -33,6 +35,19 @@ export function useLectureFeedback() {
       alive = false
     }
   }, [studentId])
+
+  // A lecture's form opens shortly before it ends (and a lecturer can move or add lectures): look again now and then, so the box
+  // appears when it is time without leaving the page.
+  const refresh = useCallback(() => {
+    if (studentId === null) return
+    fetchPendingLectures(studentId).then(
+      (lectures) => {
+        if (lectures) setOpen(keepIfSame(lectures))
+      },
+      () => undefined,
+    )
+  }, [studentId])
+  useLive(['feedback', 'events', 'courses'], refresh, { enabled: studentId !== null })
 
   /** Sends the form of one lecture; rejects with the server's message when it is refused. */
   const send = useCallback(

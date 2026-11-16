@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchTeamStandings, saveWeekGrade, type StoredStanding } from '../api/standings'
 import type { LoadStatus } from '../context/courses'
 import type { StandingLevel } from '../types/standing'
 import { canMentor } from '../utils/roles'
+import { keepIfSame } from '../utils/same'
 import { useAuth } from './useAuth'
+import { useLive } from './useLive'
 
 /** Mentor: the weekly green / yellow / red grades of their team, and giving them. */
 export function useTeamStandings() {
@@ -35,10 +37,25 @@ export function useTeamStandings() {
     setAttempt((a) => a + 1)
   }, [])
 
+  // grades given from another screen or another mentor's tab show here without a reload
+  const version = useRef(0)
+  const refresh = useCallback(() => {
+    if (!mentor) return
+    const started = version.current
+    fetchTeamStandings(mentor).then(
+      (data) => {
+        if (version.current === started) setStandings(keepIfSame(data))
+      },
+      () => undefined,
+    )
+  }, [mentor])
+  useLive(['standings', 'directory'], refresh, { enabled: !!mentor && status === 'ready' })
+
   const gradeWeek = useCallback(
     async (studentId: number, week: number, level: StandingLevel, note: string) => {
       if (!mentor) throw new Error('Only mentors can grade a week')
       const saved = await saveWeekGrade(mentor, studentId, week, level, note)
+      version.current += 1
       setStandings(saved)
       // what the store now holds for this student and week (the server may not have kept the feedback)
       return saved.find((s) => s.studentId === studentId && s.week === week)

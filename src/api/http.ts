@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import type { AxiosRequestConfig } from 'axios'
+import { publish, topicsForPath } from '../sync/bus'
 
 /** Thin axios wrapper for the LMS backend: JSON in/out and one error type for every failure. */
 
@@ -102,6 +103,9 @@ export async function apiRequest<T>(path: string, { method = 'GET', body, token,
     const message = fieldMessages.length > 0 ? fieldMessages.join('. ') : (err.message ?? 'Something went wrong')
     throw new ApiError(res.status, err.error ?? 'error', sentence(message), err.details)
   }
+
+  // something was saved: every screen that shows data of that kind loads it again (in this tab and in the others)
+  if (method !== 'GET') publish(topicsForPath(path))
 
   return json as T
 }

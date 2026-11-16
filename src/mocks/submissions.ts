@@ -3,6 +3,7 @@ import type { TeamSubmission } from '../types/review'
 import type { Person } from '../types/team'
 import { buildMockModules } from './courses'
 import { buildMentorTeam, MENTOR } from './teams'
+import { publish } from '../sync/bus'
 
 /**
  * Stand-in for the backend's submissions table: every student's work on every task, kept in
@@ -106,13 +107,15 @@ function load(now: Date): Store {
     /* unreadable: fall back to the demo data */
   }
   const seed = buildMockSubmissions(now)
-  save(seed)
+  save(seed, true)
   return seed
 }
 
-function save(store: Store): void {
+/** `seeding`: the first copy of the demo data is not a change, so nobody is told. */
+function save(store: Store, seeding = false): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(store))
+    if (!seeding) publish(['courses', 'notifications', 'standings'])
   } catch {
     /* storage blocked or full: changes last until the page reloads */
   }

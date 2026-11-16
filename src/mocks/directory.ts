@@ -2,6 +2,7 @@ import { DEMO_ACCOUNTS, DEMO_ADMIN } from './accounts'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { Role, User } from '../types/user'
 import { isStaffRole, mainRoleOf, ROLE_NAMES } from '../utils/adminRoles'
+import { publish } from '../sync/bus'
 
 /**
  * Offline school directory for the admin section: every account and the six teams.
@@ -155,6 +156,7 @@ function load(): DirectoryEdits {
 function save(edits: DirectoryEdits): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(edits))
+    publish(['directory', 'courses', 'standings'])
   } catch {
     /* storage blocked or full: the change lasts until the page reloads */
   }

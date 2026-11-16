@@ -1,6 +1,7 @@
 import type { CourseModule } from '../types/course'
 import type { MentorReview, ReviewedWeek } from '../types/mentorReview'
 import { listModules } from './contentEdits'
+import { publish } from '../sync/bus'
 
 /**
  * Demo store of the weekly mentor reviews (localStorage). So the demo is usable out of the box, every demo student
@@ -58,6 +59,7 @@ export function addReview(
 ): ReviewedWeek[] {
   const rest = load().filter((r) => !(r.studentId === studentId && r.moduleId === review.moduleId))
   localStorage.setItem(KEY, JSON.stringify([...rest, { ...review, studentId, mentorId, submittedAt: now.toISOString() }]))
+  publish(['reviews'])
   return reviewedWeeks(studentId, now, modules)
 }
 
