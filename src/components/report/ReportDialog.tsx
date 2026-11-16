@@ -49,7 +49,7 @@ function ReportForm({ onClose }: { onClose: () => void }) {
     if (Object.values(errors).some(Boolean) || busy) return
     setBusy(true)
     try {
-      await sendReport(reportSubject(d), reportMessage(d), user ? { id: user.id, name: user.name } : undefined)
+      await sendReport(reportSubject(d), reportMessage(d), user ? { id: user.id, name: user.name, email: user.email, roles: user.roles } : undefined)
       setSent(true)
     } catch (err) {
       setFailed(err instanceof Error && err.message ? err.message : 'The report could not be sent. Please try again.')

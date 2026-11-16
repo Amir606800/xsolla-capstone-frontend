@@ -57,14 +57,15 @@ function load(now: Date): MeetingSlot[] {
     /* unreadable: fall back to the demo data */
   }
   const seed = buildMockSlots(now)
-  save(seed) // keep the demo data stable (same ids and days) from now on
+  save(seed, true) // keep the demo data stable (same ids and days) from now on
   return seed
 }
 
-function save(slots: MeetingSlot[]): void {
+/** `seeding`: the first copy of the demo data is not a change, so nobody is told (every course would reload for nothing). */
+function save(slots: MeetingSlot[], seeding = false): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(slots))
-    publish(['slots', 'notifications'])
+    if (!seeding) publish(['slots', 'notifications'])
   } catch {
     /* storage full or blocked: changes last until the page reloads */
   }

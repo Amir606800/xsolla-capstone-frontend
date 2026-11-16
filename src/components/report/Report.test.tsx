@@ -39,7 +39,7 @@ describe('Report a problem', () => {
     expect(sendReport).toHaveBeenCalledWith(
       'A mentor: Rashad Aliyev · Missed two 1:1s',
       'About: A mentor (Rashad Aliyev)\n\nHe did not come to our last two 1:1s.',
-      { id: 1, name: 'Sam Student' },
+      { id: 1, name: 'Sam Student', email: 'student@xsolla.school', roles: ['student'] },
     )
     expect(listReports()[0]).toMatchObject({ subject: 'A mentor: Rashad Aliyev · Missed two 1:1s', status: 'open' })
     await user.click(within(dialog()).getByRole('button', { name: 'Done' }))

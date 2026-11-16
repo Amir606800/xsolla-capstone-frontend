@@ -1,12 +1,17 @@
-import { addReport } from '../mocks/reports'
+import { addReport, changeReport, listReports, removeReport } from '../mocks/reports'
+import type { AdminReport, ReportChange, ReportPerson, ReportStatus } from '../types/report'
+import { rolesFrom } from '../utils/roles'
 import { authedRequest } from './authed'
-import { hasBackend } from './http'
+import { ApiError, hasBackend } from './http'
 
 /**
- * Sending a report to the school's admins (backend docs/reports.md). Anyone signed in may send one; only admins read
- * them. The server answers 422 with every problem in `details` (the ApiError message joins them), 401 when signed out.
- *   POST /reports { subject (1-200), message (1-5000) }  ->  201 { id, subject, message, created_at }
- * Offline, the report is kept in this browser.
+ * Reports to the school's admins (backend docs/reports.md).
+ *   POST   /reports        anyone signed in: { subject (1-200), message (1-5000) } -> 201 { id, subject, message, created_at }
+ *   GET    /reports        admin: every report, newest first (filters exist on the server; the page filters itself)
+ *   GET    /reports/summary  admin: { open, resolved, total }
+ *   PATCH  /reports/{id}   admin: { status?, admin_note? } -> the report
+ *   DELETE /reports/{id}   admin: 204
+ * 422 answers list every problem in `details` (the ApiError message joins them). Offline, the reports live in this browser.
  */
 export interface SentReport {
   id: string
@@ -15,21 +20,112 @@ export interface SentReport {
   createdAt: string
 }
 
-interface ReportDto {
+interface SentDto {
   id: number | string
   subject: string
   message: string
   created_at: string
 }
 
+interface PersonDto {
+  id: number | string
+  name: string
+  email?: string
+  roles?: string[] | null
+}
+
+export interface ReportDto extends SentDto {
+  status: string
+  reporter: PersonDto | null
+  admin_note?: string | null
+  resolved_by?: PersonDto | null
+  resolved_at?: string | null
+}
+
 const MOCK_LATENCY_MS = 300
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
+/** A server without the routes: the page says so instead of failing. */
+const missingRoute = (e: unknown) =>
+  e instanceof ApiError && (e.status === 405 || e.status === 501 || (e.status === 404 && e.code !== 'not_found'))
 
-export async function sendReport(subject: string, message: string, reporter?: { id: number; name: string }): Promise<SentReport> {
+const person = (p: PersonDto): ReportPerson => ({
+  id: Number(p.id),
+  name: p.name,
+  ...(p.email ? { email: p.email } : {}),
+  ...(p.roles?.length ? { roles: rolesFrom(p.roles) } : {}),
+})
+
+export function mapReport(d: ReportDto): AdminReport {
+  const note = d.admin_note?.trim()
+  return {
+    id: String(d.id),
+    subject: d.subject,
+    message: d.message,
+    status: (d.status === 'resolved' ? 'resolved' : 'open') as ReportStatus,
+    reporter: d.reporter ? person(d.reporter) : null,
+    ...(note ? { adminNote: note } : {}),
+    ...(d.resolved_by ? { resolvedBy: person(d.resolved_by) } : {}),
+    ...(d.resolved_at ? { resolvedAt: d.resolved_at } : {}),
+    createdAt: d.created_at,
+  }
+}
+
+/** Anyone: send a report. */
+export async function sendReport(subject: string, message: string, reporter?: ReportPerson): Promise<SentReport> {
   if (hasBackend()) {
-    const d = await authedRequest<ReportDto>('/reports', { method: 'POST', body: { subject, message } })
+    const d = await authedRequest<SentDto>('/reports', { method: 'POST', body: { subject, message } })
     return { id: String(d.id), subject: d.subject, message: d.message, createdAt: d.created_at }
   }
   await wait()
-  return addReport(subject, message, reporter)
+  const r = addReport(subject, message, reporter)
+  return { id: r.id, subject: r.subject, message: r.message, createdAt: r.createdAt }
+}
+
+/** Admin: every report, newest first; `null` when the server has no such route yet. */
+export async function fetchReports(): Promise<AdminReport[] | null> {
+  if (hasBackend()) {
+    try {
+      return ((await authedRequest<ReportDto[] | null>('/reports')) ?? []).map(mapReport)
+    } catch (e) {
+      if (missingRoute(e)) return null
+      throw e
+    }
+  }
+  await wait()
+  return listReports()
+}
+
+/** Admin: how many reports are still open (for the sidebar); 0 when the server cannot say. */
+export async function fetchOpenReportCount(): Promise<number> {
+  if (hasBackend()) {
+    try {
+      return (await authedRequest<{ open?: number }>('/reports/summary')).open ?? 0
+    } catch {
+      return 0
+    }
+  }
+  return listReports().filter((r) => r.status === 'open').length
+}
+
+/** Admin: mark resolved or open again, and/or change the note. Answers the report as it is now. */
+export async function updateReport(id: string, change: ReportChange, admin?: ReportPerson): Promise<AdminReport> {
+  if (hasBackend()) {
+    const body = {
+      ...(change.status ? { status: change.status } : {}),
+      ...(change.adminNote !== undefined ? { admin_note: change.adminNote } : {}),
+    }
+    return mapReport(await authedRequest<ReportDto>(`/reports/${encodeURIComponent(id)}`, { method: 'PATCH', body }))
+  }
+  await wait()
+  return changeReport(id, change, admin)
+}
+
+/** Admin: delete a report for good. */
+export async function deleteReport(id: string): Promise<void> {
+  if (hasBackend()) {
+    await authedRequest<unknown>(`/reports/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    return
+  }
+  await wait()
+  removeReport(id)
 }

@@ -12,6 +12,7 @@ export type AdminSectionKey =
   | 'reviews'
   | 'lectureReviews'
   | 'analytics'
+  | 'reports'
   | 'announce'
   | 'notifications'
 
@@ -63,6 +64,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     label: 'Messages',
     sections: [
+      { key: 'reports', path: '/admin/reports', label: 'Reports', icon: 'flag', summary: 'Problems students and staff reported: read them and mark them resolved.' },
       { key: 'announce', path: '/admin/announce', label: 'Announce', icon: 'mail', summary: 'Send a message everyone sees.' },
       { key: 'notifications', path: '/admin/notifications', label: 'Notifications', icon: 'bell', summary: 'What needs your attention, and what happened lately.' },
     ],

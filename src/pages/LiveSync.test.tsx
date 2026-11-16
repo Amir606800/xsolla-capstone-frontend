@@ -22,7 +22,8 @@ describe('a change made elsewhere shows up without a reload', () => {
 
     putModule('m1', { title: 'A brand new title' })
 
-    expect(await within(list).findByText('A brand new title')).toBeInTheDocument()
+    // the course is loaded again together with the student's 1:1s (their deadlines follow them)
+    expect(await within(list).findByText('A brand new title', {}, { timeout: 3000 })).toBeInTheDocument()
   })
 
   it("an admin's announcement rings the student's bell at once", async () => {

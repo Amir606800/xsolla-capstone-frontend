@@ -16,6 +16,7 @@ export type Topic =
   | 'reviews' // mentor reviews
   | 'feedback' // lecture feedback
   | 'profile'
+  | 'reports' // reports to the admins
 
 export const ALL_TOPICS: readonly Topic[] = [
   'courses',
@@ -27,6 +28,7 @@ export const ALL_TOPICS: readonly Topic[] = [
   'reviews',
   'feedback',
   'profile',
+  'reports',
 ]
 
 type Listener = (topics: ReadonlySet<Topic>) => void
@@ -125,11 +127,11 @@ export function topicsForPath(path: string): Topic[] {
       return ['directory', 'standings']
     case 'enrollments':
       return ['courses', 'standings']
-    // asking for an AI summary (POST /analytics/.../ai-summary) or sending a report (read by the admins only) saves
-    // nothing anybody else has on screen
+    case 'reports':
+      return ['reports']
+    // asking for an AI summary (POST /analytics/.../ai-summary) saves nothing anybody else has on screen
     case 'auth':
     case 'analytics':
-    case 'reports':
       return []
     default:
       return [...ALL_TOPICS]
