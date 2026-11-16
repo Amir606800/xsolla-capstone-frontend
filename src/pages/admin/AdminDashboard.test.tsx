@@ -12,7 +12,7 @@ beforeEach(() => {
 })
 
 /** Sections that have their real page already. */
-const BUILT = ['/admin/modules', '/admin/calendar', '/admin/students', '/admin/mentors', '/admin/lecturers', '/admin/teams', '/admin/mentor-reviews', '/admin/lecture-reviews', '/admin/announce', '/admin/notifications', '/admin/settings']
+const BUILT = ['/admin/modules', '/admin/calendar', '/admin/students', '/admin/mentors', '/admin/lecturers', '/admin/teams', '/admin/mentor-reviews', '/admin/lecture-reviews', '/admin/analytics', '/admin/announce', '/admin/notifications', '/admin/settings']
 
 const tiles = () => screen.findByRole('list', { name: 'School at a glance' })
 const tileFor = async (label: string) => within(await tiles()).getByRole('link', { name: new RegExp(`^${label}`) })
@@ -31,6 +31,7 @@ describe('Admin dashboard frame', () => {
       'Teams',
       'Mentor reviews',
       'Lecture reviews',
+      'Analytics',
       'Announce',
       'Notifications',
       'Office tour',
