@@ -19,6 +19,16 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # Validate LMS API configuration
+      - name: Validate LMS API configuration
+        env:
+          LMS_API_URL: ${{ vars.LMS_API_URL }}
+        run: |
+          test -n "$LMS_API_URL" || {
+            echo "::error::LMS_API_URL is required"
+            exit 1
+          }
+
       # <commit sha> on every push; "latest" only from the default branch
       - id: meta
         uses: docker/metadata-action@v5
@@ -36,3 +46,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+          target: web
+            VITE_API_URL=${{ vars.LMS_API_URL }}
