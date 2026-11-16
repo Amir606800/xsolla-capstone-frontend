@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubHttp } from '../test/stubHttp'
-import { fetchMentor, fetchOverview, fetchPeople, fetchStudent } from './analytics.http'
+import { fetchAiSummary, fetchLectureExpected, fetchMentor, fetchOverview, fetchPeople, fetchStudent } from './analytics.http'
 import { saveTokens } from './session'
 
 const BASE = 'https://api.test'
-type Call = { method: string; path: string; url: string }
+type Call = { method: string; path: string; url: string; body?: unknown }
 let calls: Call[]
 
 type Route = { status: number; body?: unknown }
@@ -14,8 +14,16 @@ async function backend(routes: Record<string, Route>) {
   await stubHttp(
     vi.fn(async (url: string, init: RequestInit) => {
       const path = url.replace(BASE, '')
-      calls.push({ method: init.method ?? 'GET', path: path.split('?')[0], url })
-      const r = routes[`${init.method ?? 'GET'} ${path.split('?')[0]}`] ?? { status: 404, body: { error: 'not_found', message: 'missing', status: 404 } }
+      calls.push({
+        method: init.method ?? 'GET',
+        path: path.split('?')[0],
+        url,
+        body: typeof init.body === 'string' ? JSON.parse(init.body) : undefined,
+      })
+      const r = routes[`${init.method ?? 'GET'} ${path.split('?')[0]}`] ?? {
+        status: 404,
+        body: { error: 'not_found', message: 'missing', status: 404 },
+      }
       return new Response(r.body === undefined ? null : JSON.stringify(r.body), { status: r.status })
     }),
   )
@@ -94,7 +102,15 @@ describe('analytics HTTP contract', () => {
           generated_at: '2026-11-14T17:00:00Z',
           assignment_status: { on_time_count: 4, late_count: 1, missing_count: 2, eligible_count: 7 },
           quiz_accuracy_by_module: [
-            { module_id: 4, module_title: 'Week 4', opens_at: WEEK.opens_at, score_total: 0, possible_total: 0, accuracy: null, attempt_count: 1 },
+            {
+              module_id: 4,
+              module_title: 'Week 4',
+              opens_at: WEEK.opens_at,
+              score_total: 0,
+              possible_total: 0,
+              accuracy: null,
+              attempt_count: 1,
+            },
           ],
         },
       },
@@ -126,7 +142,74 @@ describe('analytics HTTP contract', () => {
   })
 
   it('lets authorization and server errors through to the page', async () => {
-    await backend({ 'GET /analytics/overview': { status: 403, body: { error: 'forbidden', message: 'Admin only', status: 403 } } })
+    await backend({
+      'GET /analytics/overview': { status: 403, body: { error: 'forbidden', message: 'Admin only', status: 403 } },
+    })
     await expect(fetchOverview()).rejects.toMatchObject({ status: 403, message: 'Admin only' })
+  })
+})
+
+describe('AI summary HTTP contract', () => {
+  const summaryBody = {
+    summary: 'Students describe the mentor as clear.\n\nSessions sometimes run out of time.',
+    source_count: 5,
+    generated_at: '2026-11-16T08:30:00Z',
+    cached: true,
+    period: { from: '2026-09-01', to: '2026-11-16' },
+  }
+
+  it('asks for the period on screen and maps the answer; Regenerate sends force_refresh', async () => {
+    await backend({ 'POST /analytics/mentors/7/ai-summary': { status: 200, body: summaryBody } })
+    const s = await fetchAiSummary('mentors', 7, { from: '2026-09-01', to: '2026-11-16' })
+    expect(calls[0]).toMatchObject({
+      method: 'POST',
+      path: '/analytics/mentors/7/ai-summary',
+      body: { from: '2026-09-01', to: '2026-11-16', force_refresh: false },
+    })
+    expect(s).toEqual({
+      summary: 'Students describe the mentor as clear.\n\nSessions sometimes run out of time.',
+      sourceCount: 5,
+      generatedAt: '2026-11-16T08:30:00Z',
+      cached: true,
+      period: { from: '2026-09-01', to: '2026-11-16' },
+    })
+    await fetchAiSummary('mentors', 7, { force: true })
+    expect(calls[1].body).toEqual({ force_refresh: true })
+  })
+
+  it('nothing to summarise is a normal answer, and the AI being off is an error for the card', async () => {
+    await backend({
+      'POST /analytics/students/10/ai-summary': {
+        status: 200,
+        body: {
+          ...summaryBody,
+          summary: 'There is not enough feedback yet.',
+          source_count: 0,
+          generated_at: null,
+          cached: false,
+        },
+      },
+      'POST /analytics/students/11/ai-summary': {
+        status: 503,
+        body: { error: 'service_unavailable', message: 'the AI summary service is unavailable', status: 503 },
+      },
+    })
+    expect(await fetchAiSummary('students', 10)).toMatchObject({ sourceCount: 0, generatedAt: null })
+    await expect(fetchAiSummary('students', 11)).rejects.toMatchObject({ status: 503 })
+  })
+
+  it("the lecture summary gives each lecture's expected answers, keyed like the reviews; no route = unknown", async () => {
+    await backend({
+      'GET /lecture-feedback/summary': {
+        status: 200,
+        body: [
+          { lecture: { event_id: 41, starts_at: '2026-11-12T15:00:00Z' }, responses: 14, expected: 18 },
+          { lecture: { event_id: 42, starts_at: '2026-11-13T15:00:00Z' }, responses: 0, expected: null },
+        ],
+      },
+    })
+    expect(await fetchLectureExpected()).toEqual({ '41@2026-11-12T15:00:00Z': 18 })
+    await backend({})
+    expect(await fetchLectureExpected()).toEqual({})
   })
 })

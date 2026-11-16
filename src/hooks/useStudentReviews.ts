@@ -5,13 +5,17 @@ import { keepIfSame } from '../utils/same'
 import { useLive } from './useLive'
 import type { ReviewsStatus } from './useAdminReviews'
 
-/** Every mentor's grade of every student, loaded once per visit to the page, and again when grades or people change. */
-export function useStudentReviews() {
+/**
+ * Every mentor's grade of every student, loaded once per visit to the page, and again when grades or people change.
+ * `enabled: false` loads nothing (a page that only sometimes needs them).
+ */
+export function useStudentReviews(enabled = true) {
   const [status, setStatus] = useState<ReviewsStatus>('loading')
   const [reviews, setReviews] = useState<StudentReview[]>([])
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
+    if (!enabled) return
     let alive = true
     fetchStudentReviews().then(
       (rows) => {
@@ -24,7 +28,7 @@ export function useStudentReviews() {
     return () => {
       alive = false
     }
-  }, [attempt])
+  }, [attempt, enabled])
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -40,7 +44,7 @@ export function useStudentReviews() {
       () => undefined,
     )
   }, [])
-  useLive(['standings', 'directory'], refresh, { enabled: status === 'ready' })
+  useLive(['standings', 'directory'], refresh, { enabled: enabled && status === 'ready' })
 
   return { status, reviews, reload }
 }

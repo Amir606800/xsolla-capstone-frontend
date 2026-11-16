@@ -97,7 +97,9 @@ export function topicsForPath(path: string): Topic[] {
   switch (head) {
     case 'modules':
       // /modules/:id/enrollments/:user/grade is the mentor's week grade
-      return p.includes('/grade') || third === 'enrollments' ? ['courses', 'standings', 'notifications'] : ['courses', 'notifications']
+      return p.includes('/grade') || third === 'enrollments'
+        ? ['courses', 'standings', 'notifications']
+        : ['courses', 'notifications']
     case 'content-items':
     case 'quizzes':
     case 'files':
@@ -123,7 +125,9 @@ export function topicsForPath(path: string): Topic[] {
       return ['directory', 'standings']
     case 'enrollments':
       return ['courses', 'standings']
+    // asking for an AI summary (POST /analytics/.../ai-summary) saves nothing anybody else shows
     case 'auth':
+    case 'analytics':
       return []
     default:
       return [...ALL_TOPICS]

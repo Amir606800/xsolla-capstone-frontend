@@ -57,7 +57,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     label: 'Insights',
     sections: [
-      { key: 'analytics', path: '/admin/analytics', label: 'Analytics', icon: 'activity', summary: 'Weekly standing, student performance and mentor feedback.' },
+      { key: 'analytics', path: '/admin/analytics', label: 'Analytics', icon: 'activity', summary: 'How the school, each student, mentor and lecturer is doing.' },
     ],
   },
   {

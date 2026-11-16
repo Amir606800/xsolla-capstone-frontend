@@ -54,6 +54,7 @@ const AnalyticsOverviewPage = lazy(() => import('./pages/admin/analytics/Analyti
 const AnalyticsPeoplePage = lazy(() => import('./pages/admin/analytics/AnalyticsPeoplePage'))
 const StudentAnalyticsPage = lazy(() => import('./pages/admin/analytics/StudentAnalyticsPage'))
 const MentorAnalyticsPage = lazy(() => import('./pages/admin/analytics/MentorAnalyticsPage'))
+const LecturerAnalyticsPage = lazy(() => import('./pages/admin/analytics/LecturerAnalyticsPage'))
 /** Admin sections with their own pages; the rest show a placeholder until they are built. */
 const BUILT_ADMIN: string[] = ['modules', 'calendar', 'students', 'mentors', 'lecturers', 'teams', 'studentReviews', 'reviews', 'lectureReviews', 'analytics', 'announce', 'notifications']
 
@@ -101,6 +102,8 @@ export default function App() {
             <Route path="/admin/analytics/students/:studentId" element={<StudentAnalyticsPage />} />
             <Route path="/admin/analytics/mentors" element={<AnalyticsPeoplePage role="mentors" />} />
             <Route path="/admin/analytics/mentors/:mentorId" element={<MentorAnalyticsPage />} />
+            <Route path="/admin/analytics/lecturers" element={<AnalyticsPeoplePage role="lecturers" />} />
+            <Route path="/admin/analytics/lecturers/:lecturerId" element={<LecturerAnalyticsPage />} />
             <Route path="/admin/office-tour" element={<OfficeTourPage />} />
             <Route path="/admin/profile" element={<AdminProfilePage />} />
             <Route path="/admin/settings" element={<ToProfile to="/admin/profile" />} />

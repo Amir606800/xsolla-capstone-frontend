@@ -78,3 +78,34 @@ export interface MentorReport {
 }
 
 export type StandingKey = Extract<StandingLevel, 'green' | 'yellow' | 'red'>
+
+/** The three kinds of person the analytics look at. */
+export type AnalyticsRole = 'students' | 'mentors' | 'lecturers'
+
+/**
+ * The AI summary at the bottom of a person's analytics (backend docs/analytics.md, "AI feedback summaries"). The server
+ * reads the feedback itself and sends back only the text. `sourceCount: 0` = there was nothing to summarise: `summary`
+ * is then the server's fixed "not enough feedback" sentence and `generatedAt` is null.
+ */
+export interface AiSummary {
+  summary: string
+  sourceCount: number
+  generatedAt: string | null
+  cached: boolean
+  period: AnalyticsPeriod
+  /** Offline demo only: the app wrote this text from the demo data; no AI was asked. */
+  demo?: boolean
+}
+
+/** One lecture of a lecturer, with what its students said. */
+export interface LectureRow {
+  key: string
+  title: string
+  startsAt: string
+  moduleTitle?: string
+  responses: number
+  /** Students who could answer, when the server says (`GET /lecture-feedback/summary`); null when unknown. */
+  expected: number | null
+  overall: number | null
+  pace: { too_slow: number; just_right: number; too_fast: number }
+}

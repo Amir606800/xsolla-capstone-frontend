@@ -1,5 +1,7 @@
 import type {
+  AiSummary,
   AnalyticsPerson,
+  AnalyticsRole,
   AnalyticsWeek,
   AssignmentStatus,
   FeedbackDimension,
@@ -8,125 +10,232 @@ import type {
   QuizAccuracy,
   StudentReport,
 } from '../types/analytics'
+import { REVIEW_STATEMENTS } from '../types/mentorReview'
+import type { SchoolUser } from '../types/admin'
+import { analyseStandings } from '../utils/standing'
+import { canMentor, isStudent } from '../utils/roles'
+import { adminLectureReviews } from './adminLectureReviews'
+import { adminReviews } from './adminReviews'
+import { buildMockModules } from './courses'
+import { listTeams, listUsers } from './directory'
+import { allStandings } from './standings'
 
 /**
- * Offline stand-in for the analytics routes. Enough rows to click through every screen: a week with no grades, a
- * student with no scored quiz, and a mentor dimension nobody rated. Dates are fixed so tests and demos do not drift.
+ * Offline stand-in for the analytics routes. It is made from the same demo data as the rest of the app (the people and
+ * teams, the mentors' week grades, the mentor and lecture reviews), so Sam in Analytics is the Sam of the Grading page.
+ * Hand-ins and quiz scores are not kept by the demo, so they are worked out from the student's id: the same on every visit.
  */
 const MOCK_LATENCY_MS = 200
 const wait = () => new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS))
 
-const PERIOD = { from: '2026-09-28', to: '2026-11-15' }
-const GENERATED_AT = '2026-11-15T17:00:00Z'
+const day = (d: Date) => d.toISOString().slice(0, 10)
 
-const openDate = (week: number) => new Date(Date.UTC(2026, 8, 28 + week * 7, 8)).toISOString()
-
-const WEEK_COUNTS: { green: number; yellow: number; red: number }[] = [
-  { green: 9, yellow: 3, red: 1 },
-  { green: 8, yellow: 4, red: 1 },
-  { green: 10, yellow: 2, red: 1 },
-  { green: 0, yellow: 0, red: 0 }, // week 4: nobody graded yet
-  { green: 7, yellow: 4, red: 2 },
-  { green: 11, yellow: 1, red: 1 },
-]
-
-const WEEK_TITLES = ['Week 1 · Foundations', 'Week 2 · Go Basics', 'Week 3 · HTTP', 'Week 4 · Databases', 'Week 5 · React', 'Week 6 · Delivery']
-
-const weeks = (): AnalyticsWeek[] =>
-  WEEK_COUNTS.map((counts, i) => ({
-    moduleId: i + 1,
-    moduleTitle: WEEK_TITLES[i],
-    opensAt: openDate(i),
-    ...counts,
-    total: counts.green + counts.yellow + counts.red,
-  }))
-
-const studentNames = [
-  'Leyla Hasanova',
-  'Murad Guliyev',
-  'Nigar Ismayilova',
-  'Tural Karimov',
-  'Sam Student',
-  'Aynur Babayeva',
-  'Kamran Rzayev',
-  'Sabina Valiyeva',
-  'Orkhan Mustafayev',
-  'Gunel Ahmadova',
-  'Ali Abbasov',
-  'Banu Hajiyeva',
-  'Elnur Safarov',
-  'Fidan Jafarova',
-  'Ilkin Najafov',
-  'Aysu Mirzayeva',
-  'Emil Hasanli',
-  'Konul Rahimova',
-  'Nijat Bayramov',
-  'Ulvi Tagiyev',
-  'Arzu Gasimova',
-  'Rauf Ibrahimov',
-  'Narmin Aliyeva',
-  'Farid Mammadov',
-]
-
-const students: AnalyticsPerson[] = studentNames.map((name, i) => ({
-  id: 100 + i,
-  name,
-  email: `${name.toLowerCase().replace(/[^a-z]+/g, '.')}@xsolla.school`,
-}))
-
-const mentors: AnalyticsPerson[] = [
-  { id: 900, name: 'Rashad Aliyev', email: 'rashad.aliyev@xsolla.school' },
-  { id: 901, name: 'Aysel Mammadova', email: 'aysel.mammadova@xsolla.school' },
-  { id: 902, name: 'Elvin Huseynov', email: 'elvin.huseynov@xsolla.school' },
-]
-
-const find = (people: AnalyticsPerson[], id: number) => people.find((p) => p.id === id) ?? null
-
-export async function mockOverview(): Promise<OverviewReport> {
-  await wait()
-  return { period: PERIOD, generatedAt: GENERATED_AT, weeks: weeks() }
+function period(now: Date) {
+  const from = new Date(now)
+  from.setDate(from.getDate() - 12 * 7 + 1)
+  return { from: day(from), to: day(now) }
 }
 
-export async function mockPeople(role: 'students' | 'mentors', q: string, limit: number, offset: number) {
+const person = (u: SchoolUser): AnalyticsPerson => ({ id: u.id, name: u.name, email: u.email })
+const active = (now: Date) => listUsers(now).filter((u) => !u.leftAt)
+const studentsOf = (now: Date) => active(now).filter((u) => isStudent(u))
+const mentorsOf = (now: Date) => active(now).filter((u) => canMentor(u))
+
+/** The weeks that have opened, oldest first. */
+function openWeeks(now: Date) {
+  return buildMockModules(now).filter((m) => m.opensAt && new Date(m.opensAt) <= now)
+}
+
+/** Green / yellow / red per week for these students (all students when `ids` is left out). */
+function standingWeeks(now: Date, ids?: Set<number>): AnalyticsWeek[] {
+  const grades = allStandings(now).filter((g) => !ids || ids.has(g.studentId))
+  return openWeeks(now).map((m) => {
+    const of = grades.filter((g) => g.week === m.position)
+    const count = (level: string) => of.filter((g) => g.level === level).length
+    const green = count('green')
+    const yellow = count('yellow')
+    const red = count('red')
+    return {
+      moduleId: m.position,
+      moduleTitle: `Week ${m.position} · ${m.title}`,
+      opensAt: m.opensAt as string,
+      green,
+      yellow,
+      red,
+      total: green + yellow + red,
+    }
+  })
+}
+
+export async function mockOverview(now: Date = new Date()): Promise<OverviewReport> {
   await wait()
-  const all = role === 'students' ? students : mentors
+  return { period: period(now), generatedAt: now.toISOString(), weeks: standingWeeks(now) }
+}
+
+export async function mockPeople(role: 'students' | 'mentors', q: string, limit: number, offset: number, now: Date = new Date()) {
+  await wait()
+  const all = (role === 'students' ? studentsOf(now) : mentorsOf(now)).map(person)
   const needle = q.trim().toLowerCase()
-  return all.filter((p) => !needle || p.name.toLowerCase().includes(needle) || (p.email ?? '').toLowerCase().includes(needle)).slice(offset, offset + limit)
+  return all
+    .filter((p) => !needle || p.name.toLowerCase().includes(needle) || (p.email ?? '').toLowerCase().includes(needle))
+    .slice(offset, offset + limit)
 }
 
-export async function mockStudent(id: number): Promise<StudentReport | null> {
+export async function mockStudent(id: number, now: Date = new Date()): Promise<StudentReport | null> {
   await wait()
-  const student = find(students, id)
+  const student = studentsOf(now).find((u) => u.id === id)
   if (!student) return null
-  const seed = id % 5
+  const weeks = openWeeks(now)
+  // two deadlines in each week that is over; some late, a few missed (more for some students than others)
+  const over = weeks.filter((m) => m.closesAt && new Date(m.closesAt) < now).length
+  const eligible = over * 2
+  const missing = Math.min(eligible, (id * 7) % 4 === 0 ? 0 : ((id * 7) % 4) - (id % 2))
+  const late = Math.min(eligible - Math.max(0, missing), (id * 3) % 3)
   const status: AssignmentStatus = {
-    onTime: 5 + (seed % 3),
-    late: 1 + (seed % 2),
-    missing: seed === 0 ? 0 : 2,
-    eligible: 8 + (seed % 3),
+    onTime: eligible - Math.max(0, missing) - late,
+    late,
+    missing: Math.max(0, missing),
+    eligible,
   }
-  status.eligible = status.onTime + status.late + status.missing
-  const quizzes: QuizAccuracy[] = [
-    { moduleId: 1, moduleTitle: WEEK_TITLES[0], opensAt: openDate(0), scoreTotal: 16, possibleTotal: 20, accuracy: 80, attemptCount: 2 },
-    { moduleId: 2, moduleTitle: WEEK_TITLES[1], opensAt: openDate(1), scoreTotal: 5, possibleTotal: 8, accuracy: 62.5, attemptCount: 1 },
-    { moduleId: 3, moduleTitle: WEEK_TITLES[2], opensAt: openDate(2), scoreTotal: 0, possibleTotal: 0, accuracy: null, attemptCount: 1 },
-  ]
-  return { student, period: PERIOD, generatedAt: GENERATED_AT, status, quizzes }
+  // one quiz per week that is over; the latest one has no points to score, so it shows as "No scored answers"
+  const quizzes: QuizAccuracy[] = weeks.slice(0, over + 1).map((m, i) => {
+    const possible = i === over ? 0 : 10
+    const score = possible === 0 ? 0 : Math.max(3, 10 - ((id + i * 3) % 6))
+    return {
+      moduleId: m.position,
+      moduleTitle: `Week ${m.position} · ${m.title}`,
+      opensAt: m.opensAt as string,
+      scoreTotal: score,
+      possibleTotal: possible,
+      accuracy: possible === 0 ? null : Math.round((score / possible) * 1000) / 10,
+      attemptCount: 1,
+    }
+  })
+  return { student: person(student), period: period(now), generatedAt: now.toISOString(), status, quizzes }
 }
 
-export async function mockMentor(id: number): Promise<MentorReport | null> {
+export async function mockMentor(id: number, now: Date = new Date()): Promise<MentorReport | null> {
   await wait()
-  const mentor = find(mentors, id)
+  const mentor = mentorsOf(now).find((u) => u.id === id)
   if (!mentor) return null
-  // Elvin (902) has only unrated dimensions, so the screen shows "No responses".
-  const rated = id !== 902
-  const feedback: FeedbackDimension[] = [
-    { dimension: 'clarity', average: rated ? 4.4 : null, count: rated ? 5 : 0 },
-    { dimension: 'engagement', average: rated ? 4.2 : null, count: rated ? 5 : 0 },
-    { dimension: 'comfort', average: rated ? 4.8 : null, count: rated ? 4 : 0 },
-    { dimension: 'time', average: rated ? 4 : null, count: rated ? 5 : 0 },
-  ]
-  const mentorWeeks = weeks().map((w) => ({ ...w, green: Math.ceil(w.green / 3), yellow: Math.ceil(w.yellow / 3), red: Math.ceil(w.red / 3), total: 0 }))
-  for (const w of mentorWeeks) w.total = w.green + w.yellow + w.red
-  return { mentor, period: PERIOD, generatedAt: GENERATED_AT, feedback, weeks: mentorWeeks, attribution: 'current_roster' }
+  const reviews = adminReviews(now).filter((r) => r.mentorId === id)
+  const feedback: FeedbackDimension[] = REVIEW_STATEMENTS.map((dimension) => {
+    const scores = reviews.flatMap((r) => (r.ratings[dimension] === undefined ? [] : [r.ratings[dimension] as number]))
+    return {
+      dimension,
+      average: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 : null,
+      count: scores.length,
+    }
+  })
+  const team = new Set(
+    listTeams(now)
+      .filter((t) => t.mentorId === id)
+      .flatMap((t) => t.studentIds),
+  )
+  return {
+    mentor: person(mentor),
+    period: period(now),
+    generatedAt: now.toISOString(),
+    feedback,
+    weeks: standingWeeks(now, team),
+    attribution: 'current_roster',
+  }
+}
+
+// ---------- the AI summary, offline ----------
+
+const none = (now: Date, what: string): AiSummary => ({
+  summary: `There is not enough ${what} to generate a summary yet.`,
+  sourceCount: 0,
+  generatedAt: null,
+  cached: false,
+  period: period(now),
+  demo: true,
+})
+
+const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
+
+/**
+ * A stand-in for the AI summary, written by the app from the demo data so the section has something to show offline.
+ * The card says it is demo text; with a server the text comes from the AI and the real feedback.
+ */
+export async function mockAiSummary(role: AnalyticsRole, id: number, now: Date = new Date()): Promise<AiSummary> {
+  await wait()
+  if (role === 'students') {
+    const notes = allStandings(now).filter((g) => g.studentId === id)
+    const written = notes.filter((g) => g.note)
+    if (written.length === 0) return none(now, 'written feedback')
+    const s = analyseStandings(notes)
+    const steady = s.counts.green >= s.counts.total / 2
+    return {
+      summary: [
+        steady
+          ? 'The mentor’s notes describe a student who mostly keeps pace with the program and reports on time.'
+          : 'The mentor’s notes describe an uneven run of weeks: good starts are followed by weeks where the work fell behind.',
+        s.counts.red > 0
+          ? 'At least one week had no progress report, and the mentor asked to be told in advance about absences.'
+          : 'No note mentions a missed progress report.',
+        s.yellowStreak > 0
+          ? 'The latest notes say the tasks are behind but that the student is catching up; finishing the open tasks before the next week starts is the clearest next step.'
+          : 'The latest notes are positive; the mentor’s advice is to keep the same rhythm.',
+      ].join(' '),
+      sourceCount: written.length,
+      generatedAt: now.toISOString(),
+      cached: false,
+      period: period(now),
+      demo: true,
+    }
+  }
+  if (role === 'mentors') {
+    const reviews = adminReviews(now).filter((r) => r.mentorId === id)
+    if (reviews.length === 0) return none(now, 'student feedback')
+    const sessions = reviews.filter((r) => r.hadSession).length
+    const overall = mean(reviews.map((r) => r.overall))
+    const comments = reviews.filter((r) => r.comment).length
+    return {
+      summary: [
+        `Students reported having a 1:1 in ${sessions} of ${reviews.length} reviewed weeks${sessions < reviews.length ? '; in the other weeks the most common reason was that no time was scheduled' : ''}.`,
+        overall >= 4
+          ? 'Overall ratings are mostly high: students describe the mentor as approachable and clear.'
+          : overall >= 3
+            ? 'Overall ratings are mixed: several students find the sessions useful, others would like more structure.'
+            : 'Overall ratings are low, and comments ask for more time and clearer next steps.',
+        comments > 0
+          ? `${comments} reviews have a written comment; the recurring wish is to end each session with concrete next steps.`
+          : 'Few reviews have a written comment.',
+      ].join(' '),
+      sourceCount: reviews.length,
+      generatedAt: now.toISOString(),
+      cached: false,
+      period: period(now),
+      demo: true,
+    }
+  }
+  const lectures = adminLectureReviews(now).filter((r) => r.lecturers.some((l) => l.id === id))
+  if (lectures.length === 0) return none(now, 'lecture feedback')
+  const overall = mean(lectures.map((r) => r.overall))
+  const fast = lectures.filter((r) => r.pace === 'too_fast').length
+  return {
+    summary: [
+      overall >= 4
+        ? 'Students rate the lectures well: the live coding and the examples are what they mention most.'
+        : 'Students find the lectures useful but uneven: the examples work, the newer parts are harder to follow.',
+      fast > lectures.length / 3
+        ? `About ${Math.round((fast / lectures.length) * 100)}% say the pace is too fast; slowing down on new material and leaving time for the exercises are the most common requests.`
+        : 'Most students find the pace about right.',
+      'Several ask for the slides to be shared before the lecture.',
+    ].join(' '),
+    sourceCount: lectures.length,
+    generatedAt: now.toISOString(),
+    cached: false,
+    period: period(now),
+    demo: true,
+  }
+}
+
+/** Offline: every active student may answer every lecture. */
+export async function mockLectureExpected(now: Date = new Date()): Promise<Record<string, number>> {
+  await wait()
+  const students = studentsOf(now).length
+  return Object.fromEntries(adminLectureReviews(now).map((r) => [`${r.lecture.eventId}@${r.lecture.startsAt}`, students]))
 }
