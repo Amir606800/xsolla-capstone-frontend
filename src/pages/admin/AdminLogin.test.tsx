@@ -67,15 +67,6 @@ describe('Admin sign-in', () => {
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled()
   })
 
-  it('the offline demo button fills in the demo admin', async () => {
-    renderWithProviders(<App />, { route: '/admin/login' })
-    const user = userEvent.setup()
-    await user.click(await screen.findByRole('button', { name: 'use the demo admin account' }))
-    expect(screen.getByLabelText('Email')).toHaveValue(DEMO_ADMIN.email)
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(await screen.findByRole('heading', { name: 'Overview', level: 1 })).toBeInTheDocument()
-  })
-
   it('the password can be shown and hidden', async () => {
     renderWithProviders(<App />, { route: '/admin/login' })
     const user = userEvent.setup()

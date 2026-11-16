@@ -1,6 +1,5 @@
 import type { QuizQuestion, ResourceItem } from '../types/course'
-
-const GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string | undefined)?.trim() || ''
+import { runtimeEnv } from '../config/runtime.ts'
 
 const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash']
 
@@ -11,7 +10,8 @@ export interface AiGeneratedQuizPayload {
 }
 
 export async function generateAiQuizFromMaterial(material: ResourceItem): Promise<AiGeneratedQuizPayload> {
-  if (!GEMINI_API_KEY) {
+  const geminiApiKey = runtimeEnv('VITE_GEMINI_API_KEY')
+  if (!geminiApiKey) {
     throw new Error('VITE_GEMINI_API_KEY is not configured')
   }
   const prompt = [
@@ -34,7 +34,7 @@ export async function generateAiQuizFromMaterial(material: ResourceItem): Promis
   let lastError: Error | null = null
   for (const model of GEMINI_MODELS) {
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiApiKey)}`
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

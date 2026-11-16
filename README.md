@@ -7,33 +7,31 @@ people, teams, modules and the calendar in a separate section.
 Built with React, TypeScript and Vite. The back-end is a separate project (a Go server); this repository is only the
 front-end.
 
-**You do not need the back-end to try it.** Without one, the app runs on built-in demo data stored in your browser.
+The back-end must be configured before starting the front-end.
 
 ---
 
-## 1. Fastest start (no back-end)
+## 1. Fastest start
 
 You need [Node.js](https://nodejs.org) 22 or newer.
 
 ```bash
 npm install
+```
+
+Create `.env.local` next to `package.json` before starting:
+
+```
+VITE_API_URL=http://localhost:8080
+```
+
+Then run:
+
+```bash
 npm run dev
 ```
 
 Open <http://localhost:5173>.
-
-Sign in with any of these demo accounts (**any password works**):
-
-| Who | E-mail | What they get |
-|---|---|---|
-| Student | `student@xsolla.school` | Courses, tasks, grades, team, 1:1 booking, calendar |
-| Mentor and lecturer | `lecturer@xsolla.school` | Team page, grading, calendar, writes the course |
-| Mentor only | `mentor@xsolla.school` | Team page, grading, calendar |
-| Lecturer only | `teacher@xsolla.school` | Writes the course, calendar |
-| Admin | `admin@xsolla.school` | Sign in at <http://localhost:5173/admin/login> |
-
-Any other e-mail signs in as a student. Your changes are kept in the browser's local storage; to start from scratch,
-clear the site data for `localhost:5173`.
 
 ## 2. Run with Docker
 
@@ -53,7 +51,7 @@ docker compose --profile dev up dev
 
 Open <http://localhost:5173>.
 
-> The settings in section 3 are baked into the build. After you change `.env`, run `docker compose up --build` again.
+> The production container writes `/config.js` from its environment when it starts. After changing `.env`, restart the container; rebuilding is only needed after changing application code.
 
 ## 3. Connect it to the back-end
 
@@ -63,17 +61,16 @@ Create a file named `.env.local` (it is not committed) next to `package.json`:
 VITE_API_URL=http://localhost:8080
 ```
 
-Restart `npm run dev` after any change to it. With a back-end address set, sign in with a real account from that
-server; the demo accounts above only work without one.
+Restart `npm run dev` after any change to it. The frontend refuses to start when `VITE_API_URL` is missing.
 
 | Setting | What it does | Default |
 |---|---|---|
-| `VITE_API_URL` | Address of the back-end, with no path (`http://localhost:8080`, or a tunnel address). **Empty = demo mode.** | empty |
+| `VITE_API_URL` | Required address of the back-end, with no path (`http://localhost:8080`, or a tunnel address). | required |
 | `VITE_SLACK_URL` | The Slack link in the sidebar | placeholder |
 | `VITE_GITLAB_URL` | The GitLab link in the sidebar | placeholder |
 | `VITE_OFFICE_TOUR_URL` | The page opened by "Office tour" | placeholder |
 
-`.env.example` shows all of them. Which file wins: `.env.local` overrides `.env`. With Docker, Compose reads `.env`.
+`.env.example` shows all of them. Which file wins: `.env.local` overrides `.env`. Vite reads these values during local development, while the Nginx container reads them at startup and writes `/config.js`.
 
 **Things to know when using a real back-end**
 
@@ -96,9 +93,6 @@ localStorage.setItem('mentor_review_demo', 'reminder')  // this week's reminder,
 localStorage.removeItem('mentor_review_demo')           // back to normal
 ```
 
-This is for the offline demo only. With a real server (`VITE_API_URL` set) the reviews always come from the server and
-the flag does nothing.
-
 ## 5. Commands
 
 | Command | What it does |
@@ -107,8 +101,8 @@ the flag does nothing.
 | `npm run build` | Type-checks and builds into `dist/` |
 | `npm run preview` | Serves the built `dist/` locally |
 | `npm run lint` | Checks the code style |
-| `npm test` | Unit and component tests (Vitest). Always uses demo data, whatever `.env` says |
-| `npm run test:e2e` | Browser tests (Playwright). Start with `npx playwright install` the first time. Always uses demo data |
+| `npm test` | Unit and component tests (Vitest) |
+| `npm run test:e2e` | Browser tests (Playwright). Start with `npx playwright install` the first time |
 | `npm run test:backend` | Checks the app's API code against a **live** back-end. See below |
 
 `npm run test:backend` creates accounts, a team, a module and events on the server, so point it at a test database:
@@ -125,17 +119,13 @@ On Windows PowerShell set the three values with `$env:LMS_API_URL = '...'` first
 src/
   pages/        One file per screen (student, mentor, lecturer, admin/ for the admin section)
   components/   Parts the pages share: layout, calendar, dashboard, forms, modals
-  api/          Every call to the back-end. Each has a real version (*.http.ts) and a demo version (mocks/)
-  mocks/        The demo data and the in-browser store that stands in for the back-end
+  api/          Every call to the back-end
   context/      Shared state: signed-in user, course data, notifications, weekly review, ...
   hooks/        Small hooks that read that state
   utils/        Plain functions: dates, roles, progress, rules (easy to test)
   types/        Shared TypeScript types
 e2e/            Browser tests
 ```
-
-The switch between real and demo data is one place: if `VITE_API_URL` is set, the `api/` modules call the server,
-otherwise they use `mocks/`. The screens do not know the difference.
 
 Roles: a person can be a **student**, **mentor**, **lecturer** or **admin**, and mentors and lecturers can be both.
 Admins have their own layout under `/admin`.
@@ -153,12 +143,11 @@ All of them are in the [`backend_requirements/`](backend_requirements/) folder.
 
 ## 8. Troubleshooting
 
-- **The app still shows demo data after I set `VITE_API_URL`.** Restart `npm run dev`, then sign out and sign in again
-  (an old demo login is remembered in the browser), or clear the site data.
+- **The app does not start.** Configure `VITE_API_URL` in `.env.local` and restart `npm run dev`.
 - **"Failed to fetch" or every page fails to load.** The back-end is not reachable, or does not allow the browser
   (CORS). Open the address in the browser and check the Network tab.
 - **Port 5173 or 3000 is already in use.** Stop the other program, or use `WEB_PORT=8081 docker compose up --build`
   / `npm run dev -- --port 5174`.
-- **I changed `.env` but Docker shows the old address.** Rebuild: `docker compose up --build`.
+- **I changed `.env` but Docker shows the old address.** Restart the web container: `docker compose up -d`.
 - **Tests behave differently on my machine.** Run them from a folder path with the same letter case as on disk
   (on Windows, `D:\...` not `d:\...`); Vitest can fail to start otherwise.

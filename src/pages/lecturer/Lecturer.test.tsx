@@ -26,15 +26,10 @@ const dialog = () => screen.getByRole('dialog')
 const status = async (text: string | RegExp) => expect(await screen.findByRole('status')).toHaveTextContent(text)
 
 describe('Lecturer account', () => {
-  it('the login page offers the offline demo accounts, and the lecturer lands on their dashboard', async () => {
-    const user = userEvent.setup()
+  it('the login page requires backend credentials', async () => {
     renderWithProviders(<App />, { route: '/login' })
-    const demo = await screen.findByRole('group', { name: 'Demo accounts' })
-    await user.click(within(demo).getByRole('button', { name: 'Mentor & lecturer' }))
-    expect(screen.getByLabelText('Email')).toHaveValue('lecturer@xsolla.school')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(await screen.findByRole('heading', { name: 'Welcome, Rashad Aliyev', level: 1 })).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem('auth_user')!).roles).toEqual(['mentor', 'lecturer'])
+    expect(screen.queryByRole('group', { name: 'Demo accounts' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
   })
 
   it('has its own navigation, without the student pages', async () => {

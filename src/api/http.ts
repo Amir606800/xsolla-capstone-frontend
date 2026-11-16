@@ -1,12 +1,13 @@
 import axios, { AxiosError } from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 import { publish, topicsForPath } from '../sync/bus'
+import { runtimeEnv } from '../config/runtime.ts'
 
 /** Thin axios wrapper for the LMS backend: JSON in/out and one error type for every failure. */
 
 /** Base URL of the backend (no trailing slash). Empty = no backend configured, the mock API is used. */
 export function apiBaseUrl(): string {
-  return (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '')
+  return runtimeEnv('VITE_API_URL').replace(/\/+$/, '')
 }
 
 export const hasBackend = () => apiBaseUrl() !== ''
