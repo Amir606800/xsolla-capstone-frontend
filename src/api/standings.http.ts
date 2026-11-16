@@ -25,6 +25,8 @@ interface EnrollmentDto {
   /** The mentor's module feedback; absent until the server keeps it. */
   feedback?: string | null
   graded_at?: string | null
+  /** The user id of whoever gave the grade (a mentor or an admin). */
+  graded_by?: number | string | null
   created_at: string
 }
 
@@ -84,6 +86,8 @@ export async function fetchStandings(studentId: number): Promise<WeeklyStanding[
 export interface WeekGrade extends StoredStanding {
   moduleId: string
   moduleTitle: string
+  /** Whoever gave the grade; the page puts a name to the id. */
+  gradedById?: number
 }
 
 /**
@@ -121,6 +125,7 @@ export async function fetchEveryGrade(): Promise<WeekGrade[] | null> {
         assessedAt: e.graded_at || w.date,
         studentId: Number(e.user_id),
         ...(note ? { note } : {}),
+        ...(e.graded_by ? { gradedById: Number(e.graded_by) } : {}),
       })
     }
   })

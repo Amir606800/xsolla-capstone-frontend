@@ -23,6 +23,8 @@ interface Grade {
   assessedAt: string
   note?: string
   gradedBy?: { id: number; name: string }
+  /** The server gives the grader's id only; the name comes from the people list. */
+  gradedById?: number
 }
 
 export async function fetchStudentReviews(): Promise<StudentReview[] | null> {
@@ -45,7 +47,8 @@ export async function fetchStudentReviews(): Promise<StudentReview[] | null> {
 
   return grades.map((g): StudentReview => {
     const team = teamOf.get(g.studentId)
-    const mentorId = g.gradedBy?.id ?? team?.mentorId ?? undefined
+    // who graded it; a grade from before the server recorded that falls back to the student's team mentor
+    const mentorId = g.gradedBy?.id ?? g.gradedById ?? team?.mentorId ?? undefined
     const mentorName = g.gradedBy?.name ?? (mentorId === undefined ? undefined : nameOf.get(mentorId))
     return {
       id: `${g.studentId}:${g.moduleId}`,

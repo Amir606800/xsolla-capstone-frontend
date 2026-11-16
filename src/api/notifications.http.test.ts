@@ -11,6 +11,63 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('in-app notifications: with a backend', () => {
+  const dto = (over: object = {}) => ({
+    id: 41,
+    type: 'enrollment.graded',
+    title: 'Grade posted for Week 3: Concurrency',
+    message: 'Hi Anna,\n\nMurad posted your grade for Week 3: Concurrency: green.',
+    created_at: '2026-11-16T08:00:00Z',
+    read_at: null,
+    ...over,
+  })
+
+  it('GET /notifications: the unread ones from the server, each as one line with the page it opens', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify([dto(), dto({ id: 40, type: 'mentor_slot.booked', title: 'Leyla booked 15:00' }), dto({ id: 39, type: 'something.new' })]), { status: 200 }))
+    await stubHttp(fetchSpy)
+    const { fetchNotifications } = await real()
+    const rows = await fetchNotifications()
+    expect((fetchSpy.mock.calls[0] as unknown as [string])[0]).toBe('https://api.test/notifications?limit=100')
+    expect(rows.map((n) => [n.id, n.type, n.message, n.link, n.readAt])).toEqual([
+      ['41', 'graded', 'Grade posted for Week 3: Concurrency', '/grades', null],
+      ['40', 'meeting', 'Leyla booked 15:00', '/calendar', null],
+      ['39', 'announcement', 'Grade posted for Week 3: Concurrency', '', null],
+    ])
+  })
+
+  it('a server with no notification database (503) or no route has no notifications: an empty bell, not an error', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    await stubHttp(vi.fn(async () => new Response(JSON.stringify({ error: 'service_unavailable', message: 'off' }), { status: 503 })))
+    const { fetchNotifications } = await real()
+    expect(await fetchNotifications()).toEqual([])
+    await stubHttp(vi.fn(async () => new Response('null', { status: 200 })))
+    expect(await fetchNotifications()).toEqual([])
+  })
+
+  it('marking one read is POST /notifications/:id/read; one that is already gone is fine', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    const fetchSpy = vi.fn(async () => new Response(null, { status: 204 }))
+    await stubHttp(fetchSpy)
+    const { markNotificationRead } = await real()
+    await markNotificationRead('41')
+    const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
+    expect([url, init.method]).toEqual(['https://api.test/notifications/41/read', 'POST'])
+    await stubHttp(vi.fn(async () => new Response(JSON.stringify({ error: 'not_found', message: 'gone' }), { status: 404 })))
+    await expect(markNotificationRead('41')).resolves.toBeUndefined()
+  })
+
+  it('"mark all as read" is POST /notifications/read-all', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ marked: 3 }), { status: 200 }))
+    await stubHttp(fetchSpy)
+    const { markAllNotificationsRead } = await real()
+    await markAllNotificationsRead()
+    const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
+    expect([url, init.method]).toEqual(['https://api.test/notifications/read-all', 'POST'])
+  })
+})
+
 describe('announcements: with a backend', () => {
   const row = { id: 7, message: 'No classes on Friday.', link: '/calendar', audience: 'students', sent_at: '2026-11-07T10:00:00Z', sent_by: 'School Admin', recipients: 29 }
 

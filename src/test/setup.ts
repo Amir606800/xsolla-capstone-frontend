@@ -200,6 +200,8 @@ vi.mock('../api/notifications', async () => {
     fetchAnnouncements: vi.fn(async (user: Parameters<typeof store.announcementsFor>[0]) => store.announcementsFor(user)),
     markAnnouncementsAsRead: vi.fn(async (userId: number, ids: string[]) => store.markAnnouncementsRead(userId, ids)),
     isAnnouncementId: store.isAnnouncementId,
+    // the offline demo notifications are a student's
+    serverNotifications: () => false,
     fetchBroadcasts: vi.fn(async () => store.listBroadcasts()),
     sendBroadcast: vi.fn(async (input: { message: string; link: string; audience: import('../utils/adminNotifications').Audience }, sentBy: string) =>
       store.addBroadcast(input, listUsers().filter((u) => !u.leftAt && inAudience(u, input.audience)).length, sentBy),

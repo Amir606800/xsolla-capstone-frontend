@@ -42,6 +42,7 @@ async function backend({ teamStatus = 200, forbidWeek, keepsFeedback = false }: 
             module_id: Number(list[1]),
             user_id: u,
             grade: grades[`${list[1]}:${u}`] ?? null,
+            ...(keepsFeedback ? { graded_by: 55 } : {}),
             ...(keepsFeedback && notes[`${list[1]}:${u}`] ? { feedback: notes[`${list[1]}:${u}`], graded_at: '2026-11-10T09:30:00Z' } : {}),
             created_at: '2026-11-01T00:00:00Z',
           })),
@@ -131,7 +132,7 @@ describe('weekly grades on the real backend (enrollment grades)', () => {
       [1, '5', 9, 'green'],
       [2, '7', 2, 'red'],
     ])
-    expect(rows.find((r) => r.studentId === 9)).toMatchObject({ moduleTitle: 'Week A', note: 'Fine' })
+    expect(rows.find((r) => r.studentId === 9)).toMatchObject({ moduleTitle: 'Week A', note: 'Fine', gradedById: 55 })
   })
 
   it('the admin list leaves out a week the server refuses, and says "unavailable" (null) when it refuses them all', async () => {
