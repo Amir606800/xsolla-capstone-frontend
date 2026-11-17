@@ -5,7 +5,7 @@ import { ApiError } from './http'
 
 /**
  * Lecture feedback (backend docs/lecture_feedback.md).
- *   GET  /lecture-feedback/form      the questions, in order (any signed-in user)
+ *   GET  /lecture-feedback/form      { questions: [...] } in order, plus the open window (any signed-in user)
  *   GET  /lecture-feedback/pending   the lectures whose form is open for the student and not yet sent (students only)
  *   POST /lecture-feedback           { event_id, overall, clarity, practice, pace, confidence, liked?, improve? }
  * Students only: a server without the routes (404/405/501), or an account that is not only a student (403), means
@@ -20,6 +20,10 @@ interface QuestionDto {
   max_label?: string
   options?: { value: string; label: string }[]
   max_length?: number
+}
+
+interface FormDto {
+  questions?: QuestionDto[] | null
 }
 
 interface PendingDto {
@@ -63,7 +67,9 @@ export const mapPending = (p: PendingDto): PendingLecture => ({
 /** The questions: the server's, or the built-in copy when it cannot send them. */
 export async function fetchLectureForm(): Promise<FormQuestion[]> {
   try {
-    const questions = (await authedRequest<QuestionDto[] | null>('/lecture-feedback/form')) ?? []
+    // the server sends { questions: [...], opens_minutes_before_end, open_days_after_end }; a plain list works too
+    const res = await authedRequest<FormDto | QuestionDto[] | null>('/lecture-feedback/form')
+    const questions = (Array.isArray(res) ? res : res?.questions) ?? []
     const form = questions.map(mapQuestion).filter((q): q is FormQuestion => q !== null)
     return form.length > 0 ? form : LECTURE_FORM
   } catch {

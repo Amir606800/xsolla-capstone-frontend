@@ -601,6 +601,16 @@
   color: var(--text-muted);
   font-size: 13px;
 }
+.analytics-people__grade {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.analytics-people__average {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
 .analytics-people a > svg {
   flex: none;
   margin-left: auto;
