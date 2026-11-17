@@ -116,6 +116,10 @@ function classify(e: unknown): { problem: SummaryProblem; error: string } {
     if (e.status === 429)
       return { problem: 'failed', error: 'Too many summaries were asked for just now. Try again in a minute.' }
     if (e.status === 502) return { problem: 'failed', error: 'The AI could not write a usable summary this time. Try again.' }
+    // a proxy or this page gave up waiting: the server may still finish it and keep it, so asking again soon is quick
+    if (e.status === 504 || e.code === 'timeout') {
+      return { problem: 'failed', error: 'Writing the summary is taking longer than expected. It may still finish: try again in a minute.' }
+    }
   }
   return { problem: 'failed', error: reason(e) }
 }

@@ -186,6 +186,9 @@ export async function fetchStudent(id: number, from?: string, to?: string): Prom
   }
 }
 
+/** How long the page waits for a summary (the server gives up on the AI after 30 seconds per call; a proxy often cuts at a minute). */
+export const SUMMARY_TIMEOUT_MS = 60_000
+
 interface SummaryDto {
   summary: string
   source_count?: number
@@ -205,7 +208,8 @@ export async function fetchAiSummary(
   { from, to, force = false }: { from?: string; to?: string; force?: boolean } = {},
 ): Promise<AiSummary> {
   const body = { ...(from ? { from } : {}), ...(to ? { to } : {}), force_refresh: force }
-  const d = await authedRequest<SummaryDto>(`/analytics/${role}/${id}/ai-summary`, { method: 'POST', body })
+  // writing it can be slow, but never endless: after SUMMARY_TIMEOUT_MS the page says so and offers to try again
+  const d = await authedRequest<SummaryDto>(`/analytics/${role}/${id}/ai-summary`, { method: 'POST', body, timeoutMs: SUMMARY_TIMEOUT_MS })
   return {
     summary: (d.summary ?? '').trim(),
     sourceCount: d.source_count ?? 0,

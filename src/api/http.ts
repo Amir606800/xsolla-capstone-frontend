@@ -47,6 +47,8 @@ interface RequestOptions {
   token?: string | null
   /** 'blob' for file downloads; JSON otherwise. */
   as?: 'json' | 'blob'
+  /** Gives up after this long (a request that may be slow, like the AI summary). Without it a request waits for the server as long as it takes. */
+  timeoutMs?: number
 }
 
 /**
@@ -59,7 +61,7 @@ export const http = axios.create({
   transformResponse: (data: unknown) => data,
 })
 
-export async function apiRequest<T>(path: string, { method = 'GET', body, token, as = 'json' }: RequestOptions = {}): Promise<T> {
+export async function apiRequest<T>(path: string, { method = 'GET', body, token, as = 'json', timeoutMs }: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: as === 'blob' ? '*/*' : 'application/json' }
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
@@ -72,6 +74,7 @@ export async function apiRequest<T>(path: string, { method = 'GET', body, token,
     // a FormData goes out as multipart (axios and the browser set the boundary); anything else as JSON
     data: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     responseType: as === 'blob' ? 'blob' : 'text',
+    ...(timeoutMs ? { timeout: timeoutMs } : {}),
   }
 
   let res
@@ -80,6 +83,10 @@ export async function apiRequest<T>(path: string, { method = 'GET', body, token,
   } catch (e) {
     // no answer at all: offline, DNS, CORS, a refused connection
     if (e instanceof AxiosError || axios.isAxiosError(e)) {
+      // the server did not answer in time (only for a request that was given a limit)
+      if (e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT') {
+        throw new ApiError(0, 'timeout', 'The server took too long to answer.')
+      }
       throw new ApiError(0, 'network_error', "Can't reach the server. Check your connection and try again.")
     }
     throw e

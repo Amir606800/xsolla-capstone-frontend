@@ -179,11 +179,13 @@ describe('teams on the real backend', () => {
       { id: '77', email: 'ann@example.com', name: 'Ann Lee', role: 'student' },
       { id: '78', email: 'nil@example.com', name: 'Nil Ay', roles: ['mentor'] },
     ]
+    let usersPosted = 0
     await stubHttp(async (url: string, init: RequestInit) => {
       const path = url.replace(BASE, '')
       if (path === '/auth/signup') return new Response(JSON.stringify({ access_token: 'a', refresh_token: 'r', user: created[0] }), { status: 201 })
       if (path === '/auth/logout') return new Response(null, { status: 204 })
-      if (path === '/users') return new Response(JSON.stringify(created[1]), { status: 201 })
+      // an admin creates both accounts through POST /users: the student first, then the mentor
+      if (path === '/users') return new Response(JSON.stringify(created[usersPosted++]), { status: 201 })
       if (path === '/teams' && init.method === 'GET') return new Response(JSON.stringify(teams), { status: 200 })
       calls.push({ method: init.method ?? 'GET', path, body: init.body ? JSON.parse(init.body as string) : undefined })
       return new Response(null, { status: 204 })

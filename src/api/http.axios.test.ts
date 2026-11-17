@@ -24,6 +24,7 @@ beforeAll(async () => {
         res.writeHead(status, { 'Content-Type': type })
         res.end(body)
       }
+      if (req.url === '/slow') return void setTimeout(() => send(200, 'application/json', '{}'), 600) // never answers in time for a short limit
       if (req.url === '/json') return send(200, 'application/json', JSON.stringify({ id: 7, name: 'Ann' }))
       if (req.url === '/empty') return send(204, 'application/json', '')
       if (req.url === '/file') return send(200, 'application/pdf', '%PDF-1.4 slides')
@@ -81,6 +82,12 @@ describe('apiRequest with the real axios', () => {
 
   it('an error page that is not JSON still gives a plain ApiError', async () => {
     await expect(apiRequest('/proxy')).rejects.toMatchObject({ status: 502, code: 'error', message: 'Something went wrong' })
+  })
+
+  it('a request given a time limit stops waiting for a server that is too slow: a timeout error, not an endless wait', async () => {
+    await expect(apiRequest('/slow', { timeoutMs: 100 })).rejects.toMatchObject({ status: 0, code: 'timeout' })
+    // without a limit it waits for the answer
+    await expect(apiRequest('/slow')).resolves.toEqual({})
   })
 
   it('no answer at all is a network_error with status 0', async () => {
