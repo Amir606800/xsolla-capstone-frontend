@@ -86,6 +86,24 @@ describe('analytics HTTP contract', () => {
     expect(calls[0].url).toBe(`${BASE}/analytics/students?q=Ann&limit=20&offset=40`)
   })
 
+  it("reads each student's average week grade and the level it rounds to", async () => {
+    await backend({
+      'GET /analytics/students': {
+        status: 200,
+        body: [
+          { id: 7, name: 'Anna', grade_average: 2.7, grade_level: 'green', graded_weeks: 6 },
+          { id: 8, name: 'Bek' },
+          { id: 9, name: 'Cem', grade_average: 2, grade_level: 'purple', graded_weeks: 1 },
+        ],
+      },
+    })
+    expect(await fetchPeople('students', '', 20, 0)).toEqual([
+      { id: 7, name: 'Anna', gradeAverage: 2.7, gradeLevel: 'green', gradedWeeks: 6 },
+      { id: 8, name: 'Bek' },
+      { id: 9, name: 'Cem' },
+    ])
+  })
+
   it('maps an unknown student or mentor to null', async () => {
     await backend({})
     expect(await fetchStudent(999)).toBeNull()

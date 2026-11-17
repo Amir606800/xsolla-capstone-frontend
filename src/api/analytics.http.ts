@@ -14,6 +14,7 @@ import type {
 } from '../types/analytics'
 import { authedRequest } from './authed'
 import { ApiError } from './http'
+import { parseStandingLevel } from '../utils/standing'
 
 /**
  * The backend's admin-only analytics routes (docs/analytics.md):
@@ -44,6 +45,10 @@ interface PersonDto {
   id: number
   name: string
   email?: string
+  /** Students: the average of their week grades and the level it rounds to (absent until a week is graded). */
+  grade_average?: number | null
+  grade_level?: string | null
+  graded_weeks?: number | null
 }
 
 interface OverviewDto {
@@ -115,7 +120,17 @@ export const mapWeek = (d: WeekDto): AnalyticsWeek => ({
   total: d.total_count,
 })
 
-const mapPerson = (d: PersonDto): AnalyticsPerson => ({ id: d.id, name: d.name, ...(d.email ? { email: d.email } : {}) })
+const mapPerson = (d: PersonDto): AnalyticsPerson => {
+  const level = parseStandingLevel(d.grade_level)
+  return {
+    id: d.id,
+    name: d.name,
+    ...(d.email ? { email: d.email } : {}),
+    ...(level && d.grade_average != null
+      ? { gradeAverage: d.grade_average, gradeLevel: level, ...(d.graded_weeks ? { gradedWeeks: d.graded_weeks } : {}) }
+      : {}),
+  }
+}
 
 const mapStatus = (d: StatusDto): AssignmentStatus => ({
   onTime: d.on_time_count,

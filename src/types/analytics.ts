@@ -11,6 +11,13 @@ export interface AnalyticsPerson {
   id: number
   name: string
   email?: string
+  /**
+   * Students only, once a week is graded: the average of their week grades (red 1, yellow 2, green 3), worked out by
+   * the server, and the level it rounds to (.5 up). The student list shows this level, not the latest week.
+   */
+  gradeAverage?: number
+  gradeLevel?: StandingLevel
+  gradedWeeks?: number
 }
 
 /** One week's (module's) standing counts. `total` counts only recorded grades. */

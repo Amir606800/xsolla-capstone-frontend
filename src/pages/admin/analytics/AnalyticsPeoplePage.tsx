@@ -1,12 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { Icon } from '../../../components/Icon'
 import { Loading } from '../../../components/loading/Loading'
 import { StandingPill } from '../../../components/StandingPill'
 import { useAnalyticsPeople } from '../../../hooks/useAnalytics'
-import { useStudentReviews } from '../../../hooks/useStudentReviews'
 import type { AnalyticsRole } from '../../../types/analytics'
-import { standingsByStudent } from '../../../utils/personAnalytics'
 import { AnalyticsShell } from './AnalyticsShell'
 
 const TEXT: Record<AnalyticsRole, { title: string; subtitle: string; person: string; list: string }> = {
@@ -36,9 +34,9 @@ export default function AnalyticsPeoplePage({ role }: { role: AnalyticsRole }) {
   const [search, setSearch] = useState('')
   const list = useAnalyticsPeople(role, search)
   const text = TEXT[role]
-  // students show how they stand now beside their name (the grades are loaded once for the whole list)
-  const grades = useStudentReviews(role === 'students')
-  const standings = useMemo(() => (role === 'students' ? standingsByStudent(grades.reviews) : null), [role, grades.reviews])
+  // students show the colour of the AVERAGE of their week grades beside their name (the server works it out), so one
+  // bad week after many good ones does not paint the whole student red
+  const students = role === 'students'
 
   return (
     <AnalyticsShell title={text.title} subtitle={text.subtitle}>
@@ -76,15 +74,22 @@ export default function AnalyticsPeoplePage({ role }: { role: AnalyticsRole }) {
         <>
           <ul className="analytics-people" aria-label={text.list}>
             {list.people.map((p) => {
-              const now = standings?.get(p.id)
               return (
                 <li key={p.id}>
                   <Link to={`/admin/analytics/${role}/${p.id}`}>
                     <span className="analytics-people__name">{p.name}</span>
                     {p.email && <span className="analytics-people__email">{p.email}</span>}
-                    {standings &&
-                      (now?.summary.current ? (
-                        <StandingPill level={now.summary.current} />
+                    {students &&
+                      (p.gradeLevel && p.gradeAverage !== undefined ? (
+                        <span className="analytics-people__grade">
+                          <StandingPill level={p.gradeLevel} />
+                          <span
+                            className="analytics-people__average"
+                            title={`Average of ${p.gradedWeeks ?? ''} graded weeks (red 1, yellow 2, green 3)`}
+                          >
+                            avg {p.gradeAverage.toFixed(1)}
+                          </span>
+                        </span>
                       ) : (
                         <span className="admin-pill">Not graded yet</span>
                       ))}

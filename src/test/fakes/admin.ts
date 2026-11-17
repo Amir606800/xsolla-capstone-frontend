@@ -39,7 +39,19 @@ export const fetchStaffPeople = async (
   q: string,
   limit: number,
   offset: number,
-): Promise<AnalyticsPerson[]> => mockPeople(role, q, limit, offset)
+): Promise<AnalyticsPerson[]> => {
+  const people = await mockPeople(role, q, limit, offset)
+  if (role !== 'students') return people
+  // as the server does: red 1, yellow 2, green 3, averaged over the graded weeks, .5 rounds up
+  const value = { red: 1, yellow: 2, green: 3 } as const
+  const levels = ['red', 'yellow', 'green'] as const
+  return people.map((p) => {
+    const mine = allStandings().filter((g) => g.studentId === p.id)
+    if (mine.length === 0) return p
+    const avg = mine.reduce((s, g) => s + value[g.level], 0) / mine.length
+    return { ...p, gradeAverage: Math.round(avg * 10) / 10, gradeLevel: levels[Math.floor(avg + 0.5) - 1], gradedWeeks: mine.length }
+  })
+}
 
 // ---------- api/reports ----------
 export async function sendReport(subject: string, message: string, reporter?: ReportPerson) {
