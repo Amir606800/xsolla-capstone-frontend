@@ -43,7 +43,7 @@
 }
 .admin-btn--primary {
   border-color: transparent;
-  background: var(--btn-bg);
+  background: white;
   color: var(--btn-text);
 }
 .admin-btn--primary:hover:not(:disabled) {
