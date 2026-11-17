@@ -3,7 +3,6 @@ import {
   buildMockStandings,
   buildMockStandingStore,
   gradeWeek,
-  LATE_WEEK_IS_RED,
   markLate,
   standingsOf,
   teamStandings,
@@ -56,10 +55,11 @@ describe('rules', () => {
 })
 
 describe('a late hand-in', () => {
-  it('turns the week red at once; the mentor can add feedback but cannot raise it', () => {
+  it('turns the week red at once; the mentor can change it for an exceptional case', () => {
     markLate(101, 3, 'Promises', NOW)
     expect(standingsOf(101, NOW).find((w) => w.week === 3)).toMatchObject({ level: 'red', lateTasks: ['Promises'] })
-    expect(() => gradeWeek(RASHAD, 101, 3, 'green', 'Good week', NOW)).toThrow(LATE_WEEK_IS_RED)
+    gradeWeek(RASHAD, 101, 3, 'green', 'A real emergency, so green.', NOW)
+    expect(standingsOf(101, NOW).find((w) => w.week === 3)).toMatchObject({ level: 'green' })
     gradeWeek(RASHAD, 101, 3, 'red', 'The Promises task came in late.', NOW)
     expect(standingsOf(101, NOW).find((w) => w.week === 3)).toMatchObject({
       level: 'red',

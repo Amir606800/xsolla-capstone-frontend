@@ -106,10 +106,6 @@ const plain = (s: StoredStanding): WeeklyStanding => ({
   ...(s.lateTasks?.length ? { lateTasks: s.lateTasks } : {}),
 })
 
-/** The message a mentor gets when trying to raise a week that a late hand-in made red. */
-export const LATE_WEEK_IS_RED =
-  'A task of this week was handed in late, so the week grade stays red. You can still add your feedback.'
-
 /** A late hand-in: the student's week turns red at once (what the mentor wrote stays). */
 export function markLate(studentId: number, week: number, taskTitle: string, now: Date = new Date()): void {
   const store = load(now)
@@ -165,8 +161,8 @@ export function gradeWeek(
   const store = load(now)
   const text = note.trim()
   if (!text) throw new Error('Write the module feedback first: it is required with a week grade.')
+  // a late hand-in made the week red by itself; the mentor can change it (an exceptional case)
   const lateTasks = store[keyOf(studentId, week)]?.lateTasks
-  if (lateTasks?.length && level !== 'red') throw new Error(LATE_WEEK_IS_RED)
   store[keyOf(studentId, week)] = {
     week,
     level,

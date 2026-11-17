@@ -21,12 +21,12 @@ const show = (lateTasks: string[]) =>
   )
 
 describe('the week grade after a late hand-in', () => {
-  it('is red, says why, and green or yellow cannot be picked', () => {
+  it('is red, says why, and the mentor can still change it for an exceptional case', () => {
     show(['HTTP server'])
     expect(screen.getByRole('note')).toHaveTextContent('Red because of a late submission (HTTP server)')
     expect(screen.getByRole('radio', { name: /No progress/ })).toBeChecked()
-    expect(screen.getByRole('radio', { name: /On track/ })).toBeDisabled()
-    expect(screen.getByRole('radio', { name: /Falling behind/ })).toBeDisabled()
+    expect(screen.getByRole('radio', { name: /On track/ })).toBeEnabled()
+    expect(screen.getByRole('radio', { name: /Falling behind/ })).toBeEnabled()
   })
 
   it('without a late hand-in every grade can be picked', () => {

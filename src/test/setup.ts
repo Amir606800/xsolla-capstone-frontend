@@ -53,7 +53,16 @@ vi.mock('../api/courses', async () => {
   const store = await import('./fixtures/contentEdits')
   return {
     fetchModules: vi.fn(async (opts?: { student?: boolean; userId?: number }) => {
-      const modules = store.listModules(new Date())
+      let modules = store.listModules(new Date())
+      // like the server: a student's tasks carry their own deadline (08:00 on the day of their 1:1) and their hand-ins say if late
+      if (opts?.student && opts.userId !== undefined) {
+        const { withStudentDeadlines } = await import('./fixtures/studentDeadlines')
+        const { listSlots } = await import('./fixtures/slots')
+        const booked = listSlots({ id: opts.userId, name: '', roles: ['student'] }, new Date())
+          .filter((s) => s.bookedBy?.id === opts.userId)
+          .map((s) => s.startsAt)
+        modules = withStudentDeadlines(modules, booked)
+      }
       if (opts?.userId === undefined) return modules
       const attempts = store.quizAttemptsOf(opts.userId)
       return modules.map((m) => ({

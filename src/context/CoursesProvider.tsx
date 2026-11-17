@@ -13,12 +13,10 @@ import {
   submitWork,
 } from '../api/courses'
 import type { ModulePatch, SubmitPayload } from '../api/courses'
-import { fetchSlots } from '../api/slots'
 import { useAuth } from '../hooks/useAuth'
 import { useWatchedLive } from '../hooks/useWatchedLive'
 import type { ContentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
-import type { User } from '../types/user'
-import { withoutTaskDeadlines, withStudentDeadlines } from '../utils/deadline'
+import { withoutTaskDeadlines } from '../utils/deadline'
 import { datesNotKept } from '../utils/moduleDates'
 import { sameData } from '../utils/same'
 import { isModuleLocked, orderByOpening } from '../utils/progress'
@@ -51,13 +49,13 @@ function historyAfter(current: Submission | undefined): SubmissionVersion[] | un
 }
 
 /**
- * The course as this person sees it. A student gets their own task deadlines (08:00 on the day of their booked 1:1, or
- * Monday 08:00) and never the quiz answers (the backend must strip them too); staff see tasks without a deadline, since
- * a task has none of its own.
+ * The course as this person sees it. The server decides each student's deadline (08:00 on the day of their booked 1:1, or
+ * Monday 08:00) and whether a hand-in was late; this only shows what it sent. A student never sees the quiz answers (the
+ * backend must strip them too); staff see tasks without a deadline, since a task has none of its own.
  */
-function forRole(modules: CourseModule[], student: boolean, booked: string[] = []): CourseModule[] {
+function forRole(modules: CourseModule[], student: boolean): CourseModule[] {
   if (!student) return withoutTaskDeadlines(modules)
-  return withStudentDeadlines(modules, booked).map((m) =>
+  return modules.map((m) =>
     m.items.some((i) => i.type === 'quiz')
       ? {
           ...m,
@@ -69,17 +67,6 @@ function forRole(modules: CourseModule[], student: boolean, booked: string[] = [
         }
       : m,
   )
-}
-
-/** The start times of the 1:1s this student booked (their deadlines follow them). None when they cannot be loaded. */
-async function bookedOneOnOnes(user: User | null, student: boolean): Promise<string[]> {
-  if (!student || !user) return []
-  try {
-    const slots = await fetchSlots({ id: user.id, name: user.name, roles: user.roles })
-    return slots.filter((s) => s.bookedBy?.id === user.id).map((s) => s.startsAt)
-  } catch {
-    return []
-  }
 }
 
 /**
@@ -100,7 +87,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     userRef.current = user
   }, [user])
   const load = useCallback(
-    () => Promise.all([fetchModules({ student, userId: user?.id }), bookedOneOnOnes(userRef.current, student)]).then(([data, booked]) => forRole(data, student, booked)),
+    () => fetchModules({ student, userId: user?.id }).then((data) => forRole(data, student)),
     [student, user?.id],
   )
 
@@ -188,8 +175,8 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       // submission, and the server turns the week grade red.
       const result = await submitWork(assignmentId, payload, { studentId: user?.id, moduleId: owner?.id })
       version.current += 1
-      // the deadlines are kept, so whether this hand-in was late is worked out at once (unless the server said)
-      setModules((prev) => withStudentDeadlines(withSubmission(prev, assignmentId, { ...result, late: result.late }), []))
+      // whether it was late is the server's answer
+      setModules((prev) => withSubmission(prev, assignmentId, result))
       setNow(new Date())
     },
     [modules, student, user?.id],
@@ -201,7 +188,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       if (!mayAuthor) throw new Error('Only lecturers can change the course')
       const next = await run()
       version.current += 1
-      setModules(forRole(next, student, await bookedOneOnOnes(userRef.current, student)))
+      setModules(forRole(next, student))
       setNow(new Date())
     },
     [mayAuthor, student],
@@ -253,7 +240,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     async (quizId: string, answers: number[]) => {
       const next = await apiSubmitQuizAttempt(quizId, answers, { studentId: user?.id })
       version.current += 1
-      setModules(forRole(next, student, await bookedOneOnOnes(userRef.current, student)))
+      setModules(forRole(next, student))
       setNow(new Date())
     },
     [student, user?.id],

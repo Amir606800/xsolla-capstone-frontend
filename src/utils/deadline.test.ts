@@ -1,14 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { AssignmentItem, CourseModule } from '../types/course'
-import {
-  dueLookup,
-  isLateHandIn,
-  oneOnOneWeek,
-  studentDeadline,
-  weekDeadlineText,
-  withoutTaskDeadlines,
-  withStudentDeadlines,
-} from './deadline'
+import { dueLookup, oneOnOneWeek, studentDeadline, weekDeadlineText, withoutTaskDeadlines } from './deadline'
+// the server's side of it (the app only shows what the server sends): kept as the fake backend of the tests
+import { isLateHandIn, withStudentDeadlines } from '../test/fixtures/studentDeadlines'
 
 // the week opens Monday 16 Nov 2026 (school time, UTC+4): its 1:1s are Friday 20 and Monday 23 Nov
 const OPENS = '2026-11-15T20:00:00Z'

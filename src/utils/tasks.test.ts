@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildMockModules } from '../test/fixtures/courses'
 import type { AssignmentItem, CourseModule } from '../types/course'
 import { collectTasks, countTasks, filterTasks, isTaskFilter, sortTasks } from './tasks'
-import { withStudentDeadlines } from './deadline'
+import { withStudentDeadlines } from '../test/fixtures/studentDeadlines'
 
 const now = new Date('2026-03-10T12:00:00Z')
 const d = (days: number) => new Date(now.getTime() + days * 86_400_000).toISOString()

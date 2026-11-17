@@ -50,8 +50,9 @@ describe('tasks: no grade, only work and comments', () => {
     expect(workRow(t2, bob, idx, NOW).status).toBe('not-yet')
   })
 
-  it('flags late work, and lists new work first', () => {
-    const idx = indexSubmissions([sub('w1-a1', 2, { submittedAt: '2026-11-06T19:00:00.000Z' })])
+  it('flags the work the server says is late, and lists new work first', () => {
+    // late is the server's answer: the app does not compare the time with a deadline itself
+    const idx = indexSubmissions([sub('w1-a1', 2, { submittedAt: '2026-11-06T19:00:00.000Z', late: true })])
     const rows = taskRows(t1, [ann, bob], idx, NOW)
     expect(rows.map((r) => [r.student.name, r.status, r.late])).toEqual([
       ['Bob', 'new', true],

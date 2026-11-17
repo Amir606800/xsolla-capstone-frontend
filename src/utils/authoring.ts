@@ -1,7 +1,6 @@
 import type { CalendarEvent } from '../types/calendar'
 import type { AssignmentItem, CourseModule, QuizItem, QuizQuestion, ResourceItem } from '../types/course'
 import { canHaveMeeting, meetingUrlError } from './meeting'
-import { oneOnOneWeek } from './deadline'
 
 /**
  * Lecturer forms: drafts (what the inputs hold), validation and turning a draft into the item
@@ -197,7 +196,6 @@ export function draftToTask(d: TaskDraft, module: Pick<CourseModule, 'id' | 'ope
     title: d.title.trim(),
     description: d.description.trim() || undefined,
     requirements: requirements.length ? requirements : undefined,
-    ...(module.opensAt ? { dueAt: oneOnOneWeek(module.opensAt).friday } : {}),
   }
 }
 

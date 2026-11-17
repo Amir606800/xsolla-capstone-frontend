@@ -1,5 +1,6 @@
 import type { Submission } from '../../types/course'
-import { isLateHandIn, studentDeadline } from '../../utils/deadline'
+import { studentDeadline } from '../../utils/deadline'
+import { isLateHandIn } from './studentDeadlines'
 import { listModules } from './contentEdits'
 import { listSlots } from './slots'
 import { markLate } from './standings'

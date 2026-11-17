@@ -118,10 +118,9 @@ describe('task', () => {
     expect(splitLines('')).toEqual([])
     expect(draftToTask({ title: 'x', description: '', requirements: '  ' }, module, 'a').requirements).toBeUndefined()
   })
-  it("is saved with the week's Friday 08:00, only as the server's anchor for each student's 1:1 deadline", () => {
+  it("is saved without a deadline: the server works out each student's from their 1:1", () => {
     const t = draftToTask({ title: 'CLI', description: 'Do it', requirements: 'A\nB' }, module, 'a1')
-    // the week opens Monday 2 Nov: its 1:1 Friday is 6 Nov, 08:00 in Baku
-    expect(t.dueAt).toBe('2026-11-06T04:00:00.000Z')
+    expect(t).not.toHaveProperty('dueAt')
     expect(taskToDraft(t)).toEqual({ title: 'CLI', description: 'Do it', requirements: 'A\nB' })
     expect(draftToTask({ title: 'x', description: '', requirements: '' }, { id: 'm', opensAt: undefined }, 'a').dueAt).toBeUndefined()
   })

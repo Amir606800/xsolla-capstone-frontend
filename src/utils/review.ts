@@ -2,7 +2,6 @@ import type { AssignmentItem, CourseModule, QuizItem } from '../types/course'
 import type { TeamSubmission } from '../types/review'
 import type { StandingLevel, WeeklyStanding } from '../types/standing'
 import type { Person } from '../types/team'
-import { isLateHandIn } from './deadline'
 import { analyseStandings, RED_LIMIT, YELLOW_LIMIT } from './standing'
 
 /*
@@ -47,8 +46,8 @@ export function workRow(task: AssignmentItem, student: Person, index: Map<string
     : dueAt && new Date(dueAt) < now
       ? 'missing'
       : 'not-yet'
-  // the server says so when it knows; otherwise the hand-in is compared with the student's deadline
-  const late = submission?.late ?? isLateHandIn(submission, dueAt)
+  // whether the hand-in was late is the server's answer
+  const late = submission?.late === true
   return { student, task, submission, status, late, ...(dueAt ? { dueAt } : {}) }
 }
 

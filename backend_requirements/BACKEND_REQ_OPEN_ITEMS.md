@@ -148,17 +148,20 @@ lecturer summaries yet".
 
 ---
 
-## 5–8. 1:1 deadlines: the parts still missing
+## 5–8. 1:1 deadlines and late work
 
-Done already: each student's `due_at` follows their 1:1 (`task_due_at`, `due_from`). Thanks. Still open, each in
-[BACKEND_REQ_ONE_ON_ONE_DEADLINES.md](BACKEND_REQ_ONE_ON_ONE_DEADLINES.md):
+**Done in the backend on 2026-11-17** (backend `docs/one_on_one_deadlines.md`): the deadline is worked out from the
+module's `opens_at` and the student's 1:1 (lecturers set none, `due_at` is optional); a late hand-in turns the week red
+by itself (a mentor or admin can change it, for an exceptional case); `late` and `due_at` come on every submission;
+the analytics counts use the same rule; slots only on Friday and Monday; no hand-in before a module opens. A change
+after the 1:1 is not late; a change between the deadline and the end of the 1:1 is.
 
-| # | What | Section | Until then |
-|---|---|---|---|
-| 5 | A `late` boolean on every submission response, stored when the work is handed in and never changed afterwards | §2 | The front-end compares `submitted_at` with the deadline itself. A 1:1 booked or cancelled later can change its answer. |
-| 6 | A late hand-in turns the week grade `red` (`graded_by = NULL`). A mentor's `green` / `yellow` then answers `422 late_submission`. Enrollments return `late_submissions` | §3 | The front-end disables green and yellow, but the server would accept them from another client |
-| 7 | Accept assignments without `due_at`; anchor the 1:1 weekend on the module's week | §1 | The front-end sends the week's Friday 08:00 as `due_at`. With today's rule that gives the right deadlines, so this one is low priority. |
-| 8 | Analytics on-time / late / missing counts use the student's own deadline | §4 | Counts can differ slightly from what the student and mentor see |
+Still open:
+
+| # | What | Until then |
+|---|---|---|
+| 9 | `late_submissions` (task titles) on each enrollment, so the mentor and the student can see **why** a week is red | The week is red, but the note "Red because of a late submission (task)" is not shown |
+| 10 | Each student's deadline for a task, for staff: the mentor's team view needs it for the tasks the student has **not** handed in yet (to say "missing"). E.g. `due_at` per student on `GET /teams/me/...` or in the submission roster | The mentor's page works the deadline out itself from the booked slots (`dueLookup`), only for the "missing" label |
 
 ---
 

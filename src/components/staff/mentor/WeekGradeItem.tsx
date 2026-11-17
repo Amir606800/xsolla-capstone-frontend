@@ -12,7 +12,8 @@ import { Avatar } from '../../team/People'
  * MENTOR: one student's grade for one week - green (on track), yellow (falling behind) or red
  * (no progress) - with the module feedback, which is required: a grade is never given without a few words on the week.
  * The grade can be changed later; the last one counts. (The comments on single tasks are separate and optional.)
- * A task of the week handed in late makes the week red: while that stands, green and yellow cannot be picked.
+ * A task of the week handed in late turns the week red by itself (the server does it); the mentor can still change the
+ * grade, for an exceptional case.
  */
 export function WeekGradeItem({
   student,
@@ -46,9 +47,8 @@ export function WeekGradeItem({
 }) {
   const id = useId()
   const late = lateTasks.length > 0
-  const [picked, setLevel] = useState<StandingLevel | null>(grade?.level ?? null)
-  // a late hand-in keeps the week red, whatever was picked before
-  const level: StandingLevel | null = late ? 'red' : picked
+  // a late hand-in turns the week red on the server by itself; the mentor can still change it (an exceptional case)
+  const [level, setLevel] = useState<StandingLevel | null>(grade?.level ?? (late ? 'red' : null))
   const [note, setNote] = useState(grade?.note ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -133,8 +133,8 @@ export function WeekGradeItem({
         <form className="review__panel review__form" id={`${id}-panel`} onSubmit={save} noValidate>
           {late && (
             <p className="grade-pick__late" role="note">
-              <Icon name="clock" size={16} /> Red because of a late submission ({lateTasks.join(', ')}). While it stands the week stays
-              red; your module feedback is still needed.
+              <Icon name="clock" size={16} /> Red because of a late submission ({lateTasks.join(', ')}). It turned red by itself; change it
+              only for an exceptional case. Your module feedback is needed either way.
             </p>
           )}
           <fieldset className="grade-pick">
@@ -142,13 +142,12 @@ export function WeekGradeItem({
               Week {week} grade for {student.name}
             </legend>
             {STANDING_LEVELS.map((l) => (
-              <label key={l} className={`grade-pick__option grade-pick__option--${l}${late && l !== 'red' ? ' is-disabled' : ''}`}>
+              <label key={l} className={`grade-pick__option grade-pick__option--${l}`}>
                 <input
                   type="radio"
                   name={`${id}-level`}
                   value={l}
                   checked={level === l}
-                  disabled={late && l !== 'red'}
                   onChange={() => setLevel(l)}
                 />
                 <span className="grade-pick__head">
