@@ -1,5 +1,3 @@
-import { runtimeEnv } from './runtime'
-
 /**
  * Outside places the LMS links to. Set the real addresses in .env.local (see .env.example);
  * until then these placeholders are used.
