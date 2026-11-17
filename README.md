@@ -122,10 +122,13 @@ All of them are in the [`backend_requirements/`](backend_requirements/) folder.
 
 | File | What it is |
 |---|---|
+| `backend_requirements/BACKEND_REQ_OPEN_ITEMS.md` | **Start here:** what the back-end is still missing (17 Nov), with links to the detailed docs |
 | `backend_requirements/BACKEND_REQUIREMENTS.md` | What the back-end must add: weekly mentor review, assigning lecturers to modules, quizzes, bulk module import, and more |
 | `backend_requirements/BACKEND_REQ_PROFILE.md` | The profile page: picture, bio, contact handles, and look and accessibility settings |
 | `backend_requirements/BACKEND_REQ_ONE_ON_ONE_DEADLINES.md` | Task deadlines that follow the 1:1, late hand-ins and the automatic red week grade |
-| `backend_requirements/BACKEND_INTEGRATION_CHECK.md` | Result of testing the front-end against the real server: bugs and gaps |
+| `backend_requirements/BACKEND_INTEGRATION_CHECK.md` | The first test against the real server (11 Nov), replaced by `BACKEND_REQ_OPEN_ITEMS.md`; kept for history |
+| `backend_requirements/BACKEND_REQ_MENTOR_QUIZ_RESULTS.md` | A mentor reads their team's quiz results |
+| `backend_requirements/BACKEND_REQ_WEEK_FEEDBACK.md` | The mentor's feedback with the week grade (built) |
 | `backend_requirements/backend-fixes.patch` | A small patch for three back-end bugs found in that test |
 
 ## 8. Troubleshooting
