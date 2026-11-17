@@ -34,6 +34,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 // admin section: separate sign-in and pages
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
+const SuperAdminPage = lazy(() => import('./pages/superadmin/SuperAdminPage'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const AdminSectionPage = lazy(() => import('./pages/admin/AdminSectionPage'))
 const AdminCoursesLayout = lazy(() => import('./pages/admin/modules/AdminCoursesLayout'))
@@ -73,6 +74,8 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
         <Route path="/admin/login" element={<AdminLoginPage />} />
+        {/* a front-end demo of the super admin (coordinators and cohorts): no sign-in, nothing is saved */}
+        <Route path="/super-admin" element={<SuperAdminPage />} />
         <Route path="/admin" element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminHomePage />} />
