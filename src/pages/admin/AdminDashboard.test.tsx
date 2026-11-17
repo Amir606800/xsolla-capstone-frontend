@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as directory from '../../api/directory'
 import App from '../../App'
 import { ADMIN_SECTIONS } from '../../config/adminNav'
-import { listModules } from '../../mocks/contentEdits'
+import { listModules } from '../../test/fixtures/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 beforeEach(() => {
@@ -12,7 +12,7 @@ beforeEach(() => {
 })
 
 /** Sections that have their real page already. */
-const BUILT = ['/admin/modules', '/admin/calendar', '/admin/students', '/admin/mentors', '/admin/lecturers', '/admin/teams', '/admin/mentor-reviews', '/admin/lecture-reviews', '/admin/analytics', '/admin/announce', '/admin/notifications', '/admin/settings']
+const BUILT = ['/admin/modules', '/admin/calendar', '/admin/students', '/admin/mentors', '/admin/lecturers', '/admin/teams', '/admin/student-reviews', '/admin/mentor-reviews', '/admin/lecture-reviews', '/admin/analytics', '/admin/reports', '/admin/announce', '/admin/notifications', '/admin/settings']
 
 const tiles = () => screen.findByRole('list', { name: 'School at a glance' })
 const tileFor = async (label: string) => within(await tiles()).getByRole('link', { name: new RegExp(`^${label}`) })
@@ -29,9 +29,11 @@ describe('Admin dashboard frame', () => {
       'Mentors',
       'Lecturers',
       'Teams',
+      'Student reviews',
       'Mentor reviews',
       'Lecture reviews',
       'Analytics',
+      'Reports',
       'Announce',
       'Notifications',
       'Office tour',
@@ -46,12 +48,14 @@ describe('Admin dashboard frame', () => {
     renderWithProviders(<App />, { route: '/admin' })
     const user = userEvent.setup()
     const nav = await screen.findByRole('navigation', { name: 'Admin sections' })
-    await user.click(within(nav).getByRole('link', { name: label }))
+    // a section may carry a count ("Reports, 2 open"), so the link's name starts with the label
+    const link = () => within(nav).getByRole('link', { name: new RegExp(`^${label}(,|$)`) })
+    await user.click(link())
     expect(await screen.findByRole('heading', { name: label, level: 1 })).toBeInTheDocument()
-    expect(within(nav).getByRole('link', { name: label })).toHaveAttribute('aria-current', 'page')
+    expect(link()).toHaveAttribute('aria-current', 'page')
     expect(within(nav).getByRole('link', { name: 'Overview' })).not.toHaveAttribute('aria-current')
     if (!BUILT.includes(path)) expect(screen.getByText('This section is not built yet.')).toBeInTheDocument()
-    expect(within(nav).getByRole('link', { name: label })).toHaveAttribute('href', path)
+    expect(link()).toHaveAttribute('href', path)
   })
 })
 
@@ -107,7 +111,7 @@ describe('Admin overview: the current week', () => {
   })
 
   it('says so, with a way to fix it, when the week has no lecturer', async () => {
-    const { putModule } = await import('../../mocks/contentEdits')
+    const { putModule } = await import('../../test/fixtures/contentEdits')
     putModule('m6', { lecturerIds: [] })
     renderWithProviders(<App />, { route: '/admin' })
     const card = within(await screen.findByRole('region', { name: 'Current week' }))

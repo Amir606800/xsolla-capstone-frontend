@@ -22,12 +22,10 @@ function DeadlinesCardBase({ entries, now }: { entries: DeadlineEntry[]; now: Da
               <div>
                 <p className="list__title">{item.title}</p>
                 <p className="list__meta">
-                  {moduleTitle} · {formatDateTime(item.dueAt)}
+                  {moduleTitle} · {item.dueAt ? formatDateTime(item.dueAt) : 'no deadline yet'}
                 </p>
               </div>
-              <span className={`pill${overdue ? ' pill--danger' : ''}`}>
-                {formatTimeLeft(item.dueAt, now)}
-              </span>
+              {item.dueAt && <span className={`pill${overdue ? ' pill--danger' : ''}`}>{formatTimeLeft(item.dueAt, now)}</span>}
             </li>
           ))}
         </ul>

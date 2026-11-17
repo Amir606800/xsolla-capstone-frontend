@@ -1,7 +1,7 @@
 /**
  * The "something changed" bus that keeps every screen in step.
  *
- * Whenever data is saved (a request that is not a plain read, or a change in the offline demo store) the topics it touches are
+ * Whenever data is saved (a request that is not a plain read) the topics it touches are
  * published here. Every screen that shows such data listens and quietly loads it again, so a change made on one page shows on the
  * others at once, with no reload, and in the other tabs of this browser too. Changes made by other people (other computers) cannot
  * be pushed by the server yet; those are caught by the polling in `useLive`.
@@ -16,6 +16,7 @@ export type Topic =
   | 'reviews' // mentor reviews
   | 'feedback' // lecture feedback
   | 'profile'
+  | 'reports' // reports to the admins
 
 export const ALL_TOPICS: readonly Topic[] = [
   'courses',
@@ -27,6 +28,7 @@ export const ALL_TOPICS: readonly Topic[] = [
   'reviews',
   'feedback',
   'profile',
+  'reports',
 ]
 
 type Listener = (topics: ReadonlySet<Topic>) => void
@@ -97,7 +99,9 @@ export function topicsForPath(path: string): Topic[] {
   switch (head) {
     case 'modules':
       // /modules/:id/enrollments/:user/grade is the mentor's week grade
-      return p.includes('/grade') || third === 'enrollments' ? ['courses', 'standings', 'notifications'] : ['courses', 'notifications']
+      return p.includes('/grade') || third === 'enrollments'
+        ? ['courses', 'standings', 'notifications']
+        : ['courses', 'notifications']
     case 'content-items':
     case 'quizzes':
     case 'files':
@@ -123,7 +127,11 @@ export function topicsForPath(path: string): Topic[] {
       return ['directory', 'standings']
     case 'enrollments':
       return ['courses', 'standings']
+    case 'reports':
+      return ['reports']
+    // asking for an AI summary (POST /analytics/.../ai-summary) saves nothing anybody else has on screen
     case 'auth':
+    case 'analytics':
       return []
     default:
       return [...ALL_TOPICS]

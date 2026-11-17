@@ -2,8 +2,8 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { putModule } from '../../mocks/contentEdits'
-import { clearTeams, setLeft, setRoles } from '../../mocks/directory'
+import { putModule } from '../../test/fixtures/contentEdits'
+import { clearTeams, setLeft, setRoles } from '../../test/fixtures/directory'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 // Wed 4 Nov 2026, 12:00: the demo lectures are on Mondays, so none starts within 48 hours

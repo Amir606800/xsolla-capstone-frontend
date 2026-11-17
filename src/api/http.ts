@@ -5,12 +5,13 @@ import { runtimeEnv } from '../config/runtime.ts'
 
 /** Thin axios wrapper for the LMS backend: JSON in/out and one error type for every failure. */
 
-/** Base URL of the backend (no trailing slash). Empty = no backend configured, the mock API is used. */
+/**
+ * Base URL of the backend (no trailing slash). Required: VITE_API_URL points at the Go server, from /config.js (written
+ * when the container starts) or from .env.local. The app refuses to start without it (main.tsx).
+ */
 export function apiBaseUrl(): string {
   return runtimeEnv('VITE_API_URL').replace(/\/+$/, '')
 }
-
-export const hasBackend = () => apiBaseUrl() !== ''
 
 /** Matches the backend's `handlers.ErrorResponse`. */
 interface ErrorBody {

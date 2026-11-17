@@ -37,12 +37,9 @@ describe('moduleWindow', () => {
     items: [task('early', 10), task('late', 100)],
   }
 
-  it('uses explicit module dates when present', () => {
-    expect(moduleWindow({ ...base, opensAt: h(-5), closesAt: h(50) })).toEqual({ opensAt: h(-5), dueAt: h(50) })
-  })
-
-  it('falls back to the latest assignment deadline', () => {
-    expect(moduleWindow(base)).toEqual({ opensAt: undefined, dueAt: h(100) })
+  it("is due when the student's work is due (their deadline), never at the module's closing date", () => {
+    expect(moduleWindow({ ...base, opensAt: h(-5), closesAt: h(50) })).toEqual({ opensAt: h(-5), dueAt: h(10) })
+    expect(moduleWindow(base)).toEqual({ opensAt: undefined, dueAt: h(10) })
   })
 
   it('has no due date for a module without assignments', () => {

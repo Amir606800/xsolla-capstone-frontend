@@ -13,7 +13,7 @@ import { Modal } from '../../components/Modal'
 import { Spinner } from '../../components/loading/Spinner'
 import { useAuth } from '../../hooks/useAuth'
 import { useCourses } from '../../hooks/useCourses'
-import { newId } from '../../mocks/contentEdits'
+import { newId } from '../../utils/ids'
 import type { AssignmentItem, CourseModule, QuizItem, ResourceItem } from '../../types/course'
 import { draftToMaterial, draftToQuiz, draftToTask, MATERIAL_KINDS } from '../../utils/authoring'
 import { contentGaps, isAssignedTo, materialsOf, modulePhase, PHASE_LABEL, quizzesOf, tasksOf } from '../../utils/content'
@@ -24,6 +24,7 @@ import '../../styles/ui.css'
 import '../../components/module/module.css'
 import './lecturer.css'
 import { Loading } from '../../components/loading/Loading'
+import { weekDeadlineText } from '../../utils/deadline'
 
 type Kind = 'module' | 'material' | 'task' | 'quiz'
 interface Editing {
@@ -229,7 +230,7 @@ export default function ModuleEditorPage() {
               key={t.id}
               icon={<Icon name="tasks" size={18} />}
               title={t.title}
-              meta={`Due ${formatDateTime(t.dueAt)}${t.requirements?.length ? ` · ${t.requirements.length} ${t.requirements.length === 1 ? 'requirement' : 'requirements'}` : ''}`}
+              meta={`${weekDeadlineText(module) ? `Due ${weekDeadlineText(module)} (each student's 1:1)` : 'No deadline: the week has no dates'}${t.requirements?.length ? ` · ${t.requirements.length} ${t.requirements.length === 1 ? 'requirement' : 'requirements'}` : ''}`}
               warning={t.submission ? "Students' work for it will be hidden too." : undefined}
               readOnly={readOnly}
               onEdit={() => open('task', t.id)}
@@ -521,7 +522,7 @@ function EditorForm({
           now={now}
           item={current?.type === 'assignment' ? current : undefined}
           onCancel={onCancel}
-          onSave={(d) => done(`Task ${verb}.`)(actions.saveItem(draftToTask(d, module.id, idFor())))}
+          onSave={(d) => done(`Task ${verb}.`)(actions.saveItem(draftToTask(d, module, idFor())))}
         />
       )
     case 'quiz':

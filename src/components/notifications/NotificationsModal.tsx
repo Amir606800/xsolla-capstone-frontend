@@ -12,7 +12,7 @@ import type { IconName } from '../Icon'
 import { Modal } from '../Modal'
 import '../../styles/ui.css'
 import './notifications.css'
-import { Loading } from '../../components/loading/Loading'
+import { Loading } from '../loading/Loading'
 
 const TYPE_ICON: Record<NotificationType, IconName> = {
   task: 'tasks',

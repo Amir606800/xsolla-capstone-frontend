@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { mentorSeesTeamWork } from '../../api/capabilities'
-import { hasBackend } from '../../api/http'
 import { fetchTeamQuizResults } from '../../api/quizResults'
 import type { TeamQuizResults } from '../../api/quizResults'
 import { useCourses } from '../../hooks/useCourses'
+import { useMeetingSlots } from '../../hooks/useMeetingSlots'
 import { useMyTeam } from '../../hooks/useMyTeam'
 import { useTeamStandings } from '../../hooks/useTeamStandings'
 import { useTeamSubmissions } from '../../hooks/useTeamSubmissions'
 import { formatShortDate } from '../../utils/date'
+import { dueLookup } from '../../utils/deadline'
 import {
   defaultWeek,
   gradeLocked,
@@ -49,6 +50,9 @@ export default function GradingPage() {
   const workIndex = useMemo(() => indexSubmissions(work.submissions), [work.submissions])
   const gradeIndex = useMemo(() => indexStandings(grades.standings), [grades.standings])
   const now = courses.now
+  // each student's work is due at 08:00 on the day of the 1:1 they booked with this mentor (Monday 08:00 without one)
+  const meetings = useMeetingSlots()
+  const due = useMemo(() => dueLookup(modules, meetings.slots), [modules, meetings.slots])
 
   // how the students did on the quizzes (not available from the real server yet: then nothing is shown)
   const ids = students.map((s) => s.id).join(',')
@@ -92,7 +96,7 @@ export default function GradingPage() {
   const theirWeeks = (studentId: number) => grades.standings.filter((s) => s.studentId === studentId).sort((a, b) => a.week - b.week)
 
   const graded = week ? students.length - ungradedCount(week, students, gradeIndex, now) : 0
-  const freshTotal = week && seesWork ? students.reduce((n, s) => n + studentWeek(week, s, workIndex, now).fresh, 0) : 0
+  const freshTotal = week && seesWork ? students.reduce((n, s) => n + studentWeek(week, s, workIndex, now, due).fresh, 0) : 0
 
   return (
     <section className="module grading">
@@ -124,7 +128,7 @@ export default function GradingPage() {
       {!loading && !failed && myTeam.team && !week && (
         <p className="card card__empty">
           There are no weeks to grade yet.
-          {hasBackend() && ' The server shows you only the weeks you are enrolled in: ask an admin to add you to the course weeks.'}
+          {' The server shows you only the weeks you are enrolled in: ask an admin to add you to the course weeks.'}
         </p>
       )}
 
@@ -183,6 +187,7 @@ export default function GradingPage() {
               grades={gradeIndex}
               theirWeeks={theirWeeks(student.id)}
               workIndex={workIndex}
+              due={due}
               seesWork={seesWork}
               quizResults={quizResults}
               now={now}
@@ -235,6 +240,7 @@ export default function GradingPage() {
                     modules={modules}
                     grades={gradeIndex}
                     workIndex={workIndex}
+                    due={due}
                     seesWork={seesWork}
                     quizResults={quizResults}
                     now={now}

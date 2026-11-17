@@ -5,6 +5,7 @@ import { contentCounts } from '../../../utils/content'
 import { formatDateTime, formatTimeLeft } from '../../../utils/date'
 import { StaffCard } from '../StaffCard'
 import { StatTile } from '../StatTile'
+import { weekDeadlineText } from '../../../utils/deadline'
 
 /**
  * LECTURER parts of the staff dashboard: they are about writing the course, so only people who
@@ -33,14 +34,14 @@ export function ThisWeekTile({ module, running }: { module: CourseModule; runnin
   )
 }
 
-/** Tile: when the next task is due. */
+/** Tile: when students' work is next due (08:00 on their 1:1 day: Friday, or the Monday after). */
 export function NextDeadlineTile({ next, now }: { next: DueTask | undefined; now: Date }) {
   return (
     <StatTile
       id="lect-next"
       label="Next deadline"
-      value={next ? formatTimeLeft(next.task.dueAt, now) : 'None'}
-      sub={next ? `${next.task.title} · ${formatDateTime(next.task.dueAt)}` : 'No tasks due ahead'}
+      value={next ? formatTimeLeft(next.dueAt, now) : 'None'}
+      sub={next ? `${next.task.title} · ${formatDateTime(next.dueAt)}` : 'No tasks due ahead'}
       to={next ? `/courses/${next.module.id}` : undefined}
     />
   )
@@ -90,15 +91,15 @@ export function DeadlinesCard({ due, now }: { due: DueTask[]; now: Date }) {
         <p className="card__empty">No deadlines ahead.</p>
       ) : (
         <ul className="list" aria-label="Upcoming deadlines">
-          {due.map(({ task, module }) => (
+          {due.map(({ task, module, dueAt }) => (
             <li key={task.id} className="list__row">
               <Link to={`/courses/${module.id}`} className="lect__row-link">
                 <span className="list__title">{task.title}</span>
                 <span className="list__meta">
-                  Module {module.position} · {formatDateTime(task.dueAt)}
+                  Module {module.position} · {weekDeadlineText(module) ?? formatDateTime(dueAt)}
                 </span>
               </Link>
-              <span className="chip">{formatTimeLeft(task.dueAt, now)}</span>
+              <span className="chip">{formatTimeLeft(dueAt, now)}</span>
             </li>
           ))}
         </ul>

@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../../App'
-import { listTeams, listUsers, passwordMatches, setLeft } from '../../mocks/directory'
+import { listTeams, listUsers, passwordMatches, setLeft } from '../../test/fixtures/directory'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 beforeEach(() => {
@@ -65,6 +65,14 @@ describe('Admin: students', () => {
     await user.click(form.getByRole('button', { name: 'Add student' }))
 
     expect(await screen.findByText('Ann Lee added to Team 6. They can sign in with ann.lee@example.com and the password you set.')).toBeInTheDocument()
+    // the second dialog shows the password to copy, once
+    const second = within(await screen.findByRole('dialog', { name: 'Ann Lee’s password' }))
+    expect(second.getByRole('status')).toHaveTextContent('Ann Lee’s account has been created.')
+    expect(second.getByLabelText('Password')).toHaveTextContent('Kp7mWz4qTx')
+    await user.click(second.getByRole('button', { name: 'Copy' }))
+    expect(await navigator.clipboard.readText()).toBe('Kp7mWz4qTx')
+    await user.click(second.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(await rows()).toHaveLength(30)
     const ann = screen.getByText('Ann Lee').closest('tr')!
     expect(within(ann).getByText('Team 6')).toBeInTheDocument()

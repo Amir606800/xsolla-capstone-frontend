@@ -11,7 +11,7 @@ import { StandingsContext } from './standings'
 
 /** Loads the student's weekly standings once for the signed-in shell (dashboard and Grades share it). */
 export function StandingsProvider({ children }: { children: ReactNode }) {
-  // the signed-in student's own grades (falls back to the demo student outside an AuthProvider)
+  // the signed-in student's own grades
   const studentId = useContext(AuthContext)?.user?.id ?? 1
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [ratings, setRatings] = useState<WeeklyStanding[]>([])

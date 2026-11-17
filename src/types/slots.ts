@@ -28,3 +28,6 @@ export interface AvailabilityWindow {
   start: string // HH:MM
   end: string // HH:MM
 }
+
+/** Who is looking at or changing the 1:1 times. */
+export type Actor = Pick<import('./user').User, 'id' | 'name' | 'roles'>

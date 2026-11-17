@@ -13,7 +13,7 @@ The back-end must be configured before starting the front-end.
 
 ## 1. Fastest start
 
-You need [Node.js](https://nodejs.org) 22 or newer.
+You need [Node.js](https://nodejs.org) 22 or newer, and the back-end running on <http://localhost:8080>.
 
 ```bash
 npm install
@@ -31,7 +31,8 @@ Then run:
 npm run dev
 ```
 
-Open <http://localhost:5173>.
+Open <http://localhost:5173> and sign in with an account of that server (for example the seeded
+`analytics.admin@xsolla.school` at <http://localhost:5173/admin/login>).
 
 ## 2. Run with Docker
 
@@ -42,6 +43,7 @@ docker compose up --build
 ```
 
 Open <http://localhost:3000> (set `WEB_PORT=8081` to use another port). This is the production build, served by nginx.
+It calls the back-end at `VITE_API_URL`, so set that in `.env` first; the back-end must allow this site's address (CORS).
 
 For editing code with hot reload inside Docker:
 
@@ -53,7 +55,7 @@ Open <http://localhost:5173>.
 
 > The production container writes `/config.js` from its environment when it starts. After changing `.env`, restart the container; rebuilding is only needed after changing application code.
 
-## 3. Connect it to the back-end
+## 3. Settings
 
 Create a file named `.env.local` (it is not committed) next to `package.json`:
 
@@ -72,13 +74,10 @@ Restart `npm run dev` after any change to it. The frontend refuses to start when
 
 `.env.example` shows all of them. Which file wins: `.env.local` overrides `.env`. Vite reads these values during local development, while the Nginx container reads them at startup and writes `/config.js`.
 
-**Things to know when using a real back-end**
+**Screens the back-end cannot serve yet** stay on the page and say so plainly (for example "The server cannot list the
+reports yet"); they never show made-up data. `backend_requirements/` lists what each one needs.
 
-- The back-end must allow the browser to call it (CORS). If you see "Failed to fetch" in the browser, check this first.
-  Behind an ngrok tunnel the free plan shows a warning page that also blocks the calls.
-- Some screens have no back-end routes yet and keep showing demo data: 1:1 slots, notifications and announcements,
-  quizzes. `backend_requirements/BACKEND_INTEGRATION_CHECK.md` lists what works today and what is missing.
-- The weekly mentor review (`backend_requirements/BACKEND_REQUIREMENTS.md`) switches itself off until the server has its routes.
+## 4. Tests use a made-up school
 
 ## 4. The weekly mentor review (try it in demo mode)
 
@@ -124,6 +123,7 @@ src/
   hooks/        Small hooks that read that state
   utils/        Plain functions: dates, roles, progress, rules (easy to test)
   types/        Shared TypeScript types
+  test/         Test setup, the made-up school (fixtures/) and the fakes of the API modules (fakes/)
 e2e/            Browser tests
 ```
 
@@ -136,9 +136,13 @@ All of them are in the [`backend_requirements/`](backend_requirements/) folder.
 
 | File | What it is |
 |---|---|
+| `backend_requirements/BACKEND_REQ_OPEN_ITEMS.md` | **Start here:** what the back-end is still missing (17 Nov), with links to the detailed docs |
 | `backend_requirements/BACKEND_REQUIREMENTS.md` | What the back-end must add: weekly mentor review, assigning lecturers to modules, quizzes, bulk module import, and more |
 | `backend_requirements/BACKEND_REQ_PROFILE.md` | The profile page: picture, bio, contact handles, and look and accessibility settings |
-| `backend_requirements/BACKEND_INTEGRATION_CHECK.md` | Result of testing the front-end against the real server: bugs and gaps |
+| `backend_requirements/BACKEND_REQ_ONE_ON_ONE_DEADLINES.md` | Task deadlines that follow the 1:1, late hand-ins and the automatic red week grade |
+| `backend_requirements/BACKEND_INTEGRATION_CHECK.md` | The first test against the real server (11 Nov), replaced by `BACKEND_REQ_OPEN_ITEMS.md`; kept for history |
+| `backend_requirements/BACKEND_REQ_MENTOR_QUIZ_RESULTS.md` | A mentor reads their team's quiz results |
+| `backend_requirements/BACKEND_REQ_WEEK_FEEDBACK.md` | The mentor's feedback with the week grade (built) |
 | `backend_requirements/backend-fixes.patch` | A small patch for three back-end bugs found in that test |
 
 ## 8. Troubleshooting

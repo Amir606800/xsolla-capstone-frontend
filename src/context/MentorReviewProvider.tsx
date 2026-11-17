@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { hasBackend } from '../api/http'
 import { fetchReviewedWeeks, submitReview } from '../api/mentorReviews'
 import { fetchMyTeam } from '../api/teams'
 import { useAuth } from '../hooks/useAuth'
 import { useCourses } from '../hooks/useCourses'
 import { useLive } from '../hooks/useLive'
-import { demoMode } from '../mocks/mentorReviews'
 import type { MentorReview, ReviewedWeek } from '../types/mentorReview'
 import type { Person } from '../types/team'
 import { reviewDue } from '../utils/mentorReview'
@@ -71,9 +69,7 @@ export function MentorReviewProvider({ children }: { children: ReactNode }) {
 
   const due = useMemo(() => {
     if (!asked || status !== 'ready' || courses.status !== 'ready' || !data.reviewed || !data.mentor) return null
-    // the offline demo can pretend it is the weekend (see mocks/mentorReviews); a real server never can
-    const demoWeekend = !hasBackend() && demoMode() === 'reminder'
-    return reviewDue(courses.modules, data.reviewed, courses.now, demoWeekend ? { weekend: true } : undefined)
+    return reviewDue(courses.modules, data.reviewed, courses.now)
   }, [asked, status, courses.status, courses.modules, courses.now, data])
 
   const submit = useCallback(

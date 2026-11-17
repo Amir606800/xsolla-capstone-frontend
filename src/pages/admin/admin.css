@@ -563,7 +563,8 @@ a.admin-icon-btn {
   text-transform: uppercase;
   white-space: nowrap;
 }
-.admin-table tbody tr:last-child td {
+.admin-table tbody tr:last-child td,
+.admin-table tbody tr:last-child th {
   border-bottom: 0;
 }
 .admin-table tbody tr:hover {

@@ -1,4 +1,4 @@
-import type { Broadcast } from '../mocks/broadcasts'
+import type { Broadcast } from '../types/broadcast'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
 import type { CalendarEvent } from '../types/calendar'
 import type { CourseModule } from '../types/course'

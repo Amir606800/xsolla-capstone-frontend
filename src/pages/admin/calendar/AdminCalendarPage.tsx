@@ -6,7 +6,7 @@ import { Icon } from '../../../components/Icon'
 import { Modal } from '../../../components/Modal'
 import { useCalendarEvents } from '../../../hooks/useCalendarEvents'
 import { useCourses } from '../../../hooks/useCourses'
-import { newId } from '../../../mocks/contentEdits'
+import { newId } from '../../../utils/ids'
 import type { CalendarEvent } from '../../../types/calendar'
 import {
   eventsBetween,

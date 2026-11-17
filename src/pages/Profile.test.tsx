@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
 import { saveTokens } from '../api/session'
-import { mockPreferences, mockProfile } from '../mocks/profile'
+import { mockPreferences, mockProfile } from '../test/fixtures/profile'
 import { renderWithProviders } from '../test/renderWithProviders'
 import { stubHttp } from '../test/stubHttp'
+import * as profileApi from '../api/profile'
+import { useRealApi } from '../test/realApi'
 
 vi.setConfig({ testTimeout: 20_000 })
 
@@ -95,6 +97,7 @@ describe('the profile page: look and accessibility', () => {
 describe('the profile page: a server that has no profile routes yet', () => {
   it('says so, keeps the look on this device, and does not pretend the profile is saved', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
+    useRealApi(profileApi, await vi.importActual<typeof profileApi>('../api/profile'))
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
     await stubHttp(vi.fn(async () => new Response(JSON.stringify({ error: 'not_found', message: 'nope' }), { status: 404 })))
     signIn()
@@ -111,6 +114,7 @@ describe('the profile page: a server that has no profile routes yet', () => {
 
   it('a server with the routes: About me and the look come from it, as snake_case', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
+    useRealApi(profileApi, await vi.importActual<typeof profileApi>('../api/profile'))
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
     const sent: { path: string; method?: string; body?: unknown }[] = []
     await stubHttp(

@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { removeItem, setLecturer } from '../../mocks/contentEdits'
+import { listEvents, putEvent, removeItem, setLecturer } from '../../test/fixtures/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 // "Today" is Wed 4 Nov 2026: module 6 (Go Basics) is running, module 7 opens next week.
@@ -26,10 +26,14 @@ const dialog = () => screen.getByRole('dialog')
 const status = async (text: string | RegExp) => expect(await screen.findByRole('status')).toHaveTextContent(text)
 
 describe('Lecturer account', () => {
-  it('the login page requires backend credentials', async () => {
+  it('a lecturer who signs in lands on their dashboard', async () => {
+    const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/login' })
-    expect(screen.queryByRole('group', { name: 'Demo accounts' })).not.toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+    await user.type(await screen.findByLabelText('Email'), 'lecturer@xsolla.school')
+    await user.type(screen.getByLabelText('Password'), 'Some-Password-1')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByRole('heading', { name: 'Welcome, Rashad Aliyev', level: 1 })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('auth_user')!).roles).toEqual(['mentor', 'lecturer'])
   })
 
   it('has its own navigation, without the student pages', async () => {
@@ -197,7 +201,9 @@ describe('Module editor: tasks', () => {
 
     await user.type(within(dialog()).getByLabelText('Title'), 'Concurrency kata')
     await user.type(within(dialog()).getByLabelText(/What to hand in/), 'Push to the repo{enter}Explain your channels')
-    fireEvent.change(within(dialog()).getByLabelText('Date'), { target: { value: '2026-11-07' } })
+    // no deadline to pick: each student's work is due at 08:00 on the day of their 1:1
+    expect(within(dialog()).queryByLabelText('Date')).not.toBeInTheDocument()
+    expect(within(dialog()).getByText(/each student's work is due at 08:00 on the day of their 1:1/)).toBeInTheDocument()
     await user.click(within(dialog()).getByRole('button', { name: 'Add task' }))
 
     await status('Task added.')
@@ -216,19 +222,9 @@ describe('Module editor: tasks', () => {
     const user = userEvent.setup()
     renderAs(LECTURER, '/courses/m6')
     await user.click(await screen.findByRole('button', { name: 'New task' }))
-    fireEvent.change(within(dialog()).getByLabelText('Time'), { target: { value: '' } })
     await user.click(within(dialog()).getByRole('button', { name: 'Add task' }))
     expect(within(dialog()).getByText('Give it a title.')).toBeInTheDocument()
-    expect(within(dialog()).getByText('Pick a due date and time.')).toBeInTheDocument()
     expect(within(dialog()).getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true')
-  })
-
-  it('warns when the deadline falls outside the module week', async () => {
-    const user = userEvent.setup()
-    renderAs(LECTURER, '/courses/m6')
-    await user.click(await screen.findByRole('button', { name: 'New task' }))
-    fireEvent.change(within(dialog()).getByLabelText('Date'), { target: { value: '2026-11-20' } })
-    expect(within(dialog()).getByRole('list', { name: 'Please check' })).toHaveTextContent('due after the module closes')
   })
 
   it('a link from the dashboard opens the form straight away', async () => {
@@ -383,6 +379,8 @@ describe('Module editor: module details', () => {
 })
 
 describe('Calendar: lectures and events', () => {
+  // a lecturer schedules lectures of the weeks they teach (the server's rule), so Rashad teaches week 6 here
+  beforeEach(() => void setLecturer('m6', 900, true))
   // the day panel beside the month (the other tests in this file use pop-up dialogs)
   const dialog = () => screen.getByRole('region', { name: 'Day details' })
   const grid = () => screen.getByRole('group', { name: 'Month view' })
@@ -430,6 +428,9 @@ describe('Calendar: lectures and events', () => {
   })
 
   it('edits and deletes a lecture, but not deadlines', async () => {
+    // the lecture of Monday 9 November belongs to week 6, which Rashad teaches (a lecturer edits only those)
+    const lecture = listEvents().find((e) => e.id === 'lec-1')!
+    putEvent({ ...lecture, moduleId: 'm6' })
     const user = userEvent.setup()
     renderAs(LECTURER, '/calendar')
     await screen.findByRole('group', { name: 'Month view' })

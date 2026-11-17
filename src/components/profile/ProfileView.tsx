@@ -6,6 +6,7 @@ import { roleLabel } from '../../utils/roles'
 import { AboutCard } from './AboutCard'
 import { Avatar } from './Avatar'
 import { LookCard } from './LookCard'
+import { ReportCard } from '../report/ReportButton'
 import '../settings/settings.css'
 import './profile.css'
 
@@ -35,6 +36,12 @@ export function ProfileView({ variant = 'lms' }: { variant?: 'lms' | 'admin' }) 
         <GoogleCard variant={variant} />
         <ChangePasswordCard variant={variant} />
       </div>
+      {/* admins read the reports, so they are not asked to send one */}
+      {variant === 'lms' && (
+        <div className="settings-grid">
+          <ReportCard />
+        </div>
+      )}
     </div>
   )
 }

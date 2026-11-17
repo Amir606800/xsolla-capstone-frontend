@@ -19,6 +19,9 @@ test('the admin adds a lecturer, who signs in and gets the lecturer pages', asyn
   await form.getByLabel('Password', { exact: true }).fill('Kp7mWz4qTx')
   await form.getByRole('button', { name: 'Add lecturer' }).click()
   await expect(page.getByText(/^Lea Lecturer added as a lecturer\./)).toBeVisible()
+  // the second dialog shows the password to copy
+  await expect(page.getByRole('dialog', { name: 'Lea Lecturer’s password' })).toContainText('Kp7mWz4qTx')
+  await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click()
 
   await page.getByRole('button', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/admin\/login$/)
@@ -41,6 +44,8 @@ test('a mentor given the lecturer role for a week appears here with the days lef
   await page.getByRole('dialog').getByRole('radio', { name: /^Lecturer for a while/ }).check()
   await page.getByRole('dialog').getByRole('button', { name: '1 week' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Save roles' }).click()
+  // the weeks come next; leave them for now
+  await page.getByRole('dialog', { name: 'Weeks of Aysel Mammadova' }).getByRole('button', { name: 'Cancel' }).click()
   await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Lecturers' }).click()
   await expect(page.getByRole('row', { name: /Aysel Mammadova/ })).toContainText('7 days left')
 })

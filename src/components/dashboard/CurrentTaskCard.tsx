@@ -10,7 +10,7 @@ function CurrentTaskCardBase() {
   const { current, now } = useCurrentModule()
   const progress = current ? moduleProgress(current, now) : null
   const next = current ? nextAssignment(current) : null
-  const urgent = next ? new Date(next.dueAt).getTime() - now.getTime() < URGENT_WITHIN_MS : false
+  const urgent = next?.dueAt ? new Date(next.dueAt).getTime() - now.getTime() < URGENT_WITHIN_MS : false
 
   return (
     <section className="card">
@@ -53,8 +53,14 @@ function CurrentTaskCardBase() {
             <div className="current__next">
               <p className="current__label">Next task</p>
               <p className="list__title">{next.title}</p>
-              <p className="list__meta">Due {formatDateTime(next.dueAt)}</p>
-              <span className={`pill${urgent ? ' pill--danger' : ''}`}>{formatTimeLeft(next.dueAt, now)}</span>
+              {next.dueAt ? (
+                <>
+                  <p className="list__meta">Due {formatDateTime(next.dueAt)}</p>
+                  <span className={`pill${urgent ? ' pill--danger' : ''}`}>{formatTimeLeft(next.dueAt, now)}</span>
+                </>
+              ) : (
+                <p className="list__meta">No deadline yet</p>
+              )}
             </div>
           ) : (
             <p className="current__done">All tasks in this module are submitted.</p>

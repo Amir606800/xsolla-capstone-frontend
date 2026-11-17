@@ -4,6 +4,9 @@ import { fetchLectureReviews, mapLectureReview } from './adminLectureReviews'
 import type { LectureFeedbackDto } from './adminLectureReviews'
 import { saveTokens } from './session'
 
+// the real module: these tests check its HTTP calls (test/setup.ts fakes it for everything else)
+vi.unmock('./adminLectureReviews')
+
 const BASE = 'https://api.test'
 
 const dto = (over: Partial<LectureFeedbackDto> = {}): LectureFeedbackDto => ({

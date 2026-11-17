@@ -37,7 +37,7 @@ const all = (over: Partial<OverviewData> = {}): OverviewData => ({
   events: ok([]),
   ...over,
 })
-const tile = (data: OverviewData, key: string, opts = {}) => overviewTiles(data, NOW, opts).find((t) => t.key === key)!
+const tile = (data: OverviewData, key: string) => overviewTiles(data, NOW).find((t) => t.key === key)!
 
 describe('overviewTiles', () => {
   it('has one tile per section, in sidebar order (no notifications count)', () => {
@@ -69,7 +69,6 @@ describe('overviewTiles', () => {
     const noMentor = [...teams, { id: 't3', name: 'Team 3', mentorId: null, studentIds: [3] }]
     expect(tile(all({ teams: ok(noMentor) }), 'teams').hint).toBe('1 without a mentor')
     expect(tile(all({ teams: ok([]) }), 'teams')).toMatchObject({ value: 0, hint: 'No teams yet' })
-    expect(tile(all(), 'teams', { demoTeams: true }).hint).toBe('Demo data: the backend has no teams yet')
   })
 
   it('counts upcoming school events only: not past ones, deadlines or 1:1 times', () => {

@@ -1,6 +1,8 @@
 import type {
+  AiSummary,
   AnalyticsPeriod,
   AnalyticsPerson,
+  AnalyticsRole,
   AnalyticsWeek,
   AssignmentStatus,
   FeedbackDimension,
@@ -143,7 +145,12 @@ export async function fetchOverview(from?: string, to?: string): Promise<Overvie
   return { period: period(d.period), generatedAt: d.generated_at, weeks: (d.weeks ?? []).map(mapWeek) }
 }
 
-export async function fetchPeople(role: 'students' | 'mentors', q: string, limit: number, offset: number): Promise<AnalyticsPerson[]> {
+export async function fetchPeople(
+  role: 'students' | 'mentors',
+  q: string,
+  limit: number,
+  offset: number,
+): Promise<AnalyticsPerson[]> {
   const rows = await authedRequest<PersonDto[] | null>(`/analytics/${role}${query({ q, limit, offset })}`)
   return (rows ?? []).map(mapPerson)
 }
@@ -160,6 +167,56 @@ export async function fetchStudent(id: number, from?: string, to?: string): Prom
     }
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) return null
+    throw e
+  }
+}
+
+interface SummaryDto {
+  summary: string
+  source_count?: number
+  generated_at?: string | null
+  cached?: boolean
+  period: PeriodDto
+}
+
+/**
+ * POST /analytics/{students|mentors}/{id}/ai-summary {from?, to?, force_refresh}: the server reads the feedback, asks
+ * the model (or its cache) and sends back plain text. `lecturers` uses the same shape on a route the backend does not
+ * have yet (POST /analytics/lecturers/{id}/ai-summary over the lecture feedback); until it does that call is a 404.
+ */
+export async function fetchAiSummary(
+  role: AnalyticsRole,
+  id: number,
+  { from, to, force = false }: { from?: string; to?: string; force?: boolean } = {},
+): Promise<AiSummary> {
+  const body = { ...(from ? { from } : {}), ...(to ? { to } : {}), force_refresh: force }
+  const d = await authedRequest<SummaryDto>(`/analytics/${role}/${id}/ai-summary`, { method: 'POST', body })
+  return {
+    summary: (d.summary ?? '').trim(),
+    sourceCount: d.source_count ?? 0,
+    generatedAt: d.generated_at ?? null,
+    cached: !!d.cached,
+    period: period(d.period),
+  }
+}
+
+interface LectureSummaryDto {
+  lecture: { event_id: number | string; starts_at: string }
+  expected?: number | null
+}
+
+/**
+ * How many students could answer each lecture's form (GET /lecture-feedback/summary, admin), keyed like `lectureKey`.
+ * Optional: a server without the route gives `{}` and the page leaves the response rate out.
+ */
+export async function fetchLectureExpected(): Promise<Record<string, number>> {
+  try {
+    const rows = (await authedRequest<LectureSummaryDto[] | null>('/lecture-feedback/summary')) ?? []
+    const out: Record<string, number> = {}
+    for (const r of rows) if (typeof r.expected === 'number') out[`${r.lecture.event_id}@${r.lecture.starts_at}`] = r.expected
+    return out
+  } catch (e) {
+    if (e instanceof ApiError && [403, 404, 405, 501].includes(e.status)) return {}
     throw e
   }
 }

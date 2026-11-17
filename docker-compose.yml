@@ -3,8 +3,8 @@
 #   docker compose up --build            the built app on http://localhost:3000   (WEB_PORT changes the port)
 #   docker compose --profile dev up dev  the dev server with hot reload on http://localhost:5173
 #
-# VITE_* values are read from your .env (or the shell) and baked into the build, so after changing one, run
-# `docker compose up --build` again. VITE_API_URL is required.
+# VITE_* values are read from your .env (or the shell). The container writes them to /config.js when it starts, so after
+# changing one a restart is enough (`docker compose up -d`). VITE_API_URL is required.
 services:
   web:
     build:
@@ -15,7 +15,6 @@ services:
         VITE_SLACK_URL: ${VITE_SLACK_URL:-}
         VITE_GITLAB_URL: ${VITE_GITLAB_URL:-}
         VITE_OFFICE_TOUR_URL: ${VITE_OFFICE_TOUR_URL:-}
-        VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY:-}
     environment:
       VITE_API_URL: ${VITE_API_URL:-}
       VITE_SLACK_URL: ${VITE_SLACK_URL:-}

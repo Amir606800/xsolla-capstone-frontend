@@ -1,5 +1,9 @@
 # Front-end ↔ backend integration check
 
+> **Replaced on 17 Nov 2026 by [BACKEND_REQ_OPEN_ITEMS.md](BACKEND_REQ_OPEN_ITEMS.md).** Most of what is listed here
+> was built since. The front-end also no longer has demo data, so the mentions of "demo data" below are out of date.
+> Kept for history.
+
 Written for the backend developer. Checked on 11 Nov 2026 against `xsolla-capstone-backend` `master` at **`5ffcd5f`**
 (auto-enrolment, enrollment grades, squashed migrations).
 

@@ -16,7 +16,8 @@ export interface When {
 }
 
 export type TemplateItem =
-  | { type: 'task'; title: string; description?: string; requirements?: string[]; due: When }
+  /** `due` is from templates made before tasks lost their deadline: read and ignored. */
+  | { type: 'task'; title: string; description?: string; requirements?: string[]; due?: When }
   | { type: 'link'; title: string; description?: string; url: string }
   | { type: 'quiz'; title: string; description?: string; due?: When; questions: { prompt: string; options: string[]; correct?: number }[] }
 
@@ -59,7 +60,7 @@ export function buildTemplate(modules: CourseModule[], now: Date = new Date()): 
     for (const i of m.items) {
       const description = 'description' in i && i.description ? { description: i.description } : {}
       if (i.type === 'assignment') {
-        items.push({ type: 'task', title: i.title, ...description, ...(i.requirements?.length ? { requirements: i.requirements } : {}), due: whenOf(i.dueAt, base) })
+        items.push({ type: 'task', title: i.title, ...description, ...(i.requirements?.length ? { requirements: i.requirements } : {}) })
       } else if (i.type === 'resource') {
         if (i.kind === 'link' && i.url) items.push({ type: 'link', title: i.title, ...description, url: i.url })
         else files++
@@ -98,7 +99,7 @@ function checkItem(i: unknown, at: string): string | null {
   if (!str(i.title, 300) || !i.title.trim()) return `${at} has no title.`
   if (!optStr(i.description)) return `${at}: the description is not text.`
   if (i.type === 'task') {
-    if (!isWhen(i.due)) return `${at} ("${i.title}") has no valid due date.`
+    // tasks have no deadline of their own any more; an old template's due date is ignored
     if (i.requirements !== undefined && !(Array.isArray(i.requirements) && i.requirements.every((r) => str(r, 500)))) return `${at}: the requirements are not a list of text.`
     return null
   }
@@ -179,7 +180,7 @@ export function planImport(template: ModuleTemplate, start: string): PlannedModu
     items: m.items.map((i): NoId<ContentItem> => {
       const description = i.description ? { description: i.description } : {}
       if (i.type === 'task') {
-        return { type: 'assignment', title: i.title.trim(), ...description, ...(i.requirements?.length ? { requirements: i.requirements } : {}), dueAt: resolveWhen(i.due, start) } satisfies NoId<AssignmentItem>
+        return { type: 'assignment', title: i.title.trim(), ...description, ...(i.requirements?.length ? { requirements: i.requirements } : {}) } satisfies NoId<AssignmentItem>
       }
       if (i.type === 'link') return { type: 'resource', kind: 'link', title: i.title.trim(), ...description, url: i.url } satisfies NoId<ResourceItem>
       return {

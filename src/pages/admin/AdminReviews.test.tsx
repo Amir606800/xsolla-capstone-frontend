@@ -7,11 +7,7 @@ import { clearFilters, filterOptions, pickFilter } from '../../test/filters'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import type { AdminReview, MissingReview } from '../../types/mentorReview'
 
-// the real list (the demo reviews) is the default; a test says what the server sends when it needs exact rows
-vi.mock('../../api/adminReviews', async (importActual) => {
-  const actual = await importActual<typeof import('../../api/adminReviews')>()
-  return { ...actual, fetchAllReviews: vi.fn(actual.fetchAllReviews), fetchMissingReviews: vi.fn(actual.fetchMissingReviews) }
-})
+// the setup fakes this module with vi.fn functions over the fixture school
 const serverSends = (rows: AdminReview[] | null) => vi.mocked(fetchAllReviews).mockResolvedValue(rows)
 
 // Wed 4 Nov 2026: weeks 1-5 are over
@@ -46,63 +42,48 @@ const open = () => renderWithProviders(<App />, { route: '/admin/mentor-reviews'
 const listEl = () => screen.findByRole('list', { name: 'Reviews' })
 // only the cards: a card has lists of its own (topics)
 const items = async () => Array.from((await listEl()).children) as HTMLElement[]
-const summary = async () => within(await screen.findByRole('list', { name: 'Summary' }))
 
 describe('Admin: mentor reviews', () => {
-  it('is in the sidebar under People and shows the demo reviews with no server', async () => {
+  it('is in the sidebar under Feedback and shows the demo reviews with no server', async () => {
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/admin' })
     const nav = await screen.findByRole('navigation', { name: 'Admin sections' })
     await user.click(within(nav).getByRole('link', { name: 'Mentor reviews' }))
     expect(await screen.findByRole('heading', { name: 'Mentor reviews', level: 1 })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'Mentor reviews' })).toHaveAttribute('href', '/admin/mentor-reviews')
-    // each of the six demo teams' mentors has a row
-    const table = await screen.findByRole('table', { name: 'Reviews by mentor' })
-    expect(within(table).getAllByRole('row').length - 1).toBe(6)
+    expect(within(nav).getByRole('group', { name: 'Feedback' })).toContainElement(within(nav).getByRole('link', { name: 'Mentor reviews' }))
     // the list starts with 20 and offers the rest
     expect((await items())).toHaveLength(20)
     expect(screen.getByRole('button', { name: /Show more/ })).toBeInTheDocument()
   })
 
-  it('totals: reviews, average rating, sessions held, low scores', async () => {
-    serverSends([
-      review({ overall: 5 }),
-      review({ overall: 4 }),
-      review({ overall: 1, comment: 'It did not work for me' }),
-      review({ overall: 4, hadSession: false, noSessionReason: 'not-scheduled', topics: [], ratings: {} }),
-    ])
+  it('has no averages, totals or tables: those are on the Analytics pages', async () => {
+    serverSends([review({ overall: 5 }), review({ overall: 1, comment: 'It did not work for me', topics: ['homework'] })])
     open()
-    const s = await summary()
-    expect(s.getByText('Reviews').closest('.admin-tile')).toHaveTextContent('44 students')
-    expect(s.getByText('Average rating').closest('.admin-tile')).toHaveTextContent('3.5 / 5')
-    expect(s.getByText('Sessions held').closest('.admin-tile')).toHaveTextContent('75%3 of 4 reviews')
-    expect(s.getByText('Low scores').closest('.admin-tile')).toHaveTextContent('1Overall 2 or less')
+    await items()
+    expect(screen.queryByRole('list', { name: 'Summary' })).toBeNull()
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.queryByText(/Average rating/)).toBeNull()
+    expect(screen.queryByRole('list', { name: 'Topics of the sessions' })).toBeNull()
   })
 
-  it('compares the mentors, and a click on a mentor shows only the reviews about them', async () => {
+  it('filters by mentor from the Filters panel, and lists the mentors that have reviews', async () => {
     serverSends([
-      review({ mentorId: 900, mentorName: 'Rashad Aliyev', overall: 5 }),
-      review({ mentorId: 900, mentorName: 'Rashad Aliyev', overall: 4 }),
-      review({ mentorId: 901, mentorName: 'Aysel Mammadova', teamName: 'Team 4', overall: 2 }),
+      review({ mentorId: 900, mentorName: 'Rashad Aliyev' }),
+      review({ mentorId: 900, mentorName: 'Rashad Aliyev' }),
+      review({ mentorId: 901, mentorName: 'Aysel Mammadova', teamName: 'Team 4' }),
     ])
     const user = userEvent.setup()
     open()
-    const table = within(await screen.findByRole('table', { name: 'Reviews by mentor' }))
-    // lowest rated first
-    const rows = table.getAllByRole('row').slice(1)
-    expect(within(rows[0]).getByRole('button', { name: 'Aysel Mammadova' })).toBeInTheDocument()
-    expect(rows[0]).toHaveTextContent('Team 4')
-    expect(rows[1]).toHaveTextContent('Rashad Aliyev')
-    expect(rows[1]).toHaveTextContent('4.5')
+    await items()
+    expect((await filterOptions(user, 'Mentor')).slice(1)).toEqual(['Aysel Mammadova', 'Rashad Aliyev'])
 
-    await user.click(within(rows[1]).getByRole('button', { name: 'Rashad Aliyev' }))
-    expect((await items())).toHaveLength(2)
+    await pickFilter(user, 'Mentor', 'Rashad Aliyev')
+    expect(await items()).toHaveLength(2)
     expect(screen.getByRole('list', { name: 'Active filters' })).toHaveTextContent('Mentor: Rashad Aliyev')
-    // the table still compares everyone
-    expect(table.getAllByRole('row')).toHaveLength(3)
 
     await clearFilters(user)
-    expect((await items())).toHaveLength(3)
+    expect(await items()).toHaveLength(3)
   })
 
   it('filters by week, named from the course', async () => {
@@ -185,21 +166,6 @@ describe('Admin: mentor reviews', () => {
     expect(card.getByText('Clarity').parentElement).toHaveTextContent('Clarity5 / 5')
     expect(card.getByText('Time').parentElement).toHaveTextContent('Time3 / 5')
     expect(card.getByText('More code reviews please')).toBeInTheDocument()
-  })
-
-  it('what the sessions were about, and why there were none', async () => {
-    serverSends([
-      review({ topics: ['homework', 'goals'] }),
-      review({ topics: ['homework'] }),
-      review({ hadSession: false, noSessionReason: 'not-scheduled', topics: [], ratings: {} }),
-    ])
-    open()
-    const topics = within(await screen.findByRole('list', { name: 'Topics of the sessions' }))
-    const first = topics.getAllByRole('listitem')
-    expect(first[0]).toHaveTextContent('Homework defense and code logic2')
-    expect(first[1]).toHaveTextContent('Development goals and progress review1')
-    const reasons = within(await screen.findByRole('list', { name: 'Reasons for no session' }))
-    expect(reasons.getByText('No session was scheduled')).toBeInTheDocument()
   })
 
   it('shows 20 reviews and the rest on "Show more"', async () => {

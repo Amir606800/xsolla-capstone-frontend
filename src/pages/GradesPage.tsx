@@ -119,6 +119,9 @@ export default function GradesPage() {
                           {YELLOW_LIMIT} yellow weeks in a row, so this week counts as red.
                         </p>
                       )}
+                      {w.lateTasks && w.lateTasks.length > 0 && (
+                        <p className="grades__escalated">Red because of a late submission: {w.lateTasks.join(', ')}.</p>
+                      )}
                       {w.note && <p className="list__feedback">&ldquo;{w.note}&rdquo;</p>}
                     </div>
                     <StandingPill level={w.effective} />

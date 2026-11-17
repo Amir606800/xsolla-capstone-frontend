@@ -10,7 +10,7 @@ import { useAuth } from '../../../hooks/useAuth'
 import { useCourses } from '../../../hooks/useCourses'
 import { usePeopleNames } from '../../../hooks/usePeopleNames'
 import { useSort } from '../../../hooks/useSort'
-import { newId } from '../../../mocks/contentEdits'
+import { newId } from '../../../utils/ids'
 import type { ContentItem, CourseModule } from '../../../types/course'
 import { contentsLine, ITEM_TYPE_LABEL, itemAuthor, itemSummary, keepMeta, moduleDates, moduleDeleteWarning } from '../../../utils/adminContent'
 import { draftToMaterial, draftToQuiz, draftToTask } from '../../../utils/authoring'
@@ -373,7 +373,7 @@ function ItemForm({
           now={now}
           item={item?.type === 'assignment' ? item : undefined}
           onCancel={onCancel}
-          onSave={(d) => onSave(finish(draftToTask(d, module.id, id)), `Task ${verb}.`)}
+          onSave={(d) => onSave(finish(draftToTask(d, module, id)), `Task ${verb}.`)}
         />
       )
     case 'resource':

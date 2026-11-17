@@ -8,18 +8,6 @@ afterEach(() => {
 })
 
 describe('auth API selection', () => {
-  it('uses the offline mock when no backend URL is configured', async () => {
-    vi.stubEnv('VITE_API_URL', '')
-    const fetchSpy = vi.fn()
-    await stubHttp(fetchSpy)
-
-    const { login } = await vi.importActual<typeof import('./auth')>('./auth')
-    const user = await login('sam@example.com', 'pw')
-
-    expect(user).toMatchObject({ email: 'sam@example.com', roles: ['student'] })
-    expect(fetchSpy).not.toHaveBeenCalled()
-  })
-
   it('calls the backend when VITE_API_URL is set', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     const fetchSpy = vi.fn(

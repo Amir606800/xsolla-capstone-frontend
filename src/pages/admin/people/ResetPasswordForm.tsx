@@ -5,6 +5,7 @@ import type { SchoolUser } from '../../../types/admin'
 import { generatePassword } from '../../../utils/adminPeople'
 import { passwordError } from '../../../utils/credentials'
 import { PasswordChecklist } from './PasswordChecklist'
+import { PasswordHandover } from './PasswordHandover'
 
 /**
  * Admin: set a new password for someone who cannot sign in. Type one or generate one, save, then the
@@ -27,7 +28,6 @@ export function ResetPasswordForm({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
-  const [copied, setCopied] = useState<'' | 'yes' | 'no'>('')
 
   const invalid = passwordError(password, user)
 
@@ -47,42 +47,16 @@ export function ResetPasswordForm({
     }
   }
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(password)
-      setCopied('yes')
-    } catch {
-      setCopied('no')
-    }
-  }
-
   if (saved) {
     return (
-      <div className="admin-dialog" role="group" aria-label={`New password for ${user.name}`}>
-        <p className="admin-reset__done" role="status">
-          <Icon name="check" size={18} /> {user.name}’s password has been changed.
-        </p>
-        <div className="admin-field">
-          <span className="admin-field__label">New password</span>
-          <div className="admin-pw-row">
-            <code className="admin-reset__password" aria-label="New password">
-              {password}
-            </code>
-            <button type="button" className="admin-btn" onClick={copy}>
-              <Icon name={copied === 'yes' ? 'check' : 'copy'} size={16} /> {copied === 'yes' ? 'Copied' : 'Copy'}
-            </button>
-          </div>
-          {copied === 'no' && <span className="admin-field__error">It could not be copied: select it and copy it by hand.</span>}
-        </div>
-        <p className="admin-hint">
-          Give it to them in person or in a private message. Their old password no longer works. This is the last time it is shown.
-        </p>
-        <div className="admin-confirm__actions">
-          <button type="button" className="admin-btn admin-btn--primary" onClick={() => onDone(true)}>
-            Done
-          </button>
-        </div>
-      </div>
+      <PasswordHandover
+        name={user.name}
+        label="New password"
+        headline={`${user.name}’s password has been changed.`}
+        hint="Give it to them in person or in a private message. Their old password no longer works. This is the last time it is shown."
+        password={password}
+        onDone={() => onDone(true)}
+      />
     )
   }
 

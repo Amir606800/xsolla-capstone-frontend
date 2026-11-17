@@ -2,6 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { stubHttp } from '../test/stubHttp'
 import { saveTokens } from './session'
 
+// the real module: these tests check its HTTP calls (test/setup.ts fakes it for everything else)
+vi.unmock('./directory')
+
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
@@ -9,17 +12,6 @@ afterEach(() => {
 })
 
 describe('directory API', () => {
-  it('offline: the mock cohort, without calling the network', async () => {
-    vi.stubEnv('VITE_API_URL', '')
-    const fetchSpy = vi.fn()
-    await stubHttp(fetchSpy)
-    const { fetchTeams, fetchUsers, teamsAreDemoData } = await import('./directory')
-    expect((await fetchUsers()).length).toBeGreaterThan(29)
-    expect(await fetchTeams()).toHaveLength(6)
-    expect(teamsAreDemoData()).toBe(false)
-    expect(fetchSpy).not.toHaveBeenCalled()
-  })
-
   it('with a backend: GET /users?search= with the token, mapped to the app’s roles', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
@@ -34,7 +26,7 @@ describe('directory API', () => {
         ),
     )
     await stubHttp(fetchSpy)
-    const { fetchUsers, teamsAreDemoData } = await import('./directory')
+    const { fetchUsers } = await import('./directory')
 
     expect(await fetchUsers()).toEqual([
       { id: 1, name: 'Ann', email: 'a@x.co', roles: ['student'] },
@@ -43,22 +35,11 @@ describe('directory API', () => {
     const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
     expect(url).toBe('https://api.test/users?search=')
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer acc')
-    // teams come from the server too now: nothing is demo data any more
-    expect(teamsAreDemoData()).toBe(false)
   })
 })
 
 describe('adding a student', () => {
   const input = { name: 'Ann Lee', email: 'ann@x.co', password: 'Kp7mWz4qTx', teamId: 't2' }
-
-  it('offline: added to the demo directory and to the chosen team', async () => {
-    vi.stubEnv('VITE_API_URL', '')
-    const { createStudent, fetchTeams, fetchUsers } = await import('./directory')
-    const ann = await createStudent(input)
-    expect(ann).toMatchObject({ name: 'Ann Lee', email: 'ann@x.co', roles: ['student'] })
-    expect((await fetchUsers()).some((u) => u.id === ann.id)).toBe(true)
-    expect((await fetchTeams()).find((t) => t.id === 't2')!.studentIds).toContain(ann.id)
-  })
 
   it('with a backend: POST /users with the chosen password and student role; the admin keeps their own session', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
@@ -137,14 +118,6 @@ describe('adding a student', () => {
     expect(JSON.parse(init.body as string).roles).toEqual(['lecturer'])
   })
 
-  it('offline: a new lecturer has the lecturer role and no team', async () => {
-    vi.stubEnv('VITE_API_URL', '')
-    const { createStaff, fetchTeams } = await import('./directory')
-    const lea = await createStaff({ name: 'Lea Lec', email: 'lea@x.co', password: 'Kp7mWz4qTx', teamId: 't1' }, 'lecturer')
-    expect(lea.roles).toEqual(['lecturer'])
-    expect((await fetchTeams()).some((t) => t.mentorId === lea.id)).toBe(false)
-  })
-
   it('with a backend that cannot do it yet: plain messages for mentors and roles', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     saveTokens({ accessToken: 'acc', refreshToken: 'ref' })
@@ -205,12 +178,4 @@ describe('main role and password reset', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('offline: the new password is the only one that signs them in', async () => {
-    vi.stubEnv('VITE_API_URL', '')
-    const { resetPassword } = await import('./directory')
-    const { passwordMatches } = await import('../mocks/directory')
-    await resetPassword(902, 'Teach-Again-4k')
-    expect(passwordMatches(902, 'Teach-Again-4k')).toBe(true)
-    expect(passwordMatches(902, 'demo')).toBe(false)
-  })
 })

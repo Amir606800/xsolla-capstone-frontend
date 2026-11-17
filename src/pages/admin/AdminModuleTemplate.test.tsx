@@ -2,7 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import { listModules } from '../../mocks/contentEdits'
+import { listModules } from '../../test/fixtures/contentEdits'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
 // the file the admin would download is caught here instead

@@ -10,6 +10,8 @@ import { formatShortDate } from '../../../utils/date'
 import { isStudent } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
+import { NewAccountPasswordModal } from './NewAccountPasswordModal'
+import type { CreatedAccount } from './NewAccountPasswordModal'
 import { ResetPasswordForm } from './ResetPasswordForm'
 import { StudentForm } from './StudentForm'
 import { Loading } from '../../../components/loading/Loading'
@@ -30,6 +32,7 @@ export default function AdminStudentsPage() {
   const [state, setState] = useState<Status>('current')
   const [action, setAction] = useState<Action | null>(null)
   const [message, setMessage] = useState('')
+  const [created, setCreated] = useState<CreatedAccount | null>(null)
 
   const students = useMemo(() => users.filter(isStudent), [users])
   const current = students.filter((s) => !s.leftAt)
@@ -248,10 +251,13 @@ export default function AdminStudentsPage() {
               setState('current')
               const name = teamName(input.teamId)
               done(`${user.name} added${name ? ` to ${name}` : ''}. They can sign in with ${user.email} and the password you set.`)
+              setCreated({ name: user.name, email: user.email, password: input.password })
             }}
           />
         )}
       </Modal>
+
+      <NewAccountPasswordModal created={created} onDone={() => setCreated(null)} />
 
       <Modal open={action?.kind === 'password'} onClose={close} title={target ? `Reset ${target.name}’s password` : ''} size="sm" initialFocus=".admin-dialog input">
         {action?.kind === 'password' && target && (

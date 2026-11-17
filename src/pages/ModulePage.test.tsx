@@ -6,6 +6,7 @@ import { downloadFile } from '../api/files'
 import App from '../App'
 import { renderWithProviders } from '../test/renderWithProviders'
 import { MAX_FILE_BYTES } from '../utils/files'
+import { standingsOf } from '../test/fixtures/standings'
 
 // the real download needs object URLs, which jsdom lacks; api/files has its own tests
 vi.mock('../api/files', () => ({ downloadFile: vi.fn(async () => undefined) }))
@@ -199,12 +200,14 @@ describe('ModulePage - submitting work', () => {
     expect(screen.getByText(/^Submitted /)).toBeInTheDocument()
   })
 
-  it('work that is submitted but not graded yet can get a new version until the deadline', async () => {
+  it('work that is submitted but not graded yet can get a new version; the deadline is 08:00 on the day of the 1:1', async () => {
     const user = userEvent.setup()
     renderAt('/courses/m6')
     await openAssignment(user, /CLI tool/)
     expect(screen.getByRole('heading', { name: 'Hand in a new version' })).toBeInTheDocument()
-    expect(screen.getByText(/You can hand in a new version as often as you like until/)).toBeInTheDocument()
+    expect(screen.getByText(/You can hand in a new version as often as you like./)).toBeInTheDocument()
+    // Sam has no 1:1 booked this weekend, so the work is due Monday 08:00
+    expect(screen.getByText(/no 1:1 booked yet, so Monday 08:00/)).toBeInTheDocument()
     expect(screen.getByLabelText(/Answer or link/)).toBeEnabled()
   })
 
@@ -296,12 +299,17 @@ describe('ModulePage - versions until the deadline', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('You can hand in up to 10 files at a time.')
   })
 
-  it('after the deadline nothing new can be handed in; what was sent stays visible', async () => {
+  it('after the deadline work can still be handed in: it is a late submission, and the week turns red', async () => {
     const user = userEvent.setup()
     renderAt('/courses/m4')
     await openAssignment(user, /Migrate a module/)
-    expect(screen.getByText(/The deadline \(.+\) has passed\. Nothing was handed in\./)).toBeInTheDocument()
-    expect(screen.queryByLabelText(/Answer or link/)).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Submit' })).not.toBeInTheDocument()
+    expect(screen.getByRole('note')).toHaveTextContent(/has passed\. You can still hand in, but it will be a late submission/)
+    await user.type(screen.getByLabelText(/Answer or link/), 'https://example.com/late')
+    await user.click(screen.getByRole('button', { name: 'Submit late' }))
+    expect(await screen.findByText('Your work was submitted, as a late submission.')).toBeInTheDocument()
+    expect(screen.getAllByText('Late submission').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: /Migrate a module/ })).toHaveTextContent('Late submission')
+    // the week grade is red now, because of this task
+    expect(standingsOf(1).find((w) => w.week === 4)).toMatchObject({ level: 'red', lateTasks: ['Migrate a module'] })
   })
 })

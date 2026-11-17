@@ -8,7 +8,6 @@ import { SlotList } from '../components/calendar/Slots'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { canAuthor, canMentor, isAdmin, isStudent } from '../utils/roles'
-import { hasBackend } from '../api/http'
 import { Link } from 'react-router'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
 import { useGoogleCalendarEvents } from '../hooks/useGoogleCalendarEvents'
@@ -21,7 +20,7 @@ import { draftToEvent, isEditableEvent } from '../utils/authoring'
 import type { EventDraft } from '../utils/authoring'
 import { isAssignedTo } from '../utils/content'
 import { savedNotice, profilePath } from '../utils/googleSync'
-import { newId } from '../mocks/contentEdits'
+import { newId } from '../utils/ids'
 import type { CalendarEvent, EventKind } from '../types/calendar'
 import '../styles/ui.css'
 import '../components/calendar/calendar.css'
@@ -147,7 +146,7 @@ export default function CalendarPage() {
   const { save: saveEvent, remove: removeEvent } = calendar
   // the server lets a lecturer link an event only to a week they lead (an admin to any)
   const eventModules = useMemo(
-    () => (hasBackend() && user && !isAdmin(user) ? courses.modules.filter((m) => isAssignedTo(m, user.id)) : courses.modules),
+    () => (user && !isAdmin(user) ? courses.modules.filter((m) => isAssignedTo(m, user.id)) : courses.modules),
     [courses.modules, user],
   )
 
@@ -159,7 +158,7 @@ export default function CalendarPage() {
             canEdit: (event) =>
               isEditableEvent(event) &&
               (!lectureOnly || event.kind === 'lecture') &&
-              (!hasBackend() || isAdmin(user) || (!!event.moduleId && eventModules.some((m) => m.id === event.moduleId))),
+              (isAdmin(user) || (!!event.moduleId && eventModules.some((m) => m.id === event.moduleId))),
             onEdit: (event) => {
               setNotice(null)
               setTool({ kind: 'event', event })

@@ -28,7 +28,7 @@ const FAILED = 'Could not load'
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** The overview's count tiles, in sidebar order. */
-export function overviewTiles(data: OverviewData, now: Date, opts: { demoTeams?: boolean } = {}): OverviewTile[] {
+export function overviewTiles(data: OverviewData, now: Date): OverviewTile[] {
   const { modules, users, teams, events } = data
   // students who left the school are not counted
   const people = (users.ok ? users.value : []).filter((u) => !(u as { leftAt?: string }).leftAt)
@@ -80,8 +80,7 @@ export function overviewTiles(data: OverviewData, now: Date, opts: { demoTeams?:
     const noMentor = list.filter((t) => t.mentorId === null).length
     const sizes = list.map((t) => t.studentIds.length)
     let hint = 'No teams yet'
-    if (opts.demoTeams) hint = 'Demo data: the backend has no teams yet'
-    else if (noMentor > 0) hint = `${noMentor} without a mentor`
+    if (noMentor > 0) hint = `${noMentor} without a mentor`
     else if (list.length > 0) {
       const min = Math.min(...sizes)
       const max = Math.max(...sizes)

@@ -1,8 +1,8 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from '../App'
-import { addBroadcast } from '../mocks/broadcasts'
-import { putModule } from '../mocks/contentEdits'
+import { addBroadcast } from '../test/fixtures/broadcasts'
+import { putModule } from '../test/fixtures/contentEdits'
 import { renderWithProviders } from '../test/renderWithProviders'
 
 const STUDENT = { id: 1, name: 'Sam Student', email: 'student@xsolla.school', roles: ['student'] }
@@ -22,7 +22,8 @@ describe('a change made elsewhere shows up without a reload', () => {
 
     putModule('m1', { title: 'A brand new title' })
 
-    expect(await within(list).findByText('A brand new title')).toBeInTheDocument()
+    // the course is loaded again together with the student's 1:1s (their deadlines follow them)
+    expect(await within(list).findByText('A brand new title', {}, { timeout: 3000 })).toBeInTheDocument()
   })
 
   it("an admin's announcement rings the student's bell at once", async () => {

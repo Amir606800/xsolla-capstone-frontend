@@ -3,7 +3,6 @@ export interface RuntimeConfig {
   VITE_SLACK_URL?: string
   VITE_GITLAB_URL?: string
   VITE_OFFICE_TOUR_URL?: string
-  VITE_GEMINI_API_KEY?: string
 }
 
 declare global {

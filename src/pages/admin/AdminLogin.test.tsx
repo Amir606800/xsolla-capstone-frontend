@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth'
-import { DEMO_ADMIN } from '../../api/auth.mock'
+import { DEMO_ADMIN } from '../../test/fixtures/auth'
 import App from '../../App'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
@@ -65,6 +65,12 @@ describe('Admin sign-in', () => {
     await fillAndSubmit(DEMO_ADMIN.email, 'wrong')
     expect(await screen.findByRole('alert')).toHaveTextContent('invalid credentials')
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled()
+  })
+
+  it('offers no demo account: every sign-in goes to the server', async () => {
+    renderWithProviders(<App />, { route: '/admin/login' })
+    await screen.findByRole('button', { name: 'Sign in' })
+    expect(screen.queryByText(/demo/i)).toBeNull()
   })
 
   it('the password can be shown and hidden', async () => {

@@ -1,0 +1,126 @@
+.admin-reports {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-report {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--field-border);
+  /* an open report is marked red on the left: it still needs someone */
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  background: var(--card);
+}
+.admin-report.is-resolved {
+  border-left-color: var(--ok);
+}
+.admin-report p {
+  margin: 0;
+}
+.admin-report__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.admin-report__about {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.admin-report__about svg {
+  color: var(--danger);
+}
+.admin-report.is-resolved .admin-report__about svg {
+  color: var(--text-muted);
+}
+.admin-report__about strong {
+  color: var(--text);
+}
+.admin-report__status--open {
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  color: var(--danger);
+}
+.admin-report__status--resolved {
+  border-color: color-mix(in srgb, var(--ok) 55%, transparent);
+  color: var(--ok);
+}
+.admin-report__title {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 24px;
+}
+.admin-report__from {
+  color: var(--text);
+}
+.admin-report__message {
+  max-width: 80ch;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  line-height: 23px;
+  white-space: pre-wrap;
+}
+.admin-report__message.is-folded {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+.admin-report__more {
+  align-self: flex-start;
+}
+.admin-report__resolved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.admin-report__resolved svg {
+  color: var(--ok);
+}
+.admin-report__note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-report__note-input {
+  /* the admin inputs are one line high; a note needs room */
+  height: auto;
+  min-height: 88px;
+  padding-top: 8px;
+  resize: vertical;
+}
+.admin-report__count {
+  align-self: flex-end;
+  font-size: 12px;
+}
+.admin-report__count.is-over {
+  color: var(--danger);
+}
+.admin-report__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.admin-report__delete {
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .admin-report__delete {
+    margin-left: 0;
+  }
+}

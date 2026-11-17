@@ -1,0 +1,156 @@
+/* ---------- the red flag in the header ---------- */
+.header__icon-btn.report-btn {
+  color: var(--danger);
+}
+.header__icon-btn.report-btn:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+.header__icon-btn.report-btn:focus-visible {
+  outline: 2px solid var(--danger);
+  outline-offset: 2px;
+}
+
+/* ---------- the form ---------- */
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* the modal body has no padding of its own: forms bring theirs */
+  padding: 8px 20px 20px;
+}
+.report__lead {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+}
+.report__about {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.report__choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.report__choice {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--card);
+  cursor: pointer;
+}
+.report__choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.report__choice svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--text-muted);
+}
+.report__choice:hover {
+  background: var(--active-bg);
+}
+.report__choice.is-picked {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 7%, var(--card));
+}
+.report__choice.is-picked svg {
+  color: var(--danger);
+}
+.report__choice:has(input:focus-visible) {
+  outline: 2px solid var(--danger);
+  outline-offset: 2px;
+}
+.report__choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.report__choice-label {
+  font-weight: 600;
+}
+.report__choice-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+.report__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.report__optional {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.report__message {
+  resize: vertical;
+  min-height: 110px;
+}
+.report__count {
+  align-self: flex-end;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.report__count.is-over {
+  color: var(--danger);
+}
+.report__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+/* the send button is red: it is about a problem */
+.btn.report__send {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-color: transparent;
+  background: var(--danger);
+  color: var(--on-fill);
+}
+.btn.report__send:hover:not(:disabled) {
+  background: var(--danger);
+  filter: brightness(0.95);
+}
+
+/* ---------- sent ---------- */
+.report--sent {
+  align-items: center;
+  text-align: center;
+}
+.report__sent-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+}
+.report__sent-title {
+  margin: 0;
+  font-size: var(--fs-h4);
+  font-weight: 600;
+}
+
+/* ---------- the card on the Profile page ---------- */
+.report-card__icon {
+  color: var(--danger);
+}
+.report-card__actions {
+  margin-top: 14px;
+}

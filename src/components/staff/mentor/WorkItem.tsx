@@ -6,6 +6,7 @@ import { DownloadButton } from '../../DownloadButton'
 import { Icon } from '../../Icon'
 import { EarlierVersions } from '../../module/SubmissionVersions'
 import { Avatar } from '../../team/People'
+import { LatePill } from '../../LatePill'
 
 const STATUS: Record<WorkStatus, { label: string; className: string }> = {
   new: { label: 'New', className: 'chip chip--review' },
@@ -76,10 +77,15 @@ export function WorkItem({
           {submission ? (
             <span className="list__meta">
               Handed in {formatDateTime(submission.submittedAt)}
-              {late && <span className="review__late"> · late</span>}
+              {late && (
+                <>
+                  {' '}
+                  <LatePill />
+                </>
+              )}
             </span>
           ) : (
-            by === 'task' && <span className="list__meta">Due {formatDateTime(row.task.dueAt)}</span>
+            by === 'task' && row.dueAt && <span className="list__meta">Due {formatDateTime(row.dueAt)}</span>
           )}
         </span>
         <span className={STATUS[status].className}>{STATUS[status].label}</span>

@@ -5,11 +5,17 @@ import type { Submission } from './course'
  * is): the mentor reads the work and may leave a comment, which the student sees as `feedback`.
  */
 export interface TeamSubmission extends Submission {
-  /** The server's id of this hand-in (the latest attempt); the demo store has none. */
+  /** The server's id of this hand-in (the latest attempt). */
   id?: string
   assignmentId: string
   studentId: number
   /** When the mentor last wrote or changed their comment. */
   commentedAt?: string
   commentedBy?: { id: number; name: string }
+}
+
+/** Whoever comments on a hand-in (a mentor). */
+export interface Grader {
+  id: number
+  name: string
 }

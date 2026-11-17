@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../../../components/Icon'
-import type { TeamPlan } from '../../../mocks/directory'
+import type { TeamPlan } from '../../../types/admin'
 import type { User } from '../../../types/user'
 import { DEFAULT_TEAM_SIZE, MAX_TEAM_SIZE, MIN_TEAM_SIZE, planTeams } from '../../../utils/adminTeams'
 import type { Random } from '../../../utils/adminTeams'

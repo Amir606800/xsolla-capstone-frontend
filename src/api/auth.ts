@@ -1,23 +1,5 @@
-import * as http from './auth.http'
-import * as mock from './auth.mock'
-import { hasBackend } from './http'
-import { clearTokens } from './session'
-
 /**
- * Auth API used by the app. Talks to the real backend when VITE_API_URL is set
- * (see .env.example), otherwise falls back to the offline mock.
+ * Auth API used by the app: the backend's /auth routes (./auth.http). Tests swap this module for a fake
+ * (src/test/setup.ts); the app itself always talks to the server.
  */
-export const login: typeof http.login = (email, password) =>
-  hasBackend() ? http.login(email, password) : mock.login(email, password)
-
-export const signup: typeof http.signup = (email, name, password) =>
-  hasBackend() ? http.signup(email, name, password) : mock.signup(email, name, password)
-
-/** The signed-in user as the server has them now (their roles may have been changed by an admin). Nothing offline. */
-export const fetchMe = async (): Promise<Awaited<ReturnType<typeof http.fetchMe>> | null> => (hasBackend() ? http.fetchMe() : null)
-
-export const logout: typeof http.logout = async () => {
-  if (hasBackend()) return http.logout()
-  clearTokens() // drop tokens left over from an earlier session with the real backend
-  return mock.logout()
-}
+export { fetchMe, login, logout, signup } from './auth.http'

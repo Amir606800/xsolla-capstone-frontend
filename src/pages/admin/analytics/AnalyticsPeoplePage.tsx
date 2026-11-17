@@ -1,27 +1,47 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Icon } from '../../../components/Icon'
 import { Loading } from '../../../components/loading/Loading'
+import { StandingPill } from '../../../components/StandingPill'
 import { useAnalyticsPeople } from '../../../hooks/useAnalytics'
-import './analytics.css'
+import { useStudentReviews } from '../../../hooks/useStudentReviews'
+import type { AnalyticsRole } from '../../../types/analytics'
+import { standingsByStudent } from '../../../utils/personAnalytics'
+import { AnalyticsShell } from './AnalyticsShell'
 
-/** Admin: search the students or mentors and open one person's analytics. */
-export default function AnalyticsPeoplePage({ role }: { role: 'students' | 'mentors' }) {
+const TEXT: Record<AnalyticsRole, { title: string; subtitle: string; person: string; list: string }> = {
+  students: {
+    title: 'Student analytics',
+    subtitle: 'Pick a student to see how they are doing: their standing, the AI summary of their feedback, hand-ins and quizzes.',
+    person: 'student',
+    list: 'Students',
+  },
+  mentors: {
+    title: 'Mentor analytics',
+    subtitle:
+      'Pick a mentor to see what their students say about them, how their team is doing, and the AI summary of their reviews.',
+    person: 'mentor',
+    list: 'Mentors',
+  },
+  lecturers: {
+    title: 'Lecturer analytics',
+    subtitle: 'Pick a lecturer to see how students rate their lectures, the pace, and the AI summary of the feedback.',
+    person: 'lecturer',
+    list: 'Lecturers',
+  },
+}
+
+/** Admin: search the students, mentors or lecturers and open one person's analytics. */
+export default function AnalyticsPeoplePage({ role }: { role: AnalyticsRole }) {
   const [search, setSearch] = useState('')
   const list = useAnalyticsPeople(role, search)
-  const person = role === 'students' ? 'student' : 'mentor'
+  const text = TEXT[role]
+  // students show how they stand now beside their name (the grades are loaded once for the whole list)
+  const grades = useStudentReviews(role === 'students')
+  const standings = useMemo(() => (role === 'students' ? standingsByStudent(grades.reviews) : null), [role, grades.reviews])
 
   return (
-    <section className="admin-page">
-      <header className="admin-page__head">
-        <h1 className="page-title">{role === 'students' ? 'Student analytics' : 'Mentor analytics'}</h1>
-        <p className="page-subtitle">
-          {role === 'students'
-            ? 'Search for a student to see their submissions and quiz accuracy.'
-            : 'Search for a mentor to see their feedback and their students’ standing.'}
-        </p>
-      </header>
-
+    <AnalyticsShell title={text.title} subtitle={text.subtitle}>
       <div className="admin-toolbar">
         <label className="admin-search">
           <Icon name="search" size={16} />
@@ -33,9 +53,6 @@ export default function AnalyticsPeoplePage({ role }: { role: 'students' | 'ment
             onChange={(e) => setSearch(e.target.value)}
           />
         </label>
-        <Link className="admin-btn analytics-back" to="/admin/analytics">
-          <Icon name="back" size={16} /> Overview
-        </Link>
       </div>
 
       {list.status === 'loading' && <Loading className="admin-muted">Loading {role}…</Loading>}
@@ -57,26 +74,35 @@ export default function AnalyticsPeoplePage({ role }: { role: 'students' | 'ment
 
       {list.status === 'ready' && list.people.length > 0 && (
         <>
-          <ul className="analytics-people" aria-label={`${role === 'students' ? 'Students' : 'Mentors'}`}>
-            {list.people.map((p) => (
-              <li key={p.id}>
-                <Link to={`/admin/analytics/${role}/${p.id}`}>
-                  <span className="analytics-people__name">{p.name}</span>
-                  {p.email && <span className="analytics-people__email">{p.email}</span>}
-                  <Icon name="chevron-right" size={16} />
-                </Link>
-              </li>
-            ))}
+          <ul className="analytics-people" aria-label={text.list}>
+            {list.people.map((p) => {
+              const now = standings?.get(p.id)
+              return (
+                <li key={p.id}>
+                  <Link to={`/admin/analytics/${role}/${p.id}`}>
+                    <span className="analytics-people__name">{p.name}</span>
+                    {p.email && <span className="analytics-people__email">{p.email}</span>}
+                    {standings &&
+                      (now?.summary.current ? (
+                        <StandingPill level={now.summary.current} />
+                      ) : (
+                        <span className="admin-pill">Not graded yet</span>
+                      ))}
+                    <Icon name="chevron-right" size={16} />
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
           {!list.done && (
-            <button type="button" className="admin-btn analytics-more" onClick={list.loadMore} disabled={list.loadingMore}>
+            <button type="button" className="admin-btn analytics-start" onClick={list.loadMore} disabled={list.loadingMore}>
               {list.loadingMore ? `Loading more ${role}…` : `Show more ${role}`}
             </button>
           )}
         </>
       )}
 
-      <p className="admin-muted analytics-note">Showing up to 20 {person}s per page, requested from the server.</p>
-    </section>
+      <p className="admin-muted analytics-note">Showing up to 20 {text.person}s at a time.</p>
+    </AnalyticsShell>
   )
 }

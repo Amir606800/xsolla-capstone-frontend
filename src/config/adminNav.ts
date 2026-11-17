@@ -8,9 +8,11 @@ export type AdminSectionKey =
   | 'mentors'
   | 'lecturers'
   | 'teams'
+  | 'studentReviews'
   | 'reviews'
   | 'lectureReviews'
   | 'analytics'
+  | 'reports'
   | 'announce'
   | 'notifications'
 
@@ -48,6 +50,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     label: 'Feedback',
     sections: [
+      { key: 'studentReviews', path: '/admin/student-reviews', label: 'Student reviews', icon: 'student', summary: 'What the mentors say about their students, week by week.' },
       { key: 'reviews', path: '/admin/mentor-reviews', label: 'Mentor reviews', icon: 'grades', summary: 'What students say about their mentor, week by week.' },
       { key: 'lectureReviews', path: '/admin/lecture-reviews', label: 'Lecture reviews', icon: 'lecturer', summary: 'What students say about each lecture, grouped by lecturer.' },
     ],
@@ -55,12 +58,13 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     label: 'Insights',
     sections: [
-      { key: 'analytics', path: '/admin/analytics', label: 'Analytics', icon: 'activity', summary: 'Weekly standing, student performance and mentor feedback.' },
+      { key: 'analytics', path: '/admin/analytics', label: 'Analytics', icon: 'activity', summary: 'How the school, each student, mentor and lecturer is doing.' },
     ],
   },
   {
     label: 'Messages',
     sections: [
+      { key: 'reports', path: '/admin/reports', label: 'Reports', icon: 'flag', summary: 'Problems students and staff reported: read them and mark them resolved.' },
       { key: 'announce', path: '/admin/announce', label: 'Announce', icon: 'mail', summary: 'Send a message everyone sees.' },
       { key: 'notifications', path: '/admin/notifications', label: 'Notifications', icon: 'bell', summary: 'What needs your attention, and what happened lately.' },
     ],

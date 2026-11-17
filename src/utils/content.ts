@@ -1,4 +1,5 @@
 import type { AssignmentItem, CourseModule, QuizItem, ResourceItem } from '../types/course'
+import { oneOnOneWeek } from './deadline'
 
 /** Lecturer views of the course: where each module stands and what is still missing. */
 
@@ -39,8 +40,7 @@ export function contentCounts(m: CourseModule): ContentCounts {
 }
 
 export const materialsOf = (m: CourseModule) => m.items.filter((i): i is ResourceItem => i.type === 'resource')
-export const tasksOf = (m: CourseModule) =>
-  m.items.filter((i): i is AssignmentItem => i.type === 'assignment').sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+export const tasksOf = (m: CourseModule) => m.items.filter((i): i is AssignmentItem => i.type === 'assignment')
 export const quizzesOf = (m: CourseModule) => m.items.filter((i): i is QuizItem => i.type === 'quiz')
 
 export interface ContentGap {
@@ -51,8 +51,8 @@ export interface ContentGap {
 }
 
 /**
- * What a lecturer still has to prepare in the running and upcoming modules: no tasks, no materials,
- * missing dates, or a task due outside the module's week. Finished modules are left alone.
+ * What a lecturer still has to prepare in the running and upcoming modules: no tasks, no materials, or missing dates
+ * (without an opening date the students' deadlines cannot be worked out). Finished modules are left alone.
  */
 export function contentGaps(modules: CourseModule[], now: Date): ContentGap[] {
   const gaps: ContentGap[] = []
@@ -64,10 +64,6 @@ export function contentGaps(modules: CourseModule[], now: Date): ContentGap[] {
     if (!m.opensAt || !m.closesAt) add('dates', 'Has no start or end date')
     if (counts.materials === 0) add('materials', 'No materials yet')
     if (counts.tasks === 0) add('tasks', 'No tasks yet')
-    for (const t of tasksOf(m)) {
-      if (m.closesAt && t.dueAt > m.closesAt) add(`late-${t.id}`, `"${t.title}" is due after the module closes`)
-      else if (m.opensAt && t.dueAt < m.opensAt) add(`early-${t.id}`, `"${t.title}" is due before the module opens`)
-    }
   }
   return gaps
 }
@@ -75,14 +71,24 @@ export function contentGaps(modules: CourseModule[], now: Date): ContentGap[] {
 export interface DueTask {
   task: AssignmentItem
   module: CourseModule
+  /** The next moment some student's work for it is due: the week's Friday 08:00, or Monday 08:00 once Friday has passed. */
+  dueAt: string
 }
 
-/** The next deadlines across the whole course (lecturers see every module). */
+/**
+ * The next deadlines across the whole course (lecturers see every module). A task has no deadline of its own: each
+ * student's work is due at 08:00 on the day of their 1:1, Friday or Monday of the week's 1:1 weekend.
+ */
 export function nextDueTasks(modules: CourseModule[], now: Date, limit: number): DueTask[] {
+  const t = now.getTime()
   return modules
-    .flatMap((module) => tasksOf(module).map((task) => ({ task, module })))
-    .filter((d) => new Date(d.task.dueAt) > now)
-    .sort((a, b) => a.task.dueAt.localeCompare(b.task.dueAt))
+    .flatMap((module) => {
+      if (!module.opensAt) return []
+      const week = oneOnOneWeek(module.opensAt)
+      const next = [week.friday, week.monday].find((d) => new Date(d).getTime() > t)
+      return next ? tasksOf(module).map((task) => ({ task, module, dueAt: next })) : []
+    })
+    .sort((a, b) => a.dueAt.localeCompare(b.dueAt) || a.module.position - b.module.position)
     .slice(0, limit)
 }
 

@@ -1,0 +1,56 @@
+import type { StudentReview } from '../types/studentReview'
+import { fetchTeams, fetchUsers } from './directory'
+import * as http from './standings.http'
+
+/**
+ * Every mentor's grade of every student, for the admin's Student reviews page. On the real backend a grade is the `grade`
+ * (and `feedback`) of a student's enrollment in a week's module, so this reads every week's enrollments
+ * (GET /modules/:id/enrollments) and puts names to the ids from the people and teams lists. `null` = the server lets
+ * this person read none of them.
+ */
+export interface Grade {
+  studentId: number
+  week: number
+  moduleId: string
+  moduleTitle?: string
+  level: StudentReview['level']
+  assessedAt: string
+  note?: string
+  gradedBy?: { id: number; name: string }
+  /** The server gives the grader's id only; the name comes from the people list. */
+  gradedById?: number
+}
+
+export async function fetchStudentReviews(): Promise<StudentReview[] | null> {
+  const grades = await http.fetchEveryGrade()
+  return grades === null ? null : withNames(grades)
+}
+
+/** The grades with the names of the students, their mentor and their team, from the people and teams lists. */
+export async function withNames(grades: Grade[]): Promise<StudentReview[]> {
+  // names are optional: a list that cannot be loaded leaves "Student #7" instead of failing the page
+  const [users, teams] = await Promise.all([fetchUsers().catch(() => []), fetchTeams().catch(() => [])])
+  const nameOf = new Map(users.map((u) => [u.id, u.name]))
+  const teamOf = new Map(teams.flatMap((t) => t.studentIds.map((id) => [id, t] as const)))
+
+  return grades.map((g): StudentReview => {
+    const team = teamOf.get(g.studentId)
+    // who graded it; a grade from before the server recorded that falls back to the student's team mentor
+    const mentorId = g.gradedBy?.id ?? g.gradedById ?? team?.mentorId ?? undefined
+    const mentorName = g.gradedBy?.name ?? (mentorId === undefined ? undefined : nameOf.get(mentorId))
+    return {
+      id: `${g.studentId}:${g.moduleId}`,
+      moduleId: g.moduleId,
+      week: g.week,
+      ...(g.moduleTitle ? { moduleTitle: g.moduleTitle } : {}),
+      studentId: g.studentId,
+      studentName: nameOf.get(g.studentId) ?? `Student #${g.studentId}`,
+      ...(mentorId === undefined ? {} : { mentorId }),
+      ...(mentorName ? { mentorName } : {}),
+      ...(team ? { teamName: team.name } : {}),
+      level: g.level,
+      ...(g.note ? { note: g.note } : {}),
+      gradedAt: g.assessedAt,
+    }
+  })
+}

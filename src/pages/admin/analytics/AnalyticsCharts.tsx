@@ -1,11 +1,17 @@
-import type { AnalyticsWeek, AssignmentStatus, FeedbackDimension, QuizAccuracy } from '../../../types/analytics'
+import type { ReactNode } from 'react'
+import type { AnalyticsWeek, AssignmentStatus, QuizAccuracy } from '../../../types/analytics'
+import type { Tone } from '../../../utils/personAnalytics'
+import { describeParts, formatWeekDate, shareOf, shortWeek } from './chartFormat'
 
-const schoolDate = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Baku', month: 'short', day: 'numeric' })
-
-/** "Sep 21": the module's opening date as a school date (never the browser's time zone). */
-const formatWeekDate = (iso: string) => schoolDate.format(new Date(iso))
-
-const share = (part: number, total: number) => (total === 0 ? 0 : Math.round((part / total) * 100))
+/** Every chart's numbers as a table, folded away under the chart until asked for. */
+export function NumbersTable({ children }: { children: ReactNode }) {
+  return (
+    <details className="analytics-numbers">
+      <summary>Show the numbers</summary>
+      {children}
+    </details>
+  )
+}
 
 const STANDING = [
   { key: 'green', label: 'Green' },
@@ -28,11 +34,19 @@ export function StackedStandingChart({ weeks, label, emptyText }: { weeks: Analy
   return (
     <>
       <div className="analytics-weeks" role="img" aria-label={summary}>
+        <span className="analytics-weeks__axis" aria-hidden="true">
+          <span>{max}</span>
+          <span>0</span>
+        </span>
         {weeks.map((w) => (
           <div className="analytics-week" key={w.moduleId}>
+            <span className="analytics-week__total">{w.total === 0 ? '' : `${shareOf(w.green, w.total)}%`}</span>
             <div className="analytics-week__plot">
               {w.total === 0 ? (
-                <span className="analytics-week__none" title={`${w.moduleTitle} · ${formatWeekDate(w.opensAt)}: no grades recorded`}>
+                <span
+                  className="analytics-week__none"
+                  title={`${w.moduleTitle} · ${formatWeekDate(w.opensAt)}: no grades recorded`}
+                >
                   —
                 </span>
               ) : (
@@ -45,7 +59,7 @@ export function StackedStandingChart({ weeks, label, emptyText }: { weeks: Analy
                         key={s.key}
                         className={`analytics-week__seg analytics-fill--${s.key}`}
                         style={{ flexGrow: count }}
-                        title={`${w.moduleTitle} · ${s.label}: ${count} of ${w.total} students (${share(count, w.total)}%) · week of ${formatWeekDate(w.opensAt)}`}
+                        title={`${w.moduleTitle} · ${s.label}: ${count} of ${w.total} students (${shareOf(count, w.total)}%) · week of ${formatWeekDate(w.opensAt)}`}
                       />
                     )
                   })}
@@ -53,7 +67,7 @@ export function StackedStandingChart({ weeks, label, emptyText }: { weeks: Analy
               )}
             </div>
             <span className="analytics-week__label" title={`${w.moduleTitle} · week of ${formatWeekDate(w.opensAt)}`}>
-              {w.moduleTitle}
+              {shortWeek(w.moduleTitle)}
             </span>
           </div>
         ))}
@@ -65,106 +79,132 @@ export function StackedStandingChart({ weeks, label, emptyText }: { weeks: Analy
             {s.label}
           </li>
         ))}
-        <li className="admin-muted">Each bar counts the students with a recorded grade that week.</li>
+        <li>The figure over each bar is that week's share of green.</li>
       </ul>
-      <table className="admin-table analytics-table">
-        <caption>{label}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Week</th>
-            <th scope="col">Green</th>
-            <th scope="col">Yellow</th>
-            <th scope="col">Red</th>
-            <th scope="col">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {weeks.map((w) => (
-            <tr key={w.moduleId}>
-              <th scope="row">
-                {w.moduleTitle} <span className="admin-table__muted">{formatWeekDate(w.opensAt)}</span>
-              </th>
-              {w.total === 0 ? (
-                <td colSpan={4} className="admin-table__muted">
-                  No grades recorded
-                </td>
-              ) : (
-                <>
-                  <td className="admin-table__num">{w.green}</td>
-                  <td className="admin-table__num">{w.yellow}</td>
-                  <td className="admin-table__num">{w.red}</td>
-                  <td className="admin-table__num">{w.total}</td>
-                </>
-              )}
+      <NumbersTable>
+        <table className="admin-table analytics-table">
+          <caption>{label}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Week</th>
+              <th scope="col">Green</th>
+              <th scope="col">Yellow</th>
+              <th scope="col">Red</th>
+              <th scope="col">Graded</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {weeks.map((w) => (
+              <tr key={w.moduleId}>
+                <th scope="row">
+                  {w.moduleTitle} <span className="admin-table__muted">{formatWeekDate(w.opensAt)}</span>
+                </th>
+                {w.total === 0 ? (
+                  <td colSpan={4} className="admin-table__muted">
+                    No grades recorded
+                  </td>
+                ) : (
+                  <>
+                    <td className="admin-table__num">{w.green}</td>
+                    <td className="admin-table__num">{w.yellow}</td>
+                    <td className="admin-table__num">{w.red}</td>
+                    <td className="admin-table__num">{w.total}</td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </NumbersTable>
     </>
   )
 }
 
+export interface Part {
+  key: string
+  label: string
+  value: number
+  tone: Tone
+}
+
+/**
+ * One whole split into a few parts, as a tall bar: each part's share is printed on it where it fits, and the legend
+ * below names the parts with their counts.
+ */
+export function SegmentedBar({ parts, label }: { parts: Part[]; label: string }) {
+  const total = parts.reduce((n, p) => n + p.value, 0)
+  return (
+    <div className="segbar">
+      <div className="segbar__bar" role="img" aria-label={`${label}: ${describeParts(parts)}`}>
+        {parts.map((p) =>
+          p.value > 0 ? (
+            <span
+              key={p.key}
+              className={`segbar__part donut-fill--${p.tone}`}
+              style={{ flexGrow: p.value }}
+              title={`${p.label}: ${p.value} of ${total} (${shareOf(p.value, total)}%)`}
+            >
+              {shareOf(p.value, total) >= 12 ? `${shareOf(p.value, total)}%` : ''}
+            </span>
+          ) : null,
+        )}
+      </div>
+      <ul className="analytics-legend" aria-label={`${label} legend`}>
+        {parts.map((p) => (
+          <li key={p.key}>
+            <span className={`analytics-dot donut-fill--${p.tone}`} aria-hidden="true" />
+            {p.label} <strong>{p.value}</strong>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 const SUBMISSION = [
-  { key: 'onTime', label: 'Submitted on time', className: 'on-time' },
-  { key: 'late', label: 'Submitted late', className: 'late' },
-  { key: 'missing', label: 'Not submitted', className: 'missing' },
+  { key: 'onTime', label: 'Submitted on time', tone: 'good' },
+  { key: 'late', label: 'Submitted late', tone: 'warn' },
+  { key: 'missing', label: 'Not submitted', tone: 'bad' },
 ] as const
 
-/** One horizontal stacked bar for a student's passed deadlines. */
+/** A student's passed deadlines: on time, late, missed. */
 export function SubmissionStatusChart({ status, emptyText }: { status: AssignmentStatus; emptyText: string }) {
   if (status.eligible === 0) return <p className="admin-muted">{emptyText}</p>
   const total = status.eligible
-
   return (
     <>
-      <div className="analytics-status">
-        <div className="analytics-status__bar" role="img" aria-label={`${status.onTime} on time, ${status.late} late, ${status.missing} missing of ${total} eligible assignments`}>
-          {SUBMISSION.map((s) =>
-            status[s.key] > 0 ? (
-              <span
-                key={s.key}
-                className={`analytics-status__seg analytics-fill--${s.className}`}
-                style={{ flexGrow: status[s.key] }}
-                title={`${s.label}: ${status[s.key]} of ${total} (${share(status[s.key], total)}%)`}
-              />
-            ) : null,
-          )}
-        </div>
-        <ul className="analytics-legend" aria-label="Assignment status legend">
-          {SUBMISSION.map((s) => (
-            <li key={s.key}>
-              <span className={`analytics-dot analytics-fill--${s.className}`} aria-hidden="true" />
-              {s.label} <strong>{status[s.key]}</strong>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <table className="admin-table analytics-table">
-        <caption>Assignment submission status ({total} eligible assignments)</caption>
-        <thead>
-          <tr>
-            <th scope="col">Status</th>
-            <th scope="col">Assignments</th>
-            <th scope="col">Share</th>
-          </tr>
-        </thead>
-        <tbody>
-          {SUBMISSION.map((s) => (
-            <tr key={s.key}>
-              <th scope="row">{s.label}</th>
-              <td className="admin-table__num">{status[s.key]}</td>
-              <td className="admin-table__num">{share(status[s.key], total)}%</td>
+      <SegmentedBar
+        parts={SUBMISSION.map((s) => ({ key: s.key, label: s.label, value: status[s.key], tone: s.tone }))}
+        label="Assignment status"
+      />
+      <NumbersTable>
+        <table className="admin-table analytics-table">
+          <caption>Assignment submission status ({total} eligible assignments)</caption>
+          <thead>
+            <tr>
+              <th scope="col">Status</th>
+              <th scope="col">Assignments</th>
+              <th scope="col">Share</th>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row">Eligible total</th>
-            <td className="admin-table__num">{total}</td>
-            <td className="admin-table__num">100%</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody>
+            {SUBMISSION.map((s) => (
+              <tr key={s.key}>
+                <th scope="row">{s.label}</th>
+                <td className="admin-table__num">{status[s.key]}</td>
+                <td className="admin-table__num">{shareOf(status[s.key], total)}%</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Eligible total</th>
+              <td className="admin-table__num">{total}</td>
+              <td className="admin-table__num">100%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </NumbersTable>
     </>
   )
 }
@@ -194,66 +234,68 @@ export function AccuracyChart({ quizzes, emptyText }: { quizzes: QuizAccuracy[];
           </li>
         ))}
       </ul>
-      <p className="admin-muted analytics-note">Score accuracy: points earned out of points possible across all attempts in the module. Scale 0–100%.</p>
-      <table className="admin-table analytics-table">
-        <caption>Quiz accuracy by module</caption>
-        <thead>
-          <tr>
-            <th scope="col">Module</th>
-            <th scope="col">Points</th>
-            <th scope="col">Accuracy</th>
-            <th scope="col">Attempts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {quizzes.map((q) => (
-            <tr key={q.moduleId}>
-              <th scope="row">
-                {q.moduleTitle} <span className="admin-table__muted">{formatWeekDate(q.opensAt)}</span>
-              </th>
-              <td className="admin-table__num">
-                {q.scoreTotal} / {q.possibleTotal}
-              </td>
-              <td className="admin-table__num">{q.accuracy === null ? 'No scored answers' : `${q.accuracy}%`}</td>
-              <td className="admin-table__num">{q.attemptCount}</td>
+      <p className="admin-muted analytics-note">Points earned out of points possible over every attempt in the module, 0–100%.</p>
+      <NumbersTable>
+        <table className="admin-table analytics-table">
+          <caption>Quiz accuracy by module</caption>
+          <thead>
+            <tr>
+              <th scope="col">Module</th>
+              <th scope="col">Points</th>
+              <th scope="col">Accuracy</th>
+              <th scope="col">Attempts</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {quizzes.map((q) => (
+              <tr key={q.moduleId}>
+                <th scope="row">
+                  {q.moduleTitle} <span className="admin-table__muted">{formatWeekDate(q.opensAt)}</span>
+                </th>
+                <td className="admin-table__num">
+                  {q.scoreTotal} / {q.possibleTotal}
+                </td>
+                <td className="admin-table__num">{q.accuracy === null ? 'No scored answers' : `${q.accuracy}%`}</td>
+                <td className="admin-table__num">{q.attemptCount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </NumbersTable>
     </>
   )
 }
 
-const DIMENSION_LABEL: Record<FeedbackDimension['dimension'], string> = {
-  clarity: 'Clarity',
-  engagement: 'Engagement',
-  comfort: 'Comfort',
-  time: 'Time management',
+export interface Score {
+  key: string
+  label: string
+  average: number | null
+  count: number
 }
 
-/** Four student-rated dimensions on a fixed 1-5 scale. */
-export function DimensionChart({ feedback }: { feedback: FeedbackDimension[] }) {
+/** A few 1-5 ratings, each on the same fixed 1-5 axis with the number of answers behind it. */
+export function ScoreBars({ scores, label }: { scores: Score[]; label: string }) {
   return (
     <>
-      <div className="analytics-bars analytics-bars--scale" aria-label="Feedback by dimension">
-        {feedback.map((f) => (
-          <div className="analytics-bars__row" key={f.dimension}>
-            <span className="analytics-bars__label">{DIMENSION_LABEL[f.dimension]}</span>
+      <ul className="analytics-bars analytics-bars--scale" aria-label={label}>
+        {scores.map((s) => (
+          <li key={s.key}>
+            <span className="analytics-bars__label">{s.label}</span>
             <span className="analytics-bars__track">
-              {f.average === null ? (
+              {s.average === null ? (
                 <span className="analytics-bars__nothing">No responses</span>
               ) : (
                 <span
                   className="analytics-bars__fill"
-                  style={{ width: `${((f.average - 1) / 4) * 100}%` }}
-                  title={`${DIMENSION_LABEL[f.dimension]}: ${f.average.toFixed(1)} of 5 from ${f.count} response${f.count === 1 ? '' : 's'}`}
+                  style={{ width: `${((s.average - 1) / 4) * 100}%` }}
+                  title={`${s.label}: ${s.average.toFixed(1)} of 5 from ${s.count} response${s.count === 1 ? '' : 's'}`}
                 />
               )}
             </span>
-            <span className="analytics-bars__value">{f.average === null ? 'n=0' : `${f.average.toFixed(1)} · n=${f.count}`}</span>
-          </div>
+            <span className="analytics-bars__value">{s.average === null ? 'n=0' : `${s.average.toFixed(1)} · n=${s.count}`}</span>
+          </li>
         ))}
-      </div>
+      </ul>
       <div className="analytics-axis" aria-hidden="true">
         <span />
         <span className="analytics-axis__ticks">
@@ -265,26 +307,42 @@ export function DimensionChart({ feedback }: { feedback: FeedbackDimension[] }) 
         </span>
         <span />
       </div>
-      <p className="admin-muted analytics-note">Average rating, 1–5, and the number of ratings behind it. Small samples are shown as they are, not as representative.</p>
-      <table className="admin-table analytics-table">
-        <caption>Student feedback by dimension</caption>
-        <thead>
-          <tr>
-            <th scope="col">Dimension</th>
-            <th scope="col">Average (1–5)</th>
-            <th scope="col">Responses</th>
-          </tr>
-        </thead>
-        <tbody>
-          {feedback.map((f) => (
-            <tr key={f.dimension}>
-              <th scope="row">{DIMENSION_LABEL[f.dimension]}</th>
-              <td className="admin-table__num">{f.average === null ? 'No responses' : f.average.toFixed(1)}</td>
-              <td className="admin-table__num">{f.count}</td>
+      <NumbersTable>
+        <table className="admin-table analytics-table">
+          <caption>{label}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Question</th>
+              <th scope="col">Average (1–5)</th>
+              <th scope="col">Responses</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {scores.map((s) => (
+              <tr key={s.key}>
+                <th scope="row">{s.label}</th>
+                <td className="admin-table__num">{s.average === null ? 'No responses' : s.average.toFixed(1)}</td>
+                <td className="admin-table__num">{s.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </NumbersTable>
     </>
+  )
+}
+
+/** Small shared building blocks for the pages' loading and failure states. */
+export function LoadProblem({ error, onRetry, children }: { error: string | null; onRetry: () => void; children?: ReactNode }) {
+  return (
+    <div className="admin-empty">
+      <p>{error ?? 'Could not load analytics.'}</p>
+      <div className="analytics-actions">
+        <button type="button" className="admin-btn" onClick={onRetry}>
+          Try again
+        </button>
+        {children}
+      </div>
+    </div>
   )
 }

@@ -5,7 +5,7 @@ import type { FormQuestion, LectureAnswers, PendingLecture } from '../types/lect
 export const OPENS_BEFORE_END_MS = 10 * 60_000
 export const OPEN_FOR_MS = 7 * 24 * 3_600_000
 
-/** The form as the server has it (backend docs/lecture_feedback.md). Used when the server cannot send it, and in the demo. */
+/** The form as the server has it (backend docs/lecture_feedback.md). Used when the server cannot send it. */
 export const LECTURE_FORM: FormQuestion[] = [
   {
     id: 'overall',
@@ -117,5 +117,5 @@ export function cleanAnswers(form: FormQuestion[], answers: LectureAnswers): Lec
   return out
 }
 
-/** The demo store's (and the server's 409) answer to a second form for the same lecture. */
+/** The answer to a second form for the same lecture (the server's 409). */
 export const SENT_ALREADY = 'You have already sent feedback for this lecture.'

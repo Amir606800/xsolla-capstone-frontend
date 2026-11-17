@@ -5,6 +5,7 @@ import { Avatar } from '../../components/profile/Avatar'
 import { useProfile } from '../../hooks/useProfile'
 import { AdminAlertsProvider } from '../../context/AdminAlertsProvider'
 import { useAdminAlerts } from '../../hooks/useAdminAlerts'
+import { useOpenReportCount } from '../../hooks/useAdminReports'
 import { GitLabLogo, SlackLogo } from '../../components/BrandLogos'
 import { Icon } from '../../components/Icon'
 import { LINKS } from '../../config/links'
@@ -38,6 +39,7 @@ export default function AdminLayout() {
 function AdminFrame() {
   const { user, signOut } = useAuth()
   const { attention } = useAdminAlerts()
+  const openReports = useOpenReportCount()
   const { theme } = useTheme()
   const { profile, savePrefs } = useProfile()
   const navigate = useNavigate()
@@ -110,6 +112,14 @@ function AdminFrame() {
                       <span className="admin-nav__badge" aria-label={`${attention} need attention`}>
                         {attention > 9 ? '9+' : attention}
                       </span>
+                    )}
+                    {s.key === 'reports' && openReports > 0 && (
+                      <>
+                        <span className="admin-nav__badge" aria-hidden="true">
+                          {openReports > 9 ? '9+' : openReports}
+                        </span>
+                        <span className="sr-only">, {openReports} open</span>
+                      </>
                     )}
                   </NavLink>
                 ))}

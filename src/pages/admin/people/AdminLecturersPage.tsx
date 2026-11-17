@@ -11,7 +11,10 @@ import { isStaffRole, mainRoleOf, roleBadges, rolesSummary } from '../../../util
 import { canMentor, hasRole } from '../../../utils/roles'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { SortableTh } from '../SortableTh'
-import { AssignWeeksForm } from './AssignWeeksForm'
+import { AssignTeamModal } from './AssignTeamModal'
+import { AssignWeeksModal } from './AssignWeeksModal'
+import { NewAccountPasswordModal } from './NewAccountPasswordModal'
+import type { CreatedAccount } from './NewAccountPasswordModal'
 import { ResetPasswordForm } from './ResetPasswordForm'
 import { RolePills } from './RolePills'
 import { RolesForm } from './RolesForm'
@@ -19,7 +22,7 @@ import { StudentForm } from './StudentForm'
 import { Loading } from '../../../components/loading/Loading'
 
 type Show = 'all' | 'only' | 'temporary'
-type Action = { kind: 'add' } | { kind: 'edit' | 'weeks' | 'roles' | 'password' | 'delete'; person: SchoolUser }
+type Action = { kind: 'add' } | { kind: 'edit' | 'weeks' | 'team' | 'roles' | 'password' | 'delete'; person: SchoolUser }
 
 /** The role the account was created with: lecturer, or mentor for a mentor who also lectures. */
 const mainOf = (u: SchoolUser) => {
@@ -41,6 +44,7 @@ export default function AdminLecturersPage() {
   const [show, setShow] = useState<Show>('all')
   const [action, setAction] = useState<Action | null>(null)
   const [message, setMessage] = useState('')
+  const [created, setCreated] = useState<CreatedAccount | null>(null)
 
   const lecturers = useMemo(() => users.filter((u) => hasRole(u, 'lecturer') && !u.leftAt), [users])
   const modulesBy = useMemo(() => {
@@ -95,12 +99,6 @@ export default function AdminLecturersPage() {
     const n = modulesBy.get(id) ?? 0
     return n === 0 ? '—' : `${n} ${n === 1 ? 'module' : 'modules'}`
   }
-  const weekNumbers = (ids: string[]) =>
-    courses.modules
-      .filter((m) => ids.includes(m.id))
-      .map((m) => m.position)
-      .sort((a, b) => a - b)
-      .join(', ')
   const weeksText = (id: number) => {
     const w = weeksOf(id)
     return w.length ? `Week${w.length === 1 ? '' : 's'} ${w.join(', ')}` : 'No weeks yet'
@@ -288,37 +286,31 @@ export default function AdminLecturersPage() {
               setQuery('')
               setShow('all')
               done(`${user.name} added as a lecturer. They can sign in with ${user.email} and the password you set.`)
+              setCreated({ name: user.name, email: user.email, password: input.password })
             }}
           />
         )}
       </Modal>
 
-      <Modal
-        open={action?.kind === 'weeks'}
+      <AssignWeeksModal
+        person={action?.kind === 'weeks' ? target : undefined}
+        modules={courses.modules}
+        nameOf={nameOf}
+        assignLecturer={courses.assignLecturer}
         onClose={close}
-        title={target ? `Weeks of ${target.name}` : ''}
-        initialFocus=".admin-dialog input:not(:disabled)"
-      >
-        {action?.kind === 'weeks' && target && (
-          <AssignWeeksForm
-            lecturerId={target.id}
-            modules={courses.modules}
-            nameOf={nameOf}
-            onCancel={close}
-            onSave={async ({ assign, unassign }) => {
-              for (const id of unassign) await courses.assignLecturer(id, target.id, false)
-              for (const id of assign) await courses.assignLecturer(id, target.id)
-              const parts = [
-                assign.length ? `now teaches ${assign.length === 1 ? 'week' : 'weeks'} ${weekNumbers(assign)}` : '',
-                unassign.length
-                  ? `${assign.length ? 'and ' : ''}is off ${unassign.length === 1 ? 'week' : 'weeks'} ${weekNumbers(unassign)}`
-                  : '',
-              ]
-              done(`${target.name} ${parts.filter(Boolean).join(' ')}.`)
-            }}
-          />
-        )}
-      </Modal>
+        onDone={done}
+      />
+
+      <AssignTeamModal
+        person={action?.kind === 'team' ? target : undefined}
+        teams={teams}
+        nameOf={(id) => nameOf(id)}
+        assign={async (teamId) => {
+          if (target) await editMentor(target.id, { name: target.name, email: target.email, teamId })
+        }}
+        onClose={close}
+        onDone={done}
+      />
 
       <Modal open={action?.kind === 'roles'} onClose={close} title={target ? `Roles of ${target.name}` : ''} initialFocus=".admin-dialog input">
         {action?.kind === 'roles' && target && (
@@ -332,13 +324,19 @@ export default function AdminLecturersPage() {
               await changeRoles(target.id, roles, until)
               const main = mainOf(target)
               if (main === 'mentor' && !extra.on) done(`${target.name} no longer lectures. You will find them under Mentors.`)
-              else if (main === 'lecturer' && extra.on && !teamOf.get(target.id))
+              else if (main === 'lecturer' && extra.on && !teamOf.get(target.id) && teams.length > 0) {
+                // a new mentor has no team: show the teams straight away
+                setMessage(`${target.name}: ${rolesSummary(main, extra)} They have no team yet.`)
+                setAction({ kind: 'team', person: target })
+              } else if (main === 'lecturer' && extra.on && !teamOf.get(target.id))
                 done(`${target.name}: ${rolesSummary(main, extra)} Give them a team on the Mentors page.`)
               else done(`${target.name}: ${rolesSummary(main, extra)}`)
             }}
           />
         )}
       </Modal>
+
+      <NewAccountPasswordModal created={created} onDone={() => setCreated(null)} />
 
       <Modal open={action?.kind === 'password'} onClose={close} title={target ? `Reset ${target.name}’s password` : ''} size="sm" initialFocus=".admin-dialog input">
         {action?.kind === 'password' && target && (

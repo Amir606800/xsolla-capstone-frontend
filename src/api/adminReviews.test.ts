@@ -4,6 +4,9 @@ import { fetchAllReviews, fetchMissingReviews, mapAdminReview } from './adminRev
 import type { AdminReviewDto } from './adminReviews'
 import { saveTokens } from './session'
 
+// the real module: these tests check its HTTP calls (test/setup.ts fakes it for everything else)
+vi.unmock('./adminReviews')
+
 const BASE = 'https://api.test'
 
 const dto = (over: Partial<AdminReviewDto> = {}): AdminReviewDto => ({

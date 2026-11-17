@@ -1,4 +1,4 @@
-import type { TeamPlan } from '../mocks/directory'
+import type { TeamPlan } from '../types/admin'
 
 /** A random number in [0, 1), like Math.random: passed in so tests can fix the "randomness". */
 export type Random = () => number

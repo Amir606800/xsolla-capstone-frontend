@@ -477,6 +477,33 @@
   font-size: var(--fs-label);
 }
 
+/* Late work: handed in after the deadline, or about to be */
+.submission__late {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--text);
+  font-size: var(--fs-label);
+}
+.submission__late svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--danger);
+}
+.submission > .submission__late {
+  margin-top: 12px;
+}
+.late-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* ---------- resources: scroll inside the card, filter, pop-up ---------- */
 .resources__enlarge {
   margin-left: 4px;

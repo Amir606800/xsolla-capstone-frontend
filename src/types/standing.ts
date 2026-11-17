@@ -9,10 +9,24 @@ export type StandingLevel = 'green' | 'yellow' | 'red'
 
 /** The mentor's rating of one week. `week` is the module position (1-12): a module is a week. */
 export interface WeeklyStanding {
+  /** Tasks of this week handed in late: the week is red because of them, and a mentor cannot make it green or yellow. */
+  lateTasks?: string[]
   week: number
   level: StandingLevel
   /** When the mentor shared it (end of the week). */
   assessedAt: string // ISO
   /** Optional comment from the mentor. */
   note?: string
+}
+
+/** A week grade with the student it is for (and who gave it). */
+export interface StoredStanding extends WeeklyStanding {
+  studentId: number
+  gradedBy?: { id: number; name: string }
+}
+
+/** The mentor who grades: who they are, by name. */
+export interface Mentor {
+  id: number
+  name: string
 }

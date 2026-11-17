@@ -13,12 +13,15 @@ import {
   submitWork,
 } from '../api/courses'
 import type { ModulePatch, SubmitPayload } from '../api/courses'
+import { fetchSlots } from '../api/slots'
 import { useAuth } from '../hooks/useAuth'
 import { useLive } from '../hooks/useLive'
 import type { ContentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
+import type { User } from '../types/user'
+import { withoutTaskDeadlines, withStudentDeadlines } from '../utils/deadline'
 import { datesNotKept } from '../utils/moduleDates'
 import { sameData } from '../utils/same'
-import { DEADLINE_PASSED, isModuleLocked, isPastDue } from '../utils/progress'
+import { isModuleLocked } from '../utils/progress'
 import { canAuthor, hasRole, isStudent } from '../utils/roles'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
@@ -47,10 +50,14 @@ function historyAfter(current: Submission | undefined): SubmissionVersion[] | un
   return [{ submittedAt, ...(textBody !== undefined ? { textBody } : {}), ...(files !== undefined ? { files } : {}) }, ...(current.history ?? [])]
 }
 
-/** Students never get quiz answers (the backend must strip them too). */
-function forRole(modules: CourseModule[], student: boolean): CourseModule[] {
-  if (!student) return modules
-  return modules.map((m) =>
+/**
+ * The course as this person sees it. A student gets their own task deadlines (08:00 on the day of their booked 1:1, or
+ * Monday 08:00) and never the quiz answers (the backend must strip them too); staff see tasks without a deadline, since
+ * a task has none of its own.
+ */
+function forRole(modules: CourseModule[], student: boolean, booked: string[] = []): CourseModule[] {
+  if (!student) return withoutTaskDeadlines(modules)
+  return withStudentDeadlines(modules, booked).map((m) =>
     m.items.some((i) => i.type === 'quiz')
       ? {
           ...m,
@@ -62,6 +69,17 @@ function forRole(modules: CourseModule[], student: boolean): CourseModule[] {
         }
       : m,
   )
+}
+
+/** The start times of the 1:1s this student booked (their deadlines follow them). None when they cannot be loaded. */
+async function bookedOneOnOnes(user: User | null, student: boolean): Promise<string[]> {
+  if (!student || !user) return []
+  try {
+    const slots = await fetchSlots({ id: user.id, name: user.name, roles: user.roles })
+    return slots.filter((s) => s.bookedBy?.id === user.id).map((s) => s.startsAt)
+  } catch {
+    return []
+  }
 }
 
 /**
@@ -76,13 +94,22 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const [modules, setModules] = useState<CourseModule[]>([])
   const [now, setNow] = useState(() => new Date())
   const [attempt, setAttempt] = useState(0)
+  // the course with the student's 1:1s, which their deadlines follow
+  const userRef = useRef(user)
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
+  const load = useCallback(
+    () => Promise.all([fetchModules({ student, userId: user?.id }), bookedOneOnOnes(userRef.current, student)]).then(([data, booked]) => forRole(data, student, booked)),
+    [student, user?.id],
+  )
 
   useEffect(() => {
     let cancelled = false
-    fetchModules({ student, userId: user?.id })
+    load()
       .then((data) => {
         if (cancelled) return
-        setModules(forRole(data, student))
+        setModules(data)
         setNow(new Date())
         setStatus('ready')
       })
@@ -92,7 +119,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [attempt, student, user?.id])
+  }, [attempt, load])
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -109,18 +136,18 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   }, [modules])
   const refresh = useCallback(() => {
     const started = version.current
-    fetchModules({ student, userId: user?.id }).then(
-      (data) => {
+    load().then(
+      (next) => {
         if (version.current !== started) return
-        const next = forRole(data, student)
         if (sameData(shown.current, next)) return
         setModules(next)
         setNow(new Date())
       },
       () => undefined,
     )
-  }, [student, user?.id])
-  useLive(['courses', 'directory'], refresh, { enabled: status === 'ready' })
+  }, [load])
+  // a 1:1 booked, moved or cancelled moves the student's deadlines
+  useLive(['courses', 'directory', 'slots'], refresh, { enabled: status === 'ready' })
 
   const hasGeneratingQuiz = useMemo(
     () => modules.some((m) => m.items.some((i) => i.type === 'quiz' && i.status === 'generating')),
@@ -131,10 +158,10 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     if (!hasGeneratingQuiz) return
     let active = true
     const timer = setInterval(() => {
-      fetchModules({ student, userId: user?.id })
+      load()
         .then((data) => {
           if (!active) return
-          setModules(forRole(data, student))
+          setModules(data)
           setNow(new Date())
         })
         .catch(() => {})
@@ -143,7 +170,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       active = false
       clearInterval(timer)
     }
-  }, [hasGeneratingQuiz, student, user?.id])
+  }, [hasGeneratingQuiz, load])
 
   const submitAssignment = useCallback(
     async (assignmentId: string, payload: SubmitPayload) => {
@@ -157,13 +184,12 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       if (target?.type === 'assignment' && target.submission?.gradedAt !== undefined) {
         throw new Error('This task has already been graded')
       }
-      // Work is handed in until the deadline or the module's closing date; after it the task is only for reading. The backend must refuse it too.
-      if (student && target?.type === 'assignment' && isPastDue(target, new Date(), owner?.closesAt)) {
-        throw new Error(DEADLINE_PASSED)
-      }
+      // Handing in stays open after the deadline (and after the module closes): late work is accepted, marked as a late
+      // submission, and the server turns the week grade red.
       const result = await submitWork(assignmentId, payload, { studentId: user?.id, moduleId: owner?.id })
       version.current += 1
-      setModules((prev) => withSubmission(prev, assignmentId, result))
+      // the deadlines are kept, so whether this hand-in was late is worked out at once (unless the server said)
+      setModules((prev) => withStudentDeadlines(withSubmission(prev, assignmentId, { ...result, late: result.late }), []))
       setNow(new Date())
     },
     [modules, student, user?.id],
@@ -175,7 +201,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       if (!mayAuthor) throw new Error('Only lecturers can change the course')
       const next = await run()
       version.current += 1
-      setModules(forRole(next, student))
+      setModules(forRole(next, student, await bookedOneOnOnes(userRef.current, student)))
       setNow(new Date())
     },
     [mayAuthor, student],
@@ -227,7 +253,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     async (quizId: string, answers: number[]) => {
       const next = await apiSubmitQuizAttempt(quizId, answers, { studentId: user?.id })
       version.current += 1
-      setModules(forRole(next, student))
+      setModules(forRole(next, student, await bookedOneOnOnes(userRef.current, student)))
       setNow(new Date())
     },
     [student, user?.id],

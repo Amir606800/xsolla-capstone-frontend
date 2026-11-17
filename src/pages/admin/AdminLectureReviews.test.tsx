@@ -7,11 +7,7 @@ import { clearFilters, filterOptions, pickFilter } from '../../test/filters'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import type { AdminLectureReview } from '../../types/lectureReview'
 
-// the real list (the demo reviews) is the default; a test says what the server sends when it needs exact rows
-vi.mock('../../api/adminLectureReviews', async (importActual) => {
-  const actual = await importActual<typeof import('../../api/adminLectureReviews')>()
-  return { ...actual, fetchLectureReviews: vi.fn(actual.fetchLectureReviews) }
-})
+// the setup fakes this module with vi.fn functions over the fixture school
 const serverSends = (rows: AdminLectureReview[] | null) => vi.mocked(fetchLectureReviews).mockResolvedValue(rows)
 
 // Wed 4 Nov 2026: the demo's lectures of 19 Oct, 26 Oct and 2 Nov are over
@@ -46,70 +42,54 @@ const open = () => renderWithProviders(<App />, { route: '/admin/lecture-reviews
 const listEl = () => screen.findByRole('list', { name: 'Reviews' })
 // only the cards: a card has lists of its own
 const cards = async () => Array.from((await listEl()).children) as HTMLElement[]
-const summary = async () => within(await screen.findByRole('list', { name: 'Summary' }))
 
 describe('Admin: lecture reviews', () => {
-  it('is in the sidebar under Feedback and shows the demo reviews, grouped by lecturer, with no server', async () => {
+  it('is in the sidebar under Feedback and shows the demo reviews with no server', async () => {
     const user = userEvent.setup()
     renderWithProviders(<App />, { route: '/admin' })
     const nav = await screen.findByRole('navigation', { name: 'Admin sections' })
     await user.click(within(nav).getByRole('link', { name: 'Lecture reviews' }))
     expect(await screen.findByRole('heading', { name: 'Lecture reviews', level: 1 })).toBeInTheDocument()
     expect(within(nav).getByRole('group', { name: 'Feedback' })).toContainElement(within(nav).getByRole('link', { name: 'Lecture reviews' }))
-    const table = await screen.findByRole('table', { name: 'Lecture reviews by lecturer' })
-    expect(within(table).getAllByRole('row').length).toBeGreaterThan(1)
     expect(await cards()).toHaveLength(20)
     expect(screen.getByRole('button', { name: /Show more/ })).toBeInTheDocument()
   })
 
-  it('totals: reviews and lectures, average rating, pace just right, low scores', async () => {
-    serverSends([
-      review({ overall: 5, pace: 'just_right' }),
-      review({ overall: 4, pace: 'just_right', eventId: '42' }),
-      review({ overall: 1, pace: 'too_fast', improve: 'Too much at once' }),
-      review({ overall: 4, pace: 'too_slow' }),
-    ])
+  it('has no averages, totals or tables: those are on the Analytics pages', async () => {
+    serverSends([review({ overall: 5 }), review({ overall: 1, improve: 'Too much at once' })])
     open()
-    const s = await summary()
-    expect(s.getByText('Reviews').closest('.admin-tile')).toHaveTextContent('42 lectures')
-    expect(s.getByText('Average rating').closest('.admin-tile')).toHaveTextContent('3.5 / 5')
-    expect(s.getByText('Pace just right').closest('.admin-tile')).toHaveTextContent('50%2 of 4 reviews')
-    expect(s.getByText('Low scores').closest('.admin-tile')).toHaveTextContent('1Overall 2 or less')
+    await cards()
+    expect(screen.queryByRole('list', { name: 'Summary' })).toBeNull()
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.queryByText(/Average rating/)).toBeNull()
+    expect(screen.queryByText(/Pace just right/)).toBeNull()
+    expect(screen.queryByText('How was the pace?')).toBeNull()
   })
 
-  it('groups by lecturer: a table that compares them, and a click shows only that lecturer’s lectures', async () => {
+  it('filters by lecturer, also for a lecture taught by two, and finds the lectures with no lecturer', async () => {
     serverSends([
-      review({ lecturers: [{ id: 902, name: 'Elvin Huseynov' }], overall: 5, title: 'Goroutines' }),
-      review({ lecturers: [{ id: 902, name: 'Elvin Huseynov' }], overall: 4, title: 'Goroutines' }),
-      review({ lecturers: [{ id: 900, name: 'Rashad Aliyev' }], overall: 2, title: 'Channels', eventId: '42' }),
-      review({ lecturers: [], overall: 3, title: 'Intro', eventId: '50' }),
+      review({ lecturers: [{ id: 902, name: 'Elvin Huseynov' }], title: 'Goroutines' }),
+      review({ lecturers: [{ id: 902, name: 'Elvin Huseynov' }], title: 'Goroutines' }),
+      review({ lecturers: [{ id: 902, name: 'Elvin Huseynov' }, { id: 900, name: 'Rashad Aliyev' }], title: 'Channels', eventId: '42' }),
+      review({ lecturers: [], title: 'Intro', eventId: '50' }),
     ])
     const user = userEvent.setup()
     open()
-    const table = within(await screen.findByRole('table', { name: 'Lecture reviews by lecturer' }))
-    // lowest rated first; the lectures with no lecturer are a group of their own
-    const rows = table.getAllByRole('row').slice(1)
-    expect(rows.map((r) => within(r).getByRole('button').textContent)).toEqual(['Rashad Aliyev', 'No lecturer assigned', 'Elvin Huseynov'])
-    expect(rows[2]).toHaveTextContent('4.5')
+    await cards()
+    expect((await filterOptions(user, 'Lecturer')).slice(1)).toEqual(['Elvin Huseynov', 'Rashad Aliyev', 'No lecturer assigned'])
 
-    await user.click(within(rows[2]).getByRole('button', { name: 'Elvin Huseynov' }))
-    expect(await cards()).toHaveLength(2)
+    await pickFilter(user, 'Lecturer', 'Elvin Huseynov')
+    expect(await cards()).toHaveLength(3)
     expect(screen.getByRole('list', { name: 'Active filters' })).toHaveTextContent('Lecturer: Elvin Huseynov')
-    // the table still compares everyone
-    expect(table.getAllByRole('row')).toHaveLength(4)
 
-    await user.click(within(table.getAllByRole('row')[2]).getByRole('button'))
-    expect((await cards()).every((c) => /Intro|Channels/.test(c.textContent ?? ''))).toBe(true)
+    await pickFilter(user, 'Lecturer', 'Rashad Aliyev')
+    expect(await cards()).toHaveLength(1)
+
+    await pickFilter(user, 'Lecturer', 'No lecturer assigned')
+    expect((await cards())[0]).toHaveTextContent('Intro')
 
     await clearFilters(user)
     expect(await cards()).toHaveLength(4)
-  })
-
-  it('a lecture taught by two lecturers is in both groups', async () => {
-    serverSends([review({ lecturers: [{ id: 902, name: 'Elvin Huseynov' }, { id: 900, name: 'Rashad Aliyev' }] })])
-    open()
-    const table = within(await screen.findByRole('table', { name: 'Lecture reviews by lecturer' }))
-    expect(table.getAllByRole('row')).toHaveLength(3)
   })
 
   it('filters by lecture and by kind; the buttons count', async () => {

@@ -52,12 +52,3 @@ describe('with the backend', () => {
   })
 })
 
-describe('offline demo', () => {
-  it('saves a small text file that says it is a demo, without calling any server', async () => {
-    const sent = vi.fn()
-    await stubHttp(sent)
-    await downloadFile({ name: 'Go Basics - lecture slides' })
-    expect(sent).not.toHaveBeenCalled()
-    expect(clicked[0].download).toBe('Go Basics - lecture slides-demo.txt')
-  })
-})

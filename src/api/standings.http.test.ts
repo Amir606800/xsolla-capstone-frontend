@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubHttp } from '../test/stubHttp'
 import { saveTokens } from './session'
-import { fetchStandings, fetchTeamStandings, saveWeekGrade } from './standings.http'
+import { fetchEveryGrade, fetchStandings, fetchTeamStandings, saveWeekGrade } from './standings.http'
 
 const BASE = 'https://api.test'
 type Call = { method: string; path: string; body?: unknown }
@@ -42,6 +42,7 @@ async function backend({ teamStatus = 200, forbidWeek, keepsFeedback = false }: 
             module_id: Number(list[1]),
             user_id: u,
             grade: grades[`${list[1]}:${u}`] ?? null,
+            ...(keepsFeedback ? { graded_by: 55 } : {}),
             ...(keepsFeedback && notes[`${list[1]}:${u}`] ? { feedback: notes[`${list[1]}:${u}`], graded_at: '2026-11-10T09:30:00Z' } : {}),
             created_at: '2026-11-01T00:00:00Z',
           })),
@@ -118,6 +119,32 @@ describe('weekly grades on the real backend (enrollment grades)', () => {
     await backend({ keepsFeedback: true })
     notes['5:2'] = 'Good start'
     expect((await fetchStandings(2)).find((r) => r.week === 1)?.note).toBe('Good start')
+  })
+
+  it('the admin reads every student of every week, with the week they belong to', async () => {
+    await backend({ keepsFeedback: true })
+    notes['5:9'] = 'Fine'
+    const rows = (await fetchEveryGrade()) ?? []
+    // every graded enrollment of both weeks, whatever the team (unknown grade values are dropped)
+    expect(rows.map((r) => [r.week, r.moduleId, r.studentId, r.level]).sort()).toEqual([
+      [1, '5', 2, 'green'],
+      [1, '5', 4, 'yellow'],
+      [1, '5', 9, 'green'],
+      [2, '7', 2, 'red'],
+    ])
+    expect(rows.find((r) => r.studentId === 9)).toMatchObject({ moduleTitle: 'Week A', note: 'Fine', gradedById: 55 })
+  })
+
+  it('the admin list leaves out a week the server refuses, and says "unavailable" (null) when it refuses them all', async () => {
+    await backend({ forbidWeek: '7' })
+    expect((await fetchEveryGrade())?.every((r) => r.week === 1)).toBe(true)
+
+    await stubHttp(async (url: string) =>
+      url.endsWith('/modules')
+        ? new Response(JSON.stringify([{ id: 5, title: 'Week A', created_by: 1, created_at: '2026-11-01T00:00:00Z' }]), { status: 200 })
+        : new Response(JSON.stringify({ error: 'forbidden', message: 'no' }), { status: 403 }),
+    )
+    expect(await fetchEveryGrade()).toBeNull()
   })
 
   it('a student who is not enrolled in the week gets a plain answer', async () => {

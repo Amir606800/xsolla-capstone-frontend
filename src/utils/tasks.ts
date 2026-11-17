@@ -1,4 +1,5 @@
 import type { AssignmentItem, CourseModule } from '../types/course'
+import { byDue } from './deadline'
 import { assignmentStatus, assignmentsOf } from './progress'
 import type { AssignmentStatus } from './progress'
 
@@ -54,8 +55,8 @@ export function sortTasks(entries: TaskEntry[]): TaskEntry[] {
   return [...entries].sort((a, b) => {
     const byPriority = PRIORITY[a.status] - PRIORITY[b.status]
     if (byPriority !== 0) return byPriority
-    const byDue = a.assignment.dueAt.localeCompare(b.assignment.dueAt)
-    return PRIORITY[a.status] <= 1 ? byDue : -byDue
+    const soonest = byDue(a.assignment, b.assignment)
+    return PRIORITY[a.status] <= 1 ? soonest : -soonest
   })
 }
 

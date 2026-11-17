@@ -3,7 +3,7 @@ import { parseStandingLevel } from '../utils/standing'
 import { authedRequest } from './authed'
 import { ApiError } from './http'
 import { mapModules } from './mappers'
-import type { StoredStanding } from '../mocks/standings'
+import type { StoredStanding } from '../types/standing'
 import type { ApiModule } from './types'
 
 /**
@@ -25,12 +25,23 @@ interface EnrollmentDto {
   /** The mentor's module feedback; absent until the server keeps it. */
   feedback?: string | null
   graded_at?: string | null
+  /** The user id of whoever gave the grade (a mentor or an admin). */
+  graded_by?: number | string | null
+  /** Proposed (backend_requirements/BACKEND_REQ_ONE_ON_ONE_DEADLINES.md): the week's tasks handed in late, which made the grade red. */
+  late_submissions?: { content_item_id: number | string; title: string; submitted_at?: string; due_at?: string }[] | null
   created_at: string
+}
+
+/** The titles of the week's late hand-ins, when the server lists them. */
+const lateOf = (e: EnrollmentDto) => {
+  const titles = (e.late_submissions ?? []).map((l) => l.title).filter(Boolean)
+  return titles.length ? { lateTasks: titles } : {}
 }
 
 interface Week {
   moduleId: string
   week: number
+  title: string
   /** Shown as "graded on": the server does not record when. */
   date: string
 }
@@ -38,7 +49,7 @@ interface Week {
 /** The weeks in the same order (and so with the same numbers) as the course pages. */
 async function weeks(): Promise<Week[]> {
   const rows = (await authedRequest<ApiModule[] | null>('/modules')) ?? []
-  return mapModules(rows, {}).map((m) => ({ moduleId: m.id, week: m.position, date: m.closesAt ?? m.createdAt ?? new Date().toISOString() }))
+  return mapModules(rows, {}).map((m) => ({ moduleId: m.id, week: m.position, title: m.title, date: m.closesAt ?? m.createdAt ?? new Date().toISOString() }))
 }
 
 /** A week whose enrollments the caller may not read (403) counts as "no grades yet". */
@@ -62,7 +73,7 @@ async function gradesOf(studentIds: Set<number>): Promise<StoredStanding[]> {
       const studentId = Number(e.user_id)
       if (level && studentIds.has(studentId)) {
         const note = e.feedback?.trim()
-        out.push({ week: w.week, level, assessedAt: e.graded_at || w.date, studentId, ...(note ? { note } : {}) })
+        out.push({ week: w.week, level, assessedAt: e.graded_at || w.date, studentId, ...(note ? { note } : {}), ...lateOf(e) })
       }
     }
   })
@@ -71,12 +82,63 @@ async function gradesOf(studentIds: Set<number>): Promise<StoredStanding[]> {
 
 /** The signed-in student's own grades. */
 export async function fetchStandings(studentId: number): Promise<WeeklyStanding[]> {
-  return (await gradesOf(new Set([studentId]))).map(({ week, level, assessedAt, note }) => ({
+  return (await gradesOf(new Set([studentId]))).map(({ week, level, assessedAt, note, lateTasks }) => ({
     week,
     level,
     assessedAt,
     ...(note ? { note } : {}),
+    ...(lateTasks ? { lateTasks } : {}),
   }))
+}
+
+/** A grade with the week it is for: what the admin's Student reviews page lists. */
+export interface WeekGrade extends StoredStanding {
+  moduleId: string
+  moduleTitle: string
+  /** Whoever gave the grade; the page puts a name to the id. */
+  gradedById?: number
+}
+
+/**
+ * Every grade of every student, week by week (admin). `null` when the server lets this person read none of the weeks'
+ * enrollments (so the page can say so instead of showing an empty list); a single week that is refused counts as ungraded.
+ */
+export async function fetchEveryGrade(): Promise<WeekGrade[] | null> {
+  const list = await weeks()
+  let refused = 0
+  const rows = await Promise.all(
+    list.map(async (w) => {
+      try {
+        return (await authedRequest<EnrollmentDto[] | null>(`/modules/${w.moduleId}/enrollments`)) ?? []
+      } catch (e) {
+        if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
+          refused += 1
+          return []
+        }
+        throw e
+      }
+    }),
+  )
+  if (list.length > 0 && refused === list.length) return null
+  const out: WeekGrade[] = []
+  list.forEach((w, i) => {
+    for (const e of rows[i]) {
+      const level = parseStandingLevel(e.grade)
+      if (!level) continue
+      const note = e.feedback?.trim()
+      out.push({
+        week: w.week,
+        moduleId: w.moduleId,
+        moduleTitle: w.title,
+        level,
+        assessedAt: e.graded_at || w.date,
+        studentId: Number(e.user_id),
+        ...(note ? { note } : {}),
+        ...(e.graded_by ? { gradedById: Number(e.graded_by) } : {}),
+      })
+    }
+  })
+  return out
 }
 
 /** The mentor's team: GET /mentors/me/team (404 = no team, so no grades). */

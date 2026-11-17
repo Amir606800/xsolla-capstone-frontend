@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { buildTeams, changeTeamMentor, createStaff, createStudent, createTeam, deleteAccount, fetchTeams, fetchUsers, moveStudent, removeAllTeams, removeTeam, resetPassword, setStudentLeft, setUserRoles, updateMentor, updateStudent } from '../api/directory'
 import type { MentorChanges, NewMentor, NewStudent, StudentChanges } from '../api/directory'
-import type { NewTeam, TeamPlan } from '../mocks/directory'
+import type { NewTeam, TeamPlan } from '../types/admin'
 import type { Role } from '../types/user'
 import type { LoadStatus } from '../context/courses'
 import type { SchoolTeam, SchoolUser } from '../types/admin'
