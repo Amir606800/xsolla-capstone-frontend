@@ -15,6 +15,17 @@ function atLocal(date: string, minutes: number): Date {
   return new Date(y, mo - 1, d, 0, minutes)
 }
 
+/** Converts a local availability window to the timezone-bearing instants expected by the API. */
+export function availabilityInstants({ date, start, end }: AvailabilityWindow): { startsAt: string; endsAt: string } {
+  const from = toMinutes(start)
+  const to = toMinutes(end)
+  if (from === null || to === null) throw new Error('Invalid availability window')
+  return {
+    startsAt: atLocal(date, from).toISOString(),
+    endsAt: atLocal(date, to).toISOString(),
+  }
+}
+
 export interface SlotTime {
   startsAt: string
   endsAt: string

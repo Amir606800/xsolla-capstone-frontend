@@ -4,6 +4,7 @@ import {
   myNextBooking,
   overlaps,
   previewText,
+  availabilityInstants,
   slotEvents,
   slotLabel,
   slotsOnDay,
@@ -30,6 +31,13 @@ describe('toMinutes', () => {
 })
 
 describe('splitWindow: cuts a window into 30-minute slots', () => {
+  it('converts the selected local window to timezone-bearing instants', () => {
+    expect(availabilityInstants({ date: day, start: '15:00', end: '18:00' })).toEqual({
+      startsAt: new Date(2026, 10, 5, 15, 0).toISOString(),
+      endsAt: new Date(2026, 10, 5, 18, 0).toISOString(),
+    })
+  })
+
   it('15:00-18:00 gives six slots, 15:00-15:30 ... 17:30-18:00', () => {
     expect(labels({ date: day, start: '15:00', end: '18:00' })).toEqual([
       '15:00 - 15:30',

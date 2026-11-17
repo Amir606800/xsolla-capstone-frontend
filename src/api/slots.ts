@@ -2,11 +2,12 @@ import type { Actor, AvailabilityWindow, MeetingSlot } from '../types/slots'
 import { authedRequest } from './authed'
 import { attendeesField } from './mappers'
 import type { ApiAttendee } from './types'
+import { availabilityInstants } from '../utils/slots'
 
 /**
  * 1:1 slot calls to the backend (internal/handlers/mentor_slot.go).
  *   GET    /mentor-slots                    all callers: their visible slots
- *   POST   /mentor-slots {date,start,end}   mentor: cuts a window into 30-minute slots
+ *   POST   /mentor-slots {starts_at,ends_at} mentor: cuts a window into 30-minute slots
  *   DELETE /mentor-slots/:id                mentor: removes a FREE slot
  *   POST   /mentor-slots/:id/book           student: locks the slot (409 when taken or already booked)
  *   DELETE /mentor-slots/:id/book           student/mentor: cancels a booking
@@ -49,10 +50,11 @@ export async function fetchSlots(actor: Actor): Promise<MeetingSlot[]> {
 
 export async function createAvailability(actor: Actor, window: AvailabilityWindow): Promise<MeetingSlot[]> {
   void actor
+  const { startsAt, endsAt } = availabilityInstants(window)
   return list(
     await authedRequest<MentorSlotResponse[] | null>('/mentor-slots', {
       method: 'POST',
-      body: { date: window.date, start: window.start, end: window.end },
+      body: { starts_at: startsAt, ends_at: endsAt },
     }),
   )
 }
