@@ -1,8 +1,11 @@
 // Formatters are created once; Intl construction is comparatively expensive.
-const monthFmt = new Intl.DateTimeFormat('en', { month: 'short' })
-const fullFmt = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
+// Every moment is shown in school time (Baku), like the emails and notifications: see utils/schoolTime.ts
+const timeZone = 'Asia/Baku'
+const monthFmt = new Intl.DateTimeFormat('en', { month: 'short', timeZone })
+const fullFmt = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone })
 
 const dateTimeFmt = new Intl.DateTimeFormat('en', {
+  timeZone,
   month: 'short',
   day: 'numeric',
   hour: '2-digit',
@@ -10,7 +13,7 @@ const dateTimeFmt = new Intl.DateTimeFormat('en', {
   hourCycle: 'h23',
 })
 
-const clockFmt = new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+const clockFmt = new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone })
 
 /** "18:00" */
 export function formatClockTime(iso: string): string {

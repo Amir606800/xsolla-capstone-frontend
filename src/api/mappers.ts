@@ -2,6 +2,7 @@ import type { Attendee, CalendarEvent, EventKind } from '../types/calendar'
 import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission, SubmissionVersion } from '../types/course'
 import type { WeeklyStanding } from '../types/standing'
 import { orderByOpening } from '../utils/progress'
+import { schoolDate } from '../utils/schoolTime'
 import { parseStandingLevel } from '../utils/standing'
 import type { ApiAttendee, ApiContentItem, ApiEvent, ApiGoogleCalendarEvent, ApiModule, ApiQuiz, ApiSubmission, ApiWeeklyStanding } from './types'
 
@@ -266,10 +267,10 @@ export function attendeesField(list: ApiAttendee[] | null | undefined): { attend
   return attendees.length ? { attendees } : {}
 }
 
-/** A local date `YYYY-MM-DD` at the given time. Never `new Date('YYYY-MM-DD')`: that is UTC and can land on the day before. */
+/** A school-time (Baku) date `YYYY-MM-DD` at the start or end of the day. Never `new Date('YYYY-MM-DD')`: that is UTC and can land on the day before. */
 function localDay(day: string, end: boolean): string {
   const [y, m, d] = day.slice(0, 10).split('-').map(Number)
-  return (end ? new Date(y, m - 1, d, 23, 59, 59, 999) : new Date(y, m - 1, d)).toISOString()
+  return (end ? schoolDate(y, m - 1, d, 23, 59, 59, 999) : schoolDate(y, m - 1, d)).toISOString()
 }
 
 /**

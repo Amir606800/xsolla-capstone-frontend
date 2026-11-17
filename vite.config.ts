@@ -2,6 +2,9 @@ import react from '@vitejs/plugin-react'
 import { loadEnv } from 'vite'
 import { configDefaults, defineConfig } from 'vitest/config'
 
+// The app shows and reads every time in school time (Baku, see src/utils/schoolTime.ts), so the tests run in it wherever they are run.
+process.env.TZ = 'Asia/Baku'
+
 // Let the app be opened through an ngrok tunnel (Vite blocks unknown host names by default).
 const tunnelHosts = ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app', '.ngrok.io']
 

@@ -1,5 +1,6 @@
 import type { Role, User } from '../types/user'
 import { formatShortDate } from './date'
+import { schoolDate } from './schoolTime'
 
 const DAY = 86_400_000
 const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
@@ -82,11 +83,11 @@ export function rolesSummary(main: StaffRole, extra: { on: false } | { on: true;
   return `${first}, and ${other}${extra.until ? ` until ${formatShortDate(extra.until)}` : ''}.`
 }
 
-/** The end of the given local day ("yyyy-mm-dd"), as ISO: a role "until Dec 1" lasts all of Dec 1. */
+/** The end of the given school day ("yyyy-mm-dd"), as ISO: a role "until Dec 1" lasts all of Dec 1. */
 export function endOfDay(date: string): string | null {
   const [y, m, d] = date.split('-').map(Number)
   if (!y || !m || !d) return null
-  return new Date(y, m - 1, d, 23, 59, 59).toISOString()
+  return schoolDate(y, m - 1, d, 23, 59, 59).toISOString()
 }
 
 /** "yyyy-mm-dd" for the local day `days` after `now`. */

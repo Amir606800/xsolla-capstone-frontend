@@ -1,4 +1,5 @@
 import type { AssignmentItem, ContentItem, CourseModule, QuizItem, QuizQuestion, ResourceItem } from '../types/course'
+import { schoolClock, schoolDate, schoolDayNumber } from './schoolTime'
 
 /**
  * A module template: the modules of a course as a file, so the next group gets them without typing everything again.
@@ -39,9 +40,9 @@ export interface ModuleTemplate {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
-const timeOf = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
-/** Calendar days between two moments by their LOCAL dates (a clock change never makes a day 23 or 25 hours). */
-const dayNumber = (d: Date) => Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000)
+const timeOf = schoolClock
+/** Calendar days between two moments by their school (Baku) dates. */
+const dayNumber = schoolDayNumber
 
 function whenOf(iso: string, base: Date): When {
   const d = new Date(iso)
@@ -153,11 +154,11 @@ const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3))
 
 // ---------- turning a template into new modules ----------
 
-/** A moment `when` after the day week 1 starts (`start` = "yyyy-mm-dd", local), as an ISO string. */
+/** A moment `when` after the day week 1 starts (`start` = "yyyy-mm-dd", school time), as an ISO string. */
 export function resolveWhen(when: When, start: string): string {
   const [y, m, d] = start.split('-').map(Number)
   const [hh, mm] = when.time.split(':').map(Number)
-  return new Date(y, m - 1, d + when.day, hh, mm).toISOString()
+  return schoolDate(y, m - 1, d + when.day, hh, mm).toISOString()
 }
 
 export interface PlannedModule {

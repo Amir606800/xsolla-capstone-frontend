@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '../types/calendar'
 import { type AvailabilityWindow, type MeetingSlot, SLOT_MINUTES } from '../types/slots'
 import { dateKey, formatClock } from './calendar'
+import { schoolDate } from './schoolTime'
 
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/
 
@@ -10,12 +11,13 @@ export function toMinutes(time: string): number | null {
   return m ? Number(m[1]) * 60 + Number(m[2]) : null
 }
 
+/** The moment of `minutes` after midnight of a school-time day ("YYYY-MM-DD"). */
 function atLocal(date: string, minutes: number): Date {
   const [y, mo, d] = date.split('-').map(Number)
-  return new Date(y, mo - 1, d, 0, minutes)
+  return schoolDate(y, mo - 1, d, 0, minutes)
 }
 
-/** Converts a local availability window to the timezone-bearing instants expected by the API. */
+/** Converts an availability window (school time, Baku) to the timezone-bearing instants expected by the API. */
 export function availabilityInstants({ date, start, end }: AvailabilityWindow): { startsAt: string; endsAt: string } {
   const from = toMinutes(start)
   const to = toMinutes(end)

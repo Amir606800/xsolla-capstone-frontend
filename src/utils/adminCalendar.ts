@@ -1,5 +1,6 @@
 import type { CalendarEvent, EventKind } from '../types/calendar'
 import { dateKey } from './calendar'
+import { schoolClock, schoolDate, schoolDateKey, schoolParts } from './schoolTime'
 
 /** The events the admin manages: not task deadlines and not 1:1 times. */
 export const SCHOOL_KINDS = ['lecture', 'meeting', 'off-campus'] as const satisfies readonly EventKind[]
@@ -77,14 +78,13 @@ export function rangeLabel(r: DayRange): string {
   return `${fmt.format(from)} – ${fmt.format(to)}`
 }
 
-const pad = (n: number) => String(n).padStart(2, '0')
-
-/** A local "yyyy-mm-dd" + "hh:mm" -> ISO, or null when either is missing or invalid. */
+/** A school-time "yyyy-mm-dd" + "hh:mm" -> ISO, or null when either is missing or invalid. */
 function localIso(date: string, time: string): string | null {
   const [y, m, d] = date.split('-').map(Number)
   const [h, min] = time.split(':').map(Number)
-  if (!y || !m || !d || Number.isNaN(h) || Number.isNaN(min)) return null
-  const out = new Date(y, m - 1, d, h, min)
+  // (a missing minute would silently become 0 in schoolDate)
+  if (!y || !m || !d || h === undefined || min === undefined || Number.isNaN(h) || Number.isNaN(min)) return null
+  const out = schoolDate(y, m - 1, d, h, min)
   return Number.isNaN(out.getTime()) ? null : out.toISOString()
 }
 
@@ -98,7 +98,7 @@ export function postpone(e: CalendarEvent, date: string, time: string): Calendar
 
 /** Date and time inputs ("yyyy-mm-dd", "hh:mm") for an event's start, moved by `days`. */
 export function startInputs(e: CalendarEvent, days = 0): { date: string; time: string } {
-  const d = new Date(e.startsAt)
-  d.setDate(d.getDate() + days)
-  return { date: dateKey(d), time: `${pad(d.getHours())}:${pad(d.getMinutes())}` }
+  const p = schoolParts(new Date(e.startsAt))
+  const moved = schoolDate(p.year, p.month, p.day + days, p.hour, p.minute)
+  return { date: schoolDateKey(moved), time: schoolClock(moved) }
 }

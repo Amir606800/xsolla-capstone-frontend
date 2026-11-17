@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '../types/calendar'
 import type { AssignmentItem, CourseModule, QuizItem, QuizQuestion, ResourceItem } from '../types/course'
 import { canHaveMeeting, meetingUrlError } from './meeting'
+import { schoolClock, schoolDate, schoolDateKey, schoolParts } from './schoolTime'
 
 /**
  * Lecturer forms: drafts (what the inputs hold), validation and turning a draft into the item
@@ -10,29 +11,24 @@ import { canHaveMeeting, meetingUrlError } from './meeting'
 export type Errors<K extends string> = Partial<Record<K, string>>
 export const hasErrors = (e: Errors<string>) => Object.values(e).some(Boolean)
 
-const pad = (n: number) => String(n).padStart(2, '0')
 
-/** ISO -> "YYYY-MM-DD" in local time, for <input type="date">. */
+/** ISO -> "YYYY-MM-DD" in school time, for <input type="date">. */
 export function toDateInput(iso: string | undefined): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return iso ? schoolDateKey(new Date(iso)) : ''
 }
 
-/** ISO -> "HH:MM" in local time, for <input type="time">. */
+/** ISO -> "HH:MM" in school time, for <input type="time">. */
 export function toTimeInput(iso: string | undefined): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return iso ? schoolClock(new Date(iso)) : ''
 }
 
-/** Local "YYYY-MM-DD" + "HH:MM" -> ISO, or null when either is missing or invalid. */
+/** School-time "YYYY-MM-DD" + "HH:MM" -> ISO, or null when either is missing or invalid. */
 export function fromInputs(date: string, time: string): string | null {
   const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
   const tm = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time)
   if (!dm || !tm) return null
-  const d = new Date(Number(dm[1]), Number(dm[2]) - 1, Number(dm[3]), Number(tm[1]), Number(tm[2]))
-  if (d.getMonth() !== Number(dm[2]) - 1) return null // e.g. 31 February
+  const d = schoolDate(Number(dm[1]), Number(dm[2]) - 1, Number(dm[3]), Number(tm[1]), Number(tm[2]))
+  if (schoolParts(d).month !== Number(dm[2]) - 1) return null // e.g. 31 February
   return d.toISOString()
 }
 
