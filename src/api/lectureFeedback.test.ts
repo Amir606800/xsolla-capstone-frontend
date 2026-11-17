@@ -49,6 +49,28 @@ describe('the form', () => {
     await backend({
       'GET /lecture-feedback/form': {
         status: 200,
+        body: {
+          questions: [
+            { id: 'overall', type: 'scale', label: 'Overall?', required: true, min_label: 'Bad', max_label: 'Good' },
+            { id: 'pace', type: 'choice', label: 'Pace?', required: true, options: [{ value: 'too_slow', label: 'Too slow' }] },
+            { id: 'liked', type: 'text', label: 'Liked?', required: false, max_length: 500 },
+          ],
+          opens_minutes_before_end: 10,
+          open_days_after_end: 7,
+        },
+      },
+    })
+    expect(await fetchLectureForm()).toEqual([
+      { id: 'overall', type: 'scale', label: 'Overall?', required: true, minLabel: 'Bad', maxLabel: 'Good' },
+      { id: 'pace', type: 'choice', label: 'Pace?', required: true, options: [{ value: 'too_slow', label: 'Too slow' }] },
+      { id: 'liked', type: 'text', label: 'Liked?', required: false, maxLength: 500 },
+    ])
+  })
+
+  it('also reads a plain list of questions', async () => {
+    await backend({
+      'GET /lecture-feedback/form': {
+        status: 200,
         body: [
           { id: 'overall', type: 'scale', label: 'Overall?', required: true, min_label: 'Bad', max_label: 'Good' },
           { id: 'pace', type: 'choice', label: 'Pace?', required: true, options: [{ value: 'too_slow', label: 'Too slow' }] },
@@ -65,6 +87,11 @@ describe('the form', () => {
 
   it('falls back to the built-in copy when the server cannot send it', async () => {
     await backend({})
+    expect(await fetchLectureForm()).toEqual(LECTURE_FORM)
+  })
+
+  it('falls back to the built-in copy when the server sends no questions', async () => {
+    await backend({ 'GET /lecture-feedback/form': { status: 200, body: { questions: [] } } })
     expect(await fetchLectureForm()).toEqual(LECTURE_FORM)
   })
 
