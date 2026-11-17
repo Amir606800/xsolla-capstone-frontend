@@ -31,7 +31,7 @@ const CONFIRM_MODES = ['ask', 'skip'] as const
 
 function NotificationsPanel({ onClose }: { onClose: () => void }) {
   const { status, notifications, unreadCount, reload, markRead, markAllRead } = useNotifications()
-  const { modules } = useCourses()
+  const { modules } = useCourses({ passive: true })
   const navigate = useNavigate()
   const { pathname } = useLocation()
 

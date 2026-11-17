@@ -15,7 +15,7 @@ import {
 import type { ModulePatch, SubmitPayload } from '../api/courses'
 import { fetchSlots } from '../api/slots'
 import { useAuth } from '../hooks/useAuth'
-import { useLive } from '../hooks/useLive'
+import { useWatchedLive } from '../hooks/useWatchedLive'
 import type { ContentItem, CourseModule, Submission, SubmissionVersion } from '../types/course'
 import type { User } from '../types/user'
 import { withoutTaskDeadlines, withStudentDeadlines } from '../utils/deadline'
@@ -147,7 +147,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     )
   }, [load])
   // a 1:1 booked, moved or cancelled moves the student's deadlines
-  useLive(['courses', 'directory', 'slots'], refresh, { enabled: status === 'ready' })
+  const watch = useWatchedLive(['courses', 'directory', 'slots'], refresh, status === 'ready')
 
   const hasGeneratingQuiz = useMemo(
     () => modules.some((m) => m.items.some((i) => i.type === 'quiz' && i.status === 'generating')),
@@ -265,6 +265,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       modules,
       now,
       reload,
+      watch,
       submitAssignment,
       saveModule,
       saveItem,
@@ -280,6 +281,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       modules,
       now,
       reload,
+      watch,
       submitAssignment,
       saveModule,
       saveItem,

@@ -10,6 +10,8 @@ export interface StandingsContextValue {
   /** The ratings with the program rules applied (4 yellow in a row = red, 2 red in a row = removal). */
   summary: StandingSummary
   reload: () => void
+  /** A screen that uses the standings calls this while it is open; they refresh themselves only then. Returns the stop function. */
+  watch: () => () => void
 }
 
 export const StandingsContext = createContext<StandingsContextValue | null>(null)

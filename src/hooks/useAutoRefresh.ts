@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 /** How often a screen that is open and in front asks the server again. */
-export const REFRESH_EVERY_MS = 15_000
+export const REFRESH_EVERY_MS = 60_000
 
 /**
  * Keeps a screen up to date without the person pressing anything: `refresh` runs

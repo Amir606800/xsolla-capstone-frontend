@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { fetchStandings } from '../api/standings'
 import type { WeeklyStanding } from '../types/standing'
-import { useLive } from '../hooks/useLive'
+import { useWatchedLive } from '../hooks/useWatchedLive'
 import { analyseStandings } from '../utils/standing'
 import { keepIfSame } from '../utils/same'
 import { AuthContext } from './auth'
@@ -42,11 +42,11 @@ export function StandingsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => {
     fetchStandings(studentId).then((data) => setRatings(keepIfSame(data)), () => undefined)
   }, [studentId])
-  useLive(['standings', 'courses'], refresh, { enabled: status === 'ready' })
+  const watch = useWatchedLive(['standings', 'courses'], refresh, status === 'ready')
 
   const value = useMemo(
-    () => ({ status, ratings, summary: analyseStandings(ratings), reload }),
-    [status, ratings, reload],
+    () => ({ status, ratings, summary: analyseStandings(ratings), reload, watch }),
+    [status, ratings, reload, watch],
   )
 
   return <StandingsContext.Provider value={value}>{children}</StandingsContext.Provider>

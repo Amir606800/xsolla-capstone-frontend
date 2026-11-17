@@ -10,6 +10,8 @@ export interface CoursesContextValue {
   /** When the data was fetched; used as "now" for deadline maths so renders stay pure. */
   now: Date
   reload: () => void
+  /** A screen that uses the course calls this while it is open; the course refreshes itself only then. Returns the stop function. */
+  watch: () => () => void
   /** Submits (or resubmits) work and updates the shared course state. Rejects on failure. */
   submitAssignment: (assignmentId: string, payload: SubmitPayload) => Promise<void>
   /** Lecturer authoring (teachers and admins only). Each rejects on failure. Resolves with a warning when part was not kept. */

@@ -21,7 +21,7 @@ interface SidebarProps {
 
 /** "Week 6 of 12": how far into the program we are (modules that have opened so far). */
 function ProgramProgress() {
-  const { status, modules, now } = useCourses()
+  const { status, modules, now } = useCourses({ passive: true })
   if (status !== 'ready' || modules.length === 0) return null
 
   const opened = modules.filter((m) => !isModuleLocked(m, now)).length

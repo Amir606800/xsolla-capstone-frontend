@@ -12,7 +12,7 @@ import { Modal } from '../Modal'
 import './search.css'
 
 function PaletteBody({ onClose }: { onClose: () => void }) {
-  const { modules } = useCourses()
+  const { modules } = useCourses({ passive: true })
   const isLocked = useModuleAccess()
   const { user } = useAuth()
   const navigate = useNavigate()
