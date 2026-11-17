@@ -6,6 +6,7 @@ import { MentorReviewProvider } from '../../context/MentorReviewProvider'
 import { NotificationsProvider } from '../../context/NotificationsProvider'
 import { StandingsProvider } from '../../context/StandingsProvider'
 import { usePersistedState } from '../../hooks/usePersistedState'
+import { CompleteProfileReminder } from '../profile/CompleteProfileReminder'
 import { ReviewGate } from '../review/ReviewGate'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
@@ -42,6 +43,7 @@ export default function AppLayout() {
             onToggleCollapsed={toggleCollapsed}
           />
           <main className="shell__main">
+            <CompleteProfileReminder />
             <Suspense fallback={<PageLoader />}>
               {/* a student who owes last week's mentor review is sent to the form from every page */}
               <ReviewGate>
