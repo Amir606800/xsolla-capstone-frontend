@@ -147,11 +147,13 @@ describe('lecturer editing', () => {
 
   it('a new module is POSTed with its title, description and week dates and comes back with the server id', async () => {
     await backend({ ...reload, 'POST /modules': () => ({ status: 201, body: { id: 4, title: 'Go Basics', description: 'Go', created_by: 1, created_at: '2026-11-01T00:00:00Z' } }) })
-    const { id, modules } = await createModule({ title: 'Go Basics', description: 'Go', opensAt: '2026-11-02T00:00:00Z', closesAt: '2026-11-08T23:59:00Z' })
+    const { id, module } = await createModule({ title: 'Go Basics', description: 'Go', opensAt: '2026-11-02T00:00:00Z', closesAt: '2026-11-08T23:59:00Z' })
     // the dates go as the proposed fields; whether the server kept them is checked by the caller (datesNotKept)
     expect(json(find('POST', '/modules'))).toEqual({ title: 'Go Basics', description: 'Go', opens_at: '2026-11-02T00:00:00Z', closes_at: '2026-11-08T23:59:00Z' })
     expect(id).toBe('4')
-    expect(modules.map((m) => m.id)).toEqual(['4'])
+    expect(module).toMatchObject({ id: '4', title: 'Go Basics', items: [] })
+    // no reload of the course after it: only the one request (the page opens the new module at once)
+    expect(calls.filter((c) => c.method === 'GET')).toHaveLength(0)
   })
 
   describe('the lecturer of a week is the lecturer enrolled in it', () => {

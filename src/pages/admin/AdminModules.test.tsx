@@ -114,7 +114,8 @@ describe('Admin: creating content', () => {
     vi.mocked(courses.createModule).mockImplementationOnce(async (patch) => {
       const { addModule } = await import('../../test/fixtures/contentEdits')
       const made = addModule({ title: patch.title }, 1000)
-      return { ...made, modules: made.modules.map((m) => (m.id === made.id ? { ...m, opensAt: undefined, closesAt: undefined } : m)) }
+      const module = made.modules.find((m) => m.id === made.id)!
+      return { id: made.id, module: { ...module, opensAt: undefined, closesAt: undefined } }
     })
     renderWithProviders(<App />, { route: '/admin/modules' })
     const user = userEvent.setup()

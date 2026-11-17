@@ -75,7 +75,10 @@ vi.mock('../api/courses', async () => {
     deleteItem: vi.fn(async (id: string) => store.removeItem(id)),
     deleteModule: vi.fn(async (id: string) => store.removeModule(id)),
     assignLecturer: vi.fn(async (id: string, lecturerId: number, assigned = true) => store.setLecturer(id, lecturerId, assigned)),
-    createModule: vi.fn(async (patch: Parameters<typeof store.addModule>[0], ctx?: { createdBy?: number }) => store.addModule(patch, ctx?.createdBy)),
+    createModule: vi.fn(async (patch: Parameters<typeof store.addModule>[0], ctx?: { createdBy?: number }) => {
+      const { id, modules } = store.addModule(patch, ctx?.createdBy)
+      return { id, module: modules.find((m) => m.id === id)! }
+    }),
     generateAiQuiz: vi.fn(
       async (
         input: { moduleId: string; contentItemId: string; title?: string; dueAt?: string },

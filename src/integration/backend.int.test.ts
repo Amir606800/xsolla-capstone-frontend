@@ -125,7 +125,7 @@ run('the app against the real backend', () => {
       const closesAt = inDays(7, 23)
       const made = await courses.createModule({ title: `Int Week ${stamp}`, description: 'Integration', opensAt, closesAt })
       moduleId = made.id
-      const saved = findModule(made.modules)
+      const saved = made.module
       expect(saved?.title).toBe(`Int Week ${stamp}`)
       expect(saved?.opensAt && sameInstant(saved.opensAt, opensAt)).toBe(true)
       expect(saved?.closesAt && sameInstant(saved.closesAt, closesAt)).toBe(true)

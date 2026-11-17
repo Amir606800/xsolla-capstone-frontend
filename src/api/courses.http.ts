@@ -158,15 +158,23 @@ export async function saveModule(id: string, patch: ModuleFields): Promise<Cours
   return fetchModules(false)
 }
 
-/** Creates a module and returns its id, without reloading the course (for importing many at once). */
-export async function postModule(patch: ModuleFields & { title: string }): Promise<string> {
-  const created = await authedRequest<ApiModule>('/modules', { method: 'POST', body: moduleBody(patch) })
-  return String(created.id)
+async function post(patch: ModuleFields & { title: string }): Promise<ApiModule> {
+  return authedRequest<ApiModule>('/modules', { method: 'POST', body: moduleBody(patch) })
 }
 
-/** A new module (the backend records who created it). */
-export async function createModule(patch: ModuleFields & { title: string }): Promise<{ id: string; modules: CourseModule[] }> {
-  return { id: await postModule(patch), modules: await fetchModules(false) }
+/** Creates a module and returns its id, without reloading the course (for importing many at once). */
+export async function postModule(patch: ModuleFields & { title: string }): Promise<string> {
+  return String((await post(patch)).id)
+}
+
+/**
+ * A new module (the backend records who created it). Returns just that module, as the server made it (it has no items yet),
+ * so the caller can go to it at once instead of waiting for the whole course (two requests per module) to load again.
+ */
+export async function createModule(patch: ModuleFields & { title: string }): Promise<{ id: string; module: CourseModule }> {
+  const created = await post(patch)
+  const [module] = mapModules([created], {}, {}, { includeHidden: true })
+  return { id: String(created.id), module }
 }
 
 export class NotSupportedError extends ApiError {

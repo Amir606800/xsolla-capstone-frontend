@@ -40,8 +40,8 @@ export async function saveItem(item: ContentItem): Promise<CourseModule[]> {
   return http.saveItem(item)
 }
 
-/** A new module after the last one. Returns its id and the whole course. (`createdBy`: the server takes it from the session.) */
-export async function createModule(patch: ModulePatch & { title: string }, ctx: { createdBy?: number } = {}): Promise<{ id: string; modules: CourseModule[] }> {
+/** A new module. Returns its id and the module itself (not the whole course). (`createdBy`: the server takes it from the session.) */
+export async function createModule(patch: ModulePatch & { title: string }, ctx: { createdBy?: number } = {}): Promise<{ id: string; module: CourseModule }> {
   void ctx
   return http.createModule(patch)
 }

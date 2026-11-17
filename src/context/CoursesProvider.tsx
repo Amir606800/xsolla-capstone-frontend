@@ -21,7 +21,7 @@ import type { User } from '../types/user'
 import { withoutTaskDeadlines, withStudentDeadlines } from '../utils/deadline'
 import { datesNotKept } from '../utils/moduleDates'
 import { sameData } from '../utils/same'
-import { isModuleLocked } from '../utils/progress'
+import { isModuleLocked, orderByOpening } from '../utils/progress'
 import { canAuthor, hasRole, isStudent } from '../utils/roles'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
@@ -224,17 +224,17 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const deleteModule = useCallback((id: string) => author(() => apiDeleteModule(id)), [author])
   const createModule = useCallback(
     async (patch: ModulePatch & { title: string }) => {
-      let id = ''
-      let warning: string | undefined
-      await author(async () => {
-        const res = await apiCreateModule(patch, { createdBy: user?.id })
-        id = res.id
-        warning = datesNotKept(patch, res.modules.find((m) => m.id === res.id))
-        return res.modules
-      })
-      return { id, warning }
+      if (!mayAuthor) throw new Error('Only lecturers can change the course')
+      const { id, module } = await apiCreateModule(patch, { createdBy: user?.id })
+      version.current += 1
+      // The new module is shown at once (so the caller can open it without waiting for the whole course to load again),
+      // in its place among the weeks; the quiet refresh then brings in anything else that changed.
+      setModules((prev) => orderByOpening([...prev.filter((m) => m.id !== id), module]).map((m, i) => ({ ...m, position: i + 1 })))
+      setNow(new Date())
+      refresh()
+      return { id, warning: datesNotKept(patch, module) }
     },
-    [author, user?.id],
+    [mayAuthor, user?.id, refresh],
   )
   const generateAiQuiz = useCallback(
     async (input: { moduleId: string; contentItemId: string; title?: string; dueAt?: string }) => {
