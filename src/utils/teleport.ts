@@ -1,4 +1,4 @@
-import { runtimeEnv } from '../config/runtime'
+import { runtimeEnv } from '../config/runtime.ts'
 
 function readJson(key: string): unknown {
   try {
