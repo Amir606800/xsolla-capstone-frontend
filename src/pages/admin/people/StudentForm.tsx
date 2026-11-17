@@ -79,7 +79,9 @@ export function StudentForm({
     }
   }
 
-  const show = (k: keyof typeof errors) => (touched && errors[k] ? errors[k] : '')
+  // While saving (and once saved, until the dialog closes) the new account is already in the list, so the "already an account"
+  // check would match the account this very form just made: show no field errors then.
+  const show = (k: keyof typeof errors) => (touched && !busy && errors[k] ? errors[k] : '')
 
   return (
     <form className="admin-dialog" onSubmit={submit} noValidate aria-label={editing ? `Edit ${student.name}` : `New ${noun}`}>
