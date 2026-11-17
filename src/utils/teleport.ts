@@ -1,3 +1,5 @@
+import { runtimeEnv } from '../config/runtime'
+
 function readJson(key: string): unknown {
   try {
     const raw = localStorage.getItem(key)
@@ -24,7 +26,7 @@ export function attachLmsSession(rawUrl: string): string {
       user: readJson('auth_user'),
       tokens: readJson('auth_tokens'),
       origin: typeof window !== 'undefined' ? window.location.origin : '',
-      apiUrl: (import.meta.env.VITE_API_URL ?? '').trim(),
+      apiUrl: runtimeEnv('VITE_API_URL'),
     }
     const encoded = btoa(encodeURIComponent(JSON.stringify(payload)))
     const target = new URL(baseTarget, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5174')

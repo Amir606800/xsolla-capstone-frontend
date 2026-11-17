@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 import { publish, topicsForPath } from '../sync/bus'
+import { runtimeEnv } from '../config/runtime'
 
 /** Thin axios wrapper for the LMS backend: JSON in/out and one error type for every failure. */
 
@@ -9,7 +10,7 @@ import { publish, topicsForPath } from '../sync/bus'
  * site under /api (a reverse proxy in production, or the Vite dev server's proxy, forwards it to the server).
  */
 export function apiBaseUrl(): string {
-  return ((import.meta.env.VITE_API_URL ?? '').trim() || '/api').replace(/\/+$/, '')
+  return (runtimeEnv('VITE_API_URL') || '/api').replace(/\/+$/, '')
 }
 
 /** Matches the backend's `handlers.ErrorResponse`. */

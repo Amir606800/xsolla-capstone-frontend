@@ -10,6 +10,11 @@ import { AuthProvider } from './context/AuthProvider.tsx'
 import { GoogleProvider } from './context/GoogleProvider.tsx'
 import { ProfileProvider } from './context/ProfileProvider.tsx'
 import { ThemeProvider } from './context/ThemeProvider.tsx'
+import { runtimeEnv } from './config/runtime'
+
+if (!runtimeEnv('VITE_API_URL')) {
+  throw new Error('VITE_API_URL is required. Configure the frontend environment before loading the app.')
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
