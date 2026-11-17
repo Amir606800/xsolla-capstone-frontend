@@ -43,7 +43,9 @@ test('a lecturer given the mentor role keeps lecturing and gets the team pages t
   await expect(dialog.getByRole('group', { name: 'Main role' })).toContainText('Lecturer')
   await dialog.getByRole('radio', { name: 'Mentor, no end date' }).check()
   await dialog.getByRole('button', { name: 'Save roles' }).click()
-  await expect(page.getByText('Elvin Huseynov: Lecturer, and mentor. Give them a team on the Mentors page.')).toBeVisible()
+  await expect(page.getByText('Elvin Huseynov: Lecturer, and mentor. They have no team yet.')).toBeVisible()
+  // the teams come next; the team is chosen later on the Mentors page
+  await page.getByRole('dialog', { name: 'Team of Elvin Huseynov' }).getByRole('button', { name: 'Not now' }).click()
 
   // now listed on the Mentors page as well
   await page.getByRole('navigation', { name: 'Admin sections' }).getByRole('link', { name: 'Mentors' }).click()

@@ -84,7 +84,10 @@ export default function App() {
               <Route index element={<AdminCalendarPage />} />
             </Route>
             <Route path="/admin/students" element={<AdminStudentsPage />} />
-            <Route path="/admin/mentors" element={<AdminMentorsPage />} />
+            {/* a mentor made a lecturer is given weeks right away, so the page loads the course */}
+            <Route path="/admin/mentors" element={<AdminCoursesLayout />}>
+              <Route index element={<AdminMentorsPage />} />
+            </Route>
             <Route path="/admin/teams" element={<AdminTeamsPage />} />
             {/* the page names each review's week from the course, so it loads the course */}
             <Route path="/admin/student-reviews" element={<AdminCoursesLayout />}>

@@ -57,6 +57,13 @@ describe('Admin: mentors', () => {
     await user.click(form.getByRole('button', { name: 'Add mentor' }))
 
     expect(await screen.findByText('Nil Aydin added as a mentor of Team 4. They can sign in with nil@example.com and the password you set.')).toBeInTheDocument()
+    // the second dialog hands the password over
+    const second = within(await screen.findByRole('dialog', { name: 'Nil Aydin’s password' }))
+    expect(second.getByLabelText('Password')).toHaveTextContent('Kp7mWz4qTx')
+    await user.click(second.getByRole('button', { name: 'Copy' }))
+    expect(await navigator.clipboard.readText()).toBe('Kp7mWz4qTx')
+    await user.click(second.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(within(rowOf('Nil Aydin')).getByText(/^Team 4/)).toBeInTheDocument()
     expect(within(rowOf('Nil Aydin')).getByText('Mentor')).toBeInTheDocument()
     expect(within(rowOf('Aysel Mammadova')).getByText('No team')).toBeInTheDocument()
@@ -64,22 +71,53 @@ describe('Admin: mentors', () => {
     expect(listTeams().find((t) => t.id === 't4')!.mentorId).toBe(listUsers().find((u) => u.email === 'nil@example.com')!.id)
   })
 
-  it('edits a mentor: name and team', async () => {
+  it('edits a mentor: name and e-mail; the team has its own button and stays as it is', async () => {
     renderWithProviders(<App />, { route: '/admin/mentors' })
     const user = userEvent.setup()
     await table()
     await user.click(screen.getByRole('button', { name: 'Edit Farid Mammadli' }))
     const form = within(await dialog())
-    expect(form.getByLabelText('Team they mentor')).toHaveValue('t1')
+    expect(form.queryByLabelText('Team they mentor')).not.toBeInTheDocument()
     expect(form.queryByLabelText('Password')).not.toBeInTheDocument()
     await user.clear(form.getByLabelText('Full name'))
     await user.type(form.getByLabelText('Full name'), 'Farid Mammadov')
-    await user.selectOptions(form.getByLabelText('Team they mentor'), 'No team yet')
     await user.click(form.getByRole('button', { name: 'Save changes' }))
     expect(await screen.findByText('Farid Mammadov: changes saved.')).toBeInTheDocument()
-    expect(within(rowOf('Farid Mammadov')).getByText('No team')).toBeInTheDocument()
-    // the team without a mentor is pointed out
+    expect(within(rowOf('Farid Mammadov')).getByText(/^Team 1/)).toBeInTheDocument()
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  })
+
+  it('the Team button shows the teams: the mentor’s own is chosen, another one can be given, or none', async () => {
+    renderWithProviders(<App />, { route: '/admin/mentors' })
+    const user = userEvent.setup()
+    await table()
+    await user.click(screen.getByRole('button', { name: 'Team of Farid Mammadli' }))
+    const teams = within(await screen.findByRole('dialog', { name: 'Team of Farid Mammadli' }))
+    expect(teams.getAllByRole('radio')).toHaveLength(7) // six teams and "No team"
+    expect(teams.getByRole('radio', { name: /^Team 1 / })).toBeChecked()
+    expect(teams.getByText('Farid mentors it now')).toBeInTheDocument()
+    // nothing to save until something else is chosen
+    expect(teams.getByRole('button', { name: 'Give Farid this team' })).toBeDisabled()
+
+    // another team: its mentor is named and loses it
+    const old = listTeams().find((t) => t.id === 't2')!.mentorId!
+    const oldName = listUsers().find((u) => u.id === old)!.name
+    await user.click(teams.getByRole('radio', { name: /^Team 2 / }))
+    expect(teams.getByText(`${oldName} mentors Team 2 now. They will have no team.`)).toBeInTheDocument()
+    await user.click(teams.getByRole('button', { name: 'Give Farid this team' }))
+    expect(await screen.findByText(`Farid Mammadli now mentors Team 2. ${oldName} has no team now.`)).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(listTeams().find((t) => t.id === 't2')!.mentorId).toBe(listUsers().find((u) => u.name === 'Farid Mammadli')!.id)
+    // Team 1 has no mentor now, and the page says so
     expect(screen.getByRole('note')).toHaveTextContent('Team 1 has no mentor.')
+
+    // no team at all
+    await user.click(screen.getByRole('button', { name: 'Team of Farid Mammadli' }))
+    const again = within(await screen.findByRole('dialog', { name: 'Team of Farid Mammadli' }))
+    await user.click(again.getByRole('radio', { name: /^No team/ }))
+    await user.click(again.getByRole('button', { name: 'Leave without a team' }))
+    expect(await screen.findByText('Farid Mammadli has no team now.')).toBeInTheDocument()
+    expect(within(rowOf('Farid Mammadli')).getByText('No team')).toBeInTheDocument()
   })
 
   it('gives the extra lecturer role until a date; the row shows until when', async () => {
@@ -95,12 +133,48 @@ describe('Admin: mentors', () => {
     expect(form.getByLabelText('Last day')).toHaveValue(dayInput(new Date(), 30))
     await user.click(form.getByRole('button', { name: 'Save roles' }))
 
-    expect(await screen.findByText(/^Aysel Mammadova: Mentor, and lecturer until \w+ \d+\.$/)).toBeInTheDocument()
+    expect(await screen.findByText(/^Aysel Mammadova: Mentor, and lecturer until \w+ \d+\. They have no weeks yet\.$/)).toBeInTheDocument()
     const pill = within(rowOf('Aysel Mammadova')).getByText('+ Lecturer').closest('.admin-pill')!
     expect(pill).toHaveTextContent(/until .+ · 30 days left/)
     const aysel = listUsers().find((u) => u.id === 901)!
     expect(aysel.roles).toEqual(['mentor', 'lecturer'])
     expect(aysel.roleUntil?.lecturer).toBeDefined()
+  })
+
+  it('a mentor made a lecturer is asked for their weeks right away, and the roles stay if the weeks are skipped', async () => {
+    renderWithProviders(<App />, { route: '/admin/mentors' })
+    const user = userEvent.setup()
+    await table()
+    await user.click(screen.getByRole('button', { name: 'Roles of Aysel Mammadova' }))
+    await user.click(within(await dialog()).getByRole('radio', { name: /^Lecturer for a while/ }))
+    await user.click(within(await dialog()).getByRole('button', { name: 'Save roles' }))
+
+    // the next thing on the screen is where to give them weeks
+    const weeks = within(await screen.findByRole('dialog', { name: 'Weeks of Aysel Mammadova' }))
+    expect(screen.queryByRole('dialog', { name: 'Roles of Aysel Mammadova' })).not.toBeInTheDocument()
+    await user.click(weeks.getByRole('checkbox', { name: /^Week 1 / }))
+    await user.click(weeks.getByRole('button', { name: 'Save weeks' }))
+    expect(await screen.findByText('Aysel Mammadova now teaches week 1.')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    // Cancel keeps the role; the weeks can be given later on the Lecturers page
+    await user.click(screen.getByRole('button', { name: 'Roles of Farid Mammadli' }))
+    await user.click(within(await dialog()).getByRole('radio', { name: 'Lecturer, no end date' }))
+    await user.click(within(await dialog()).getByRole('button', { name: 'Save roles' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Weeks of Farid Mammadli' })).getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(listUsers().find((u) => u.name === 'Farid Mammadli')!.roles).toEqual(['mentor', 'lecturer'])
+  })
+
+  it('a mentor who already lectures is not asked for weeks again when the end date changes', async () => {
+    renderWithProviders(<App />, { route: '/admin/mentors' })
+    const user = userEvent.setup()
+    await table()
+    await user.click(screen.getByRole('button', { name: 'Roles of Rashad Aliyev' }))
+    await user.click(within(await dialog()).getByRole('radio', { name: /^Lecturer for a while/ }))
+    await user.click(within(await dialog()).getByRole('button', { name: 'Save roles' }))
+    expect(await screen.findByText(/^Rashad Aliyev: Mentor, and lecturer until /)).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('the mentor role they were created with cannot be changed; the last day must not be in the past', async () => {
