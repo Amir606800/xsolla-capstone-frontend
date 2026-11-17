@@ -132,7 +132,7 @@ export function needsAttention(grades: StudentReview[]): StudentStanding[] {
 
 export type CurrentCounts = Record<StandingLevel | 'none', number>
 
-/** How a group of students stands now: each by the level of their latest graded week, or "none" with no grade yet. */
+/** How a group of students stands: each by the level of the average of their week grades, or "none" with no grade yet. */
 export function currentCounts(studentIds: number[], standings: Map<number, StudentStanding>): CurrentCounts {
   const counts: CurrentCounts = { green: 0, yellow: 0, red: 0, none: 0 }
   for (const id of studentIds) counts[standings.get(id)?.summary.current ?? 'none'] += 1
@@ -140,7 +140,7 @@ export function currentCounts(studentIds: number[], standings: Map<number, Stude
 }
 
 /**
- * How the school stands now, in one line: the share of graded students whose latest week was green (a student nobody
+ * How the school stands now, in one line: the share of graded students whose average grade is green (a student nobody
  * graded yet is not counted as behind). The bands are a front-end proposal: 70% and up = most on track, 50% and up =
  * many falling behind, below that = most behind.
  */

@@ -7,6 +7,7 @@ import {
   STANDING_MEANING,
   YELLOW_LIMIT,
   analyseStandings,
+  gradeAverage,
   parseStandingLevel,
   standingAlert,
 } from './standing'
@@ -63,15 +64,27 @@ describe('analyseStandings: nothing rated', () => {
 })
 
 describe('analyseStandings: the current standing', () => {
-  it('is the level of the latest rated week', () => {
-    expect(analyseStandings(weeks(G, Y)).current).toBe('yellow')
-    expect(analyseStandings(weeks(R, G)).current).toBe('green')
+  it('is the level of the AVERAGE of the week grades (red 1, yellow 2, green 3), not of the latest week', () => {
+    expect(analyseStandings(weeks(G, Y))).toMatchObject({ average: 2.5, current: 'green' }) // 2.5 rounds up
+    expect(analyseStandings(weeks(R, G))).toMatchObject({ average: 2, current: 'yellow' })
+    expect(analyseStandings(weeks(G, G, G, R))).toMatchObject({ average: 2.5, current: 'green' }) // one red week after three green
+    expect(analyseStandings(weeks(R, R, R, G))).toMatchObject({ average: 1.5, current: 'yellow' })
+    expect(analyseStandings(weeks(R, R, Y))).toMatchObject({ average: 1.3, current: 'red' })
+    expect(analyseStandings([])).toMatchObject({ average: null, current: null })
+  })
+
+  it('rounds like the backend: under 1.5 red, 1.5 to under 2.5 yellow, 2.5 and up green', () => {
+    expect(gradeAverage([R, Y, Y])).toEqual({ average: 1.7, level: 'yellow', weeks: 3 })
+    expect(gradeAverage([Y, Y, G, G])).toEqual({ average: 2.5, level: 'green', weeks: 4 })
+    expect(gradeAverage([Y, Y, Y, G])).toEqual({ average: 2.3, level: 'yellow', weeks: 4 })
+    expect(gradeAverage([R, R, R, Y])).toEqual({ average: 1.3, level: 'red', weeks: 4 })
+    expect(gradeAverage([])).toBeNull()
   })
 
   it('does not depend on the order the ratings arrive in', () => {
     const shuffled = weeks(G, Y, R).reverse()
     expect(analyseStandings(shuffled).weeks.map((w) => w.week)).toEqual([1, 2, 3])
-    expect(analyseStandings(shuffled).current).toBe('red')
+    expect(analyseStandings(shuffled)).toMatchObject({ average: 2, current: 'yellow' })
   })
 
   it('uses the last rating when a week appears twice', () => {
@@ -94,8 +107,9 @@ describe('analyseStandings: 4 consecutive yellow weeks escalate to red', () => {
     const s = analyseStandings(weeks(Y, Y, Y, Y))
     expect(s.weeks.map((w) => w.effective)).toEqual([Y, Y, Y, R])
     expect(s.weeks.map((w) => w.escalated)).toEqual([false, false, false, true])
-    expect(s.weeks[3].level).toBe('yellow') // the mentor still rated it yellow
-    expect(s.current).toBe('red')
+    expect(s.weeks[3].level).toBe('yellow') // the mentor still rated it yellow, and lists show it yellow
+    expect(s.counts).toMatchObject({ yellow: 4, red: 0 }) // the split shows the weeks as graded
+    expect(s).toMatchObject({ redStreak: 1, removal: false }) // but the rule counts it as one red for the warning
   })
 
   it('a green week in between starts the count again', () => {
@@ -164,7 +178,7 @@ describe('analyseStandings: 2 consecutive red weeks mean removal', () => {
 
   it('a green week clears an earlier red', () => {
     const s = analyseStandings(weeks(R, G))
-    expect(s).toMatchObject({ redStreak: 0, removal: false, current: 'green' })
+    expect(s).toMatchObject({ redStreak: 0, removal: false, current: 'yellow' }) // (R + G) / 2 = 2
   })
 })
 

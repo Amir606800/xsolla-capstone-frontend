@@ -131,6 +131,11 @@ export default function StudentAnalyticsPage() {
                   : undefined,
           },
           {
+            label: 'Average grade',
+            value: standing.current ? STANDING_LABEL[standing.current] : '—',
+            hint: standing.average !== null ? `${standing.average.toFixed(1)} of 3 · ${standing.counts.total} ${standing.counts.total === 1 ? 'week' : 'weeks'}` : 'not graded yet',
+          },
+          {
             label: 'Latest grade',
             value: latest ? STANDING_LABEL[latest.level] : '—',
             hint: latest ? `Week ${latest.week}` : 'not graded yet',

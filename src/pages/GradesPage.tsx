@@ -86,6 +86,12 @@ export default function GradesPage() {
                   ? STANDING_MEANING[summary.current]
                   : 'Your mentor shares your standing at the end of every week. Nothing has been rated yet.'}
               </p>
+              {summary.average !== null && (
+                <p className="list__meta">
+                  Average of your {summary.counts.total === 1 ? 'week' : `${summary.counts.total} weeks`}: {summary.average.toFixed(1)} out of 3
+                  (red 1, yellow 2, green 3)
+                </p>
+              )}
               {alert && (
                 <p className={`standing-alert standing-alert--${alert.tone}`} role="alert">
                   {alert.text}
@@ -114,17 +120,12 @@ export default function GradesPage() {
                         {titleOfWeek.get(w.week) ? ` · ${titleOfWeek.get(w.week)}` : ''}
                       </p>
                       <p className="list__meta">Rated {formatShortDate(w.assessedAt)}</p>
-                      {w.escalated && (
-                        <p className="grades__escalated">
-                          {YELLOW_LIMIT} yellow weeks in a row, so this week counts as red.
-                        </p>
-                      )}
                       {w.lateTasks && w.lateTasks.length > 0 && (
                         <p className="grades__escalated">Red because of a late submission: {w.lateTasks.join(', ')}.</p>
                       )}
                       {w.note && <p className="list__feedback">&ldquo;{w.note}&rdquo;</p>}
                     </div>
-                    <StandingPill level={w.effective} />
+                    <StandingPill level={w.level} />
                   </li>
                 ))}
               </ul>

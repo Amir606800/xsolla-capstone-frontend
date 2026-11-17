@@ -175,7 +175,8 @@ describe('ScoreCard', () => {
     const stats = overallStats(modules, NOW)
     render(<ScoreCard stats={stats} standing={rated(['green', 'green', 'yellow'])} />)
     expect(screen.getByText('My standing')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Current standing: Falling behind' })).toBeInTheDocument()
+    // (3 + 3 + 2) / 3 = 2.7: on track, although the latest week was yellow
+    expect(screen.getByRole('img', { name: 'Current standing: On track' })).toBeInTheDocument()
     expect(screen.getByRole('list', { name: 'Weeks by level' })).toHaveTextContent('2 On track')
     expect(screen.queryByText(/%$/)).not.toBeInTheDocument() // no percentage
     expect(screen.getByRole('progressbar', { name: 'Modules' })).toHaveAttribute('aria-valuemax', '12')

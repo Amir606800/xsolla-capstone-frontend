@@ -20,6 +20,30 @@ export const STANDING_MEANING: Record<StandingLevel, string> = {
   red: 'No meaningful progress was made, or no progress report was given without appropriate notice.',
 }
 
+/**
+ * The weight of a level: red 1, yellow 2, green 3. A student's standing is the AVERAGE of their week grades on this
+ * scale, like the backend's analytics (grade_average / grade_level), not the grade of the latest week.
+ */
+export const GRADE_WEIGHT: Record<StandingLevel, number> = { red: 1, yellow: 2, green: 3 }
+const LEVEL_OF_WEIGHT: StandingLevel[] = ['red', 'yellow', 'green']
+
+export interface GradeAverage {
+  /** The average weight, to one decimal (1 to 3). */
+  average: number
+  /** The level the average rounds to, half up: under 1.5 is red, 1.5 to under 2.5 is yellow, 2.5 and up is green. */
+  level: StandingLevel
+  /** How many graded weeks it is over. */
+  weeks: number
+}
+
+/** The average of week grades and the level it rounds to, or null with no grade. Same rule as the backend. */
+export function gradeAverage(levels: readonly StandingLevel[]): GradeAverage | null {
+  if (levels.length === 0) return null
+  const mean = levels.reduce((sum, l) => sum + GRADE_WEIGHT[l], 0) / levels.length
+  const place = Math.min(LEVEL_OF_WEIGHT.length, Math.max(1, Math.floor(mean + 0.5)))
+  return { average: Math.round(mean * 10) / 10, level: LEVEL_OF_WEIGHT[place - 1], weeks: levels.length }
+}
+
 /** The longest module feedback a mentor writes with a week grade, in characters. */
 export const MAX_GRADE_NOTE = 1000
 
@@ -34,7 +58,7 @@ export function parseStandingLevel(value: unknown): StandingLevel | undefined {
 }
 
 export interface AnalysedWeek extends WeeklyStanding {
-  /** The level that counts: the 4th yellow week in a row counts as red. */
+  /** For the rules (warnings, removal): the 4th yellow week in a row counts as red. A screen that lists weeks shows `level`. */
   effective: StandingLevel
   /** True when `effective` is red only because of the 4-yellow rule. */
   escalated: boolean
@@ -45,15 +69,17 @@ export type StandingCounts = Record<StandingLevel, number> & { total: number }
 export interface StandingSummary {
   /** Assessed weeks, oldest first. */
   weeks: AnalysedWeek[]
-  /** How the student stands now: the effective level of the latest assessed week. */
+  /** How the student stands: the level of the AVERAGE of all their week grades (not the latest week). */
   current: StandingLevel | null
+  /** The average of the week grades (red 1, yellow 2, green 3), to one decimal; null with no grade. */
+  average: number | null
   /** Yellow weeks in a row up to the latest week (0-3: the 4th turns red and starts over). */
   yellowStreak: number
   /** Red weeks in a row up to the latest week (an escalated week counts). */
   redStreak: number
   /** Two red weeks in a row: removal from the program. */
   removal: boolean
-  /** Weeks per effective level. */
+  /** Weeks per level, as graded (the weeks list shows the same colours). */
   counts: StandingCounts
 }
 
@@ -102,14 +128,16 @@ export function analyseStandings(ratings: WeeklyStanding[]): StandingSummary {
       redRun += 1
     }
 
-    counts[effective] += 1
+    counts[r.level] += 1
     counts.total += 1
     weeks.push({ ...r, effective, escalated })
   }
 
+  const avg = gradeAverage(weeks.map((w) => w.level))
   return {
     weeks,
-    current: weeks.length > 0 ? weeks[weeks.length - 1].effective : null,
+    current: avg?.level ?? null,
+    average: avg?.average ?? null,
     yellowStreak: yellowRun,
     redStreak: redRun,
     removal: redRun >= RED_LIMIT,

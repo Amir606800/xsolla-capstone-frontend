@@ -124,13 +124,23 @@ describe('GradesPage: the weekly standing', () => {
 })
 
 describe('GradesPage: the rules applied to the ratings', () => {
-  it('flags a fourth yellow week as red', async () => {
+  it('keeps four yellow weeks yellow in the list, and warns about them once, in the summary', async () => {
     vi.mocked(fetchStandings).mockResolvedValueOnce(ratings('yellow', 'yellow', 'yellow', 'yellow'))
     renderGrades()
     await ready()
-    expect(screen.getByRole('img', { name: 'Current standing: No progress' })).toBeInTheDocument()
-    expect(screen.getByText(/4 yellow weeks in a row, so this week counts as red/)).toBeInTheDocument()
+    // where I stand is the average (all yellow = 2.0 = yellow); the weeks are listed as graded
+    expect(screen.getByRole('img', { name: 'Current standing: Falling behind' })).toBeInTheDocument()
+    expect(screen.getByText(/Average of your 4 weeks: 2.0 out of 3/)).toBeInTheDocument()
+    expect(screen.queryByText(/so this week counts as red/)).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(/4 yellow weeks in a row count as red/)
     expect(screen.getByRole('alert')).toHaveTextContent(/One more red week in a row means removal/)
+  })
+
+  it('stands by the average of all weeks, not the latest one', async () => {
+    vi.mocked(fetchStandings).mockResolvedValueOnce(ratings('green', 'green', 'green', 'red'))
+    renderGrades()
+    await ready()
+    expect(screen.getByRole('img', { name: 'Current standing: On track' })).toBeInTheDocument() // (3+3+3+1)/4 = 2.5
   })
 
   it('shows the removal warning after two red weeks in a row', async () => {

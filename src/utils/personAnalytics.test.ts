@@ -66,8 +66,11 @@ describe('needsAttention', () => {
     ])
   })
 
-  it('counts a group by their latest week; nobody graded yet is "none"', () => {
-    const standings = standingsByStudent([...grades(1, 'A', 'green'), ...grades(2, 'B', 'green', 'yellow')])
+  it('counts a group by the average of their week grades; nobody graded yet is "none"', () => {
+    const standings = standingsByStudent([
+      ...grades(1, 'A', 'green'),
+      ...grades(2, 'B', 'green', 'yellow', 'yellow'), // (3+2+2)/3 = 2.3: yellow, although the first week was green
+    ])
     expect(currentCounts([1, 2, 3], standings)).toEqual({ green: 1, yellow: 1, red: 0, none: 1 })
   })
 })

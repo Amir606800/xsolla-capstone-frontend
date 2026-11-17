@@ -76,11 +76,11 @@ describe('WeekTiles', () => {
     expect(d).toHaveAccessibleName('Week 4: not rated yet')
   })
 
-  it('shows the 4th yellow week in a row as red and says why', () => {
+  it('shows every week as the mentor graded it: four yellow weeks in a row stay yellow', () => {
     render(<WeekTiles totalWeeks={5} weeks={rated(['yellow', 'yellow', 'yellow', 'yellow'])} />)
-    const tile = screen.getAllByRole('listitem')[3]
-    expect(tile).toHaveClass('week-tile--red')
-    expect(tile).toHaveAccessibleName('Week 4: No progress (4th yellow week in a row)')
+    const tiles = screen.getAllByRole('listitem')
+    for (const i of [0, 1, 2, 3]) expect(tiles[i]).toHaveClass('week-tile--yellow')
+    expect(tiles[3]).toHaveAccessibleName('Week 4: Falling behind')
   })
 })
 
