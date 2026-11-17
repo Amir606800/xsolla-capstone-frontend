@@ -20,6 +20,7 @@ test('the admin adds a student to a team, and finds them with the search', async
   await form.getByLabel('Team').selectOption({ label: 'Team 6 (4 students)' })
   await form.getByRole('button', { name: 'Add student' }).click()
   await expect(page.getByText(/^Ann Lee added to Team 6\./)).toBeVisible()
+  await page.getByRole('dialog', { name: 'Ann Lee’s password' }).getByRole('button', { name: 'Done' }).click()
 
   await page.reload()
   await page.getByRole('searchbox', { name: 'Search students' }).fill('ann.lee')
@@ -78,4 +79,5 @@ test('a made-up name, e-mail or weak password cannot be used for an account', as
   await form.getByLabel('Password', { exact: true }).fill('Tq7mWz4kPd')
   await form.getByRole('button', { name: 'Add student' }).click()
   await expect(page.getByText(/^Ann Lee added/)).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Ann Lee’s password' })).toContainText('Tq7mWz4kPd')
 })

@@ -15,6 +15,7 @@
         /* storage blocked: the app picks the theme itself once it starts */
       }
     </script>
+    <script src="/config.js"></script>
     <style>
       /* shown only until the app's own code and styles have arrived */
       html {
@@ -57,6 +58,7 @@
     <div id="root">
       <div class="boot" role="progressbar" aria-label="Loading" aria-busy="true"><span class="boot__ring"></span></div>
     </div>
+    <script type="module" src="/config.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

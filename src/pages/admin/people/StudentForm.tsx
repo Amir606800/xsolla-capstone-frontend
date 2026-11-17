@@ -11,7 +11,8 @@ import { PasswordChecklist } from './PasswordChecklist'
 /**
  * Admin: a student's or a mentor's account. New: name, e-mail, the password the admin chooses and
  * (optionally) a team: the team a student is in, or the team a mentor looks after. Editing (`student`
- * given): name, e-mail and team; the password is not shown or changed here.
+ * given): name, e-mail and, for a student, the team; a mentor's team has its own dialog (AssignTeamModal). The password is
+ * not shown or changed here.
  */
 export function StudentForm({
   variant = 'student',
@@ -174,7 +175,7 @@ export function StudentForm({
         </div>
       )}
 
-      {!isLecturer && (
+      {!isLecturer && !(editing && isMentor) && (
         <div className="admin-field">
           <label className="admin-field__label" htmlFor={`${id}-team`}>
             {isMentor ? 'Team they mentor' : 'Team'}

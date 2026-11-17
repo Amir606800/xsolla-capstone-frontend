@@ -18,6 +18,8 @@ test('a lecturer role given to a mentor for a week shows in the LMS when they si
   await form.getByRole('button', { name: '1 week' }).click()
   await form.getByRole('button', { name: 'Save roles' }).click()
   await expect(page.getByText(/^Aysel Mammadova: Mentor, and lecturer until /)).toBeVisible()
+  // a new lecturer is asked for weeks next: skip it here
+  await page.getByRole('dialog', { name: 'Weeks of Aysel Mammadova' }).getByRole('button', { name: 'Cancel' }).click()
   await expect(page.getByRole('row', { name: /Aysel Mammadova/ })).toContainText('7 days left')
 
   // Aysel signs in to the LMS (same browser, offline demo)
@@ -35,9 +37,9 @@ test('a lecturer role given to a mentor for a week shows in the LMS when they si
 test('the admin adds a mentor for a team without one', async ({ page }) => {
   await openMentors(page)
   // free Team 6 first
-  await page.getByRole('button', { name: 'Edit Sevinj Gasimova' }).click()
-  await page.getByRole('dialog').getByLabel('Team they mentor').selectOption({ label: 'No team yet' })
-  await page.getByRole('dialog').getByRole('button', { name: 'Save changes' }).click()
+  await page.getByRole('button', { name: 'Team of Sevinj Gasimova' }).click()
+  await page.getByRole('dialog').getByRole('radio', { name: /^No team/ }).check()
+  await page.getByRole('dialog').getByRole('button', { name: 'Leave without a team' }).click()
   await expect(page.getByRole('note')).toContainText('Team 6 has no mentor.')
 
   await page.getByRole('button', { name: 'Add mentor' }).click()
@@ -48,6 +50,7 @@ test('the admin adds a mentor for a team without one', async ({ page }) => {
   await form.getByLabel('Team they mentor').selectOption({ label: 'Team 6 (no mentor)' })
   await form.getByRole('button', { name: 'Add mentor' }).click()
   await expect(page.getByText(/^Nil Aydin added as a mentor of Team 6\./)).toBeVisible()
+  await page.getByRole('dialog', { name: 'Nil Aydin’s password' }).getByRole('button', { name: 'Done' }).click()
   await expect(page.getByRole('note')).toHaveCount(0)
 })
 

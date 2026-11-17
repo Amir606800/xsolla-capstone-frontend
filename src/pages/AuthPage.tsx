@@ -79,7 +79,6 @@ export default function AuthPage() {
         <div className="auth__card">
           <h1 className="auth__title">Welcome</h1>
 
-
           <form onSubmit={handleSubmit} noValidate>
             <label className="auth__label" htmlFor="email">
               Email
