@@ -35,6 +35,8 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const SuperAdminPage = lazy(() => import('./pages/superadmin/SuperAdminPage'))
+const SuperAdminLoginPage = lazy(() => import('./pages/superadmin/SuperAdminLoginPage'))
+const SuperAdminRoute = lazy(() => import('./pages/superadmin/SuperAdminRoute'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const AdminSectionPage = lazy(() => import('./pages/admin/AdminSectionPage'))
 const AdminCoursesLayout = lazy(() => import('./pages/admin/modules/AdminCoursesLayout'))
@@ -74,8 +76,12 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
         <Route path="/admin/login" element={<AdminLoginPage />} />
-        {/* a front-end demo of the super admin (coordinators and cohorts): no sign-in, nothing is saved */}
-        <Route path="/super-admin" element={<SuperAdminPage />} />
+        {/* a front-end demo of the super admin (coordinators and cohorts): a demo sign-in (admin / admin), nothing is saved */}
+        <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
+        <Route path="/super-admin" element={<SuperAdminRoute />}>
+          <Route index element={<SuperAdminPage />} />
+          <Route path="*" element={<Navigate to="/super-admin" replace />} />
+        </Route>
         <Route path="/admin" element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminHomePage />} />

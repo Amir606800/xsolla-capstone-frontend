@@ -1,12 +1,13 @@
 import { useId, useReducer, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Icon } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
 import { Avatar } from '../../components/profile/Avatar'
 import { XsollaLogo } from '../../components/XsollaLogo'
 import { emailError, nameError } from '../../utils/credentials'
 import { ConfirmDialog } from '../admin/ConfirmDialog'
+import { signOutSuperAdmin } from './superAdminSession'
 import { cohortsOf, initialState, superAdminReducer, unassigned } from './superAdminState'
 import type { Cohort, Coordinator, SuperAdminState } from './superAdminState'
 import '../../styles/ui.css'
@@ -31,6 +32,12 @@ export default function SuperAdminPage() {
   const [state, dispatch] = useReducer(superAdminReducer, initialState)
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [message, setMessage] = useState('')
+  const navigate = useNavigate()
+
+  function signOut() {
+    signOutSuperAdmin()
+    navigate('/super-admin/login', { replace: true })
+  }
 
   const close = () => setDialog(null)
   const done = (text: string) => {
@@ -46,7 +53,12 @@ export default function SuperAdminPage() {
           <XsollaLogo className="admin-brand__logo" />
           <span className="admin-brand__tag">Super admin</span>
         </div>
-        <span className="sa__demo">Demo, not saved</span>
+        <div className="admin__account">
+          <span className="sa__demo">Demo, not saved</span>
+          <button type="button" className="admin-btn" onClick={signOut}>
+            <Icon name="logout" size={16} /> Sign out
+          </button>
+        </div>
       </header>
 
       <main className="sa__main">

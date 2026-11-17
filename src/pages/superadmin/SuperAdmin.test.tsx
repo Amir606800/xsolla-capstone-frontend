@@ -36,9 +36,9 @@ describe('the super admin dashboard', () => {
     }
   })
 
-  it('opens the Baku cohort at its admin sign-in; a cohort without a page is not a link', () => {
+  it('opens the Baku cohort at its sign-in page; a cohort without a page is not a link', () => {
     render(<SuperAdminPage />)
-    expect(screen.getByRole('link', { name: 'Open Xsolla School Baku' })).toHaveAttribute('href', '/admin/login')
+    expect(screen.getByRole('link', { name: 'Open Xsolla School Baku' })).toHaveAttribute('href', '/login')
     expect(screen.queryByRole('link', { name: 'Open Xsolla School Kuala Lumpur' })).not.toBeInTheDocument()
     expect(within(screen.getByRole('article', { name: 'Xsolla School Kuala Lumpur' })).getByText('Page not built yet')).toBeInTheDocument()
   })
