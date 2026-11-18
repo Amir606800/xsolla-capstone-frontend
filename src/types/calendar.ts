@@ -1,5 +1,8 @@
-/** `availability` = open mentor 1:1 times; derived from the slots API, like deadlines from assignments. */
-export type EventKind = 'lecture' | 'meeting' | 'off-campus' | 'deadline' | 'availability' | 'google'
+/**
+ * `availability` = open mentor 1:1 times; derived from the slots API, like deadlines from assignments.
+ * `discussion` = a talk a mentor set up with students (not a 1:1: it moves no deadline).
+ */
+export type EventKind = 'lecture' | 'meeting' | 'off-campus' | 'deadline' | 'availability' | 'discussion' | 'google'
 
 /** A person on an event or a 1:1 (names only are shown). */
 export interface Attendee {

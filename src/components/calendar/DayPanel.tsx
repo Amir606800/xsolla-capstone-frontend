@@ -18,6 +18,7 @@ const KIND_LABEL: Record<EventKind, string> = {
   'off-campus': 'Off-campus',
   deadline: 'Deadline',
   availability: '1:1 times',
+  discussion: 'Talk',
   google: 'Google',
 }
 
@@ -44,7 +45,10 @@ interface DayPanelProps {
 }
 
 export interface EventEditing {
+  /** Whether the person may change or remove this event at all. */
   canEdit: (e: CalendarEvent) => boolean
+  /** Whether it can be edited too (a talk can only be cancelled). Default: yes. */
+  canChange?: (e: CalendarEvent) => boolean
   onEdit: (e: CalendarEvent) => void
   onDelete: (e: CalendarEvent) => Promise<void>
 }
@@ -61,7 +65,7 @@ function EventTools({ event, editing }: { event: CalendarEvent; editing: EventEd
   if (confirming) {
     return (
       <div className="event-card__tools" role="group" aria-label={`Delete ${event.title}?`}>
-        <span>Delete this event for everyone?</span>
+        <span>{event.kind === 'discussion' ? 'Cancel this talk for everyone invited?' : 'Delete this event for everyone?'}</span>
         <button
           type="button"
           className="btn btn--danger btn--small"
@@ -77,7 +81,7 @@ function EventTools({ event, editing }: { event: CalendarEvent; editing: EventEd
             }
           }}
         >
-          Yes, delete
+          {event.kind === 'discussion' ? 'Yes, cancel it' : 'Yes, delete'}
         </button>
         <button type="button" className="btn btn--ghost btn--small" onClick={() => setConfirming(false)} disabled={busy}>
           Keep
@@ -92,11 +96,13 @@ function EventTools({ event, editing }: { event: CalendarEvent; editing: EventEd
   }
   return (
     <div className="event-card__tools">
-      <button type="button" className="btn btn--ghost btn--small" onClick={() => editing.onEdit(event)} aria-label={`Edit ${event.title}`}>
-        <Icon name="edit" size={16} /> Edit
-      </button>
+      {(editing.canChange?.(event) ?? true) && (
+        <button type="button" className="btn btn--ghost btn--small" onClick={() => editing.onEdit(event)} aria-label={`Edit ${event.title}`}>
+          <Icon name="edit" size={16} /> Edit
+        </button>
+      )}
       <button type="button" className="btn btn--ghost btn--small" onClick={() => setConfirming(true)} aria-label={`Delete ${event.title}`}>
-        <Icon name="trash" size={16} /> Delete
+        <Icon name="trash" size={16} /> {event.kind === 'discussion' ? 'Cancel talk' : 'Delete'}
       </button>
     </div>
   )

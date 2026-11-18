@@ -113,6 +113,8 @@ export function topicsForPath(path: string): Topic[] {
       return ['events', 'notifications']
     case 'mentor-slots':
       return ['slots', 'notifications']
+    case 'mentor-discussions':
+      return ['slots']
     case 'mentor-reviews':
       return ['reviews']
     case 'lecture-feedback':

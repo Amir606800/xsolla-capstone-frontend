@@ -5,6 +5,7 @@
   --ev-off-campus: #c27a06;
   --ev-deadline: #c4553a;
   --ev-availability: #14795a;
+  --ev-discussion: #b8408a;
   --ev-google: #1a73e8;
 }
 :root[data-theme='dark'] {
@@ -12,6 +13,7 @@
   --ev-off-campus: #f5a524;
   --ev-deadline: #ff7a59;
   --ev-availability: #4cc9a0;
+  --ev-discussion: #ff7fc4;
   --ev-google: #6ea8ff;
 }
 
@@ -265,6 +267,9 @@
 }
 .ev--availability {
   --c: var(--ev-availability);
+}
+.ev--discussion {
+  --c: var(--ev-discussion);
 }
 .ev--google {
   --c: var(--ev-google);
@@ -685,4 +690,18 @@
 }
 .calendar__google a {
   color: var(--ev-google);
+}
+
+/* the talk form: who is invited */
+.slots__who-fieldset {
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+.slots__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 14px;
 }

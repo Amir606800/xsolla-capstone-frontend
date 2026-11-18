@@ -11,10 +11,12 @@ import { canAuthor, canMentor, isAdmin, isStudent } from '../utils/roles'
 import { Link } from 'react-router'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
 import { useGoogleCalendarEvents } from '../hooks/useGoogleCalendarEvents'
+import { useDiscussions } from '../hooks/useDiscussions'
 import { useMeetingSlots } from '../hooks/useMeetingSlots'
 import { useCourses } from '../hooks/useCourses'
 import { useModuleAccess } from '../hooks/useModuleAccess'
 import { addMonths, dateKey, deadlineEvents, groupByDay, monthLabel, startOfMonth } from '../utils/calendar'
+import { discussionEvents } from '../utils/discussions'
 import { myNextBooking, slotEvents, slotsOnDay } from '../utils/slots'
 import { draftToEvent, isEditableEvent } from '../utils/authoring'
 import type { EventDraft } from '../utils/authoring'
@@ -32,6 +34,7 @@ const LEGEND: [EventKind, string][] = [
   ['off-campus', 'Off-campus'],
   ['deadline', 'Deadline'],
   ['availability', '1:1 times'],
+  ['discussion', 'Talk'],
   ['google', 'Google'],
 ]
 const HIDDEN_KEY = 'calendar_hidden_kinds'
@@ -52,6 +55,8 @@ export default function CalendarPage() {
   const isLocked = useModuleAccess()
   const { user } = useAuth()
   const meetings = useMeetingSlots()
+  // talks a mentor set up with students: an extra, the calendar works without them
+  const discussions = useDiscussions()
   // the person's own Google events: optional, never blocks or breaks the school calendar
   const google = useGoogleCalendarEvents()
   // mentor part: 1:1 times. lecturer part: lectures and events. students: book a 1:1.
@@ -100,8 +105,9 @@ export default function CalendarPage() {
         ...googleOnly,
         ...deadlineEvents(courses.modules.filter((m) => !isLocked(m))),
         ...(user && (mentor || student) ? slotEvents(meetings.slots, { id: user.id, isMentor: mentor }, today) : []),
+        ...discussionEvents(discussions.talks, { isMentor: mentor }),
       ]),
-    [calendar.events, googleOnly, courses.modules, isLocked, meetings.slots, user, mentor, student, today],
+    [calendar.events, googleOnly, courses.modules, isLocked, meetings.slots, discussions.talks, user, mentor, student, today],
   )
   const eventsByDay = useMemo(() => {
     if (hidden.length === 0) return allByDay
@@ -150,27 +156,38 @@ export default function CalendarPage() {
     [courses.modules, user],
   )
 
+  const removeTalk = discussions.remove
   const editing = useMemo<EventEditing | undefined>(
     () =>
-      author
+      author || mentor
         ? {
-            // the server lets a lecturer change only the events of a week they lead (events have no owner of their own)
+            // the server lets a lecturer change only the events of a week they lead (events have no owner of their own);
+            // a mentor can cancel the talks, which are their own
             canEdit: (event) =>
-              isEditableEvent(event) &&
-              (!lectureOnly || event.kind === 'lecture') &&
-              (isAdmin(user) || (!!event.moduleId && eventModules.some((m) => m.id === event.moduleId))),
+              event.kind === 'discussion'
+                ? mentor
+                : author &&
+                  isEditableEvent(event) &&
+                  (!lectureOnly || event.kind === 'lecture') &&
+                  (isAdmin(user) || (!!event.moduleId && eventModules.some((m) => m.id === event.moduleId))),
+            canChange: (event) => event.kind !== 'discussion',
             onEdit: (event) => {
               setNotice(null)
               setTool({ kind: 'event', event })
             },
             onDelete: async (event) => {
+              if (event.kind === 'discussion') {
+                await removeTalk(event.id.replace(/^talk-/, ''))
+                setNotice({ tone: 'ok', text: 'Talk cancelled.' })
+                return
+              }
               await removeEvent(event.id)
               setTool(null)
               setNotice({ tone: 'ok', text: 'Event deleted.' })
             },
           }
         : undefined,
-    [author, lectureOnly, removeEvent, user, eventModules],
+    [author, mentor, lectureOnly, removeEvent, removeTalk, user, eventModules],
   )
   const saveFromForm = useCallback(
     async (d: EventDraft, existing?: CalendarEvent) => {
@@ -298,7 +315,7 @@ export default function CalendarPage() {
                 )
               }
               actions={
-                <DayActions canAddEvents={author} lectureOnly={lectureOnly} canAddSlots={mentor && meetings.status === 'ready'} tool={tool} onTool={setTool} onNotice={setNotice} />
+                <DayActions canAddEvents={author} lectureOnly={lectureOnly} canAddSlots={mentor && meetings.status === 'ready'} canAddTalk={mentor} tool={tool} onTool={setTool} onNotice={setNotice} />
               }
               form={
                 <DayForm
@@ -310,6 +327,7 @@ export default function CalendarPage() {
                   modules={eventModules}
                   slotActions={actions}
                   onSaveEvent={saveFromForm}
+                  onSaveTalk={discussions.add}
                   onNotice={setNotice}
                 />
               }

@@ -202,6 +202,17 @@ vi.mock('../api/slots', async () => {
   }
 })
 
+// talks a mentor sets up with students: the real call knows the caller from the token, the stand-in from the signed-in user
+vi.mock('../api/discussions', async () => {
+  const m = await import('./fixtures/discussions')
+  const me = (): Actor => JSON.parse(localStorage.getItem('auth_user') ?? '{"id":0,"name":"","roles":[]}') as Actor
+  return {
+    fetchDiscussions: vi.fn(async () => m.listDiscussions(me())),
+    createDiscussion: vi.fn(async (d: import('../types/discussion').DiscussionDraft) => m.addDiscussion(me(), d)),
+    removeDiscussion: vi.fn(async (id: string) => m.deleteDiscussion(me(), id)),
+  }
+})
+
 // every student's work lives in localStorage, which is cleared after each test
 vi.mock('../api/reviews', async () => {
   const m = await import('./fixtures/submissions')

@@ -175,6 +175,14 @@ deployed the line is not shown. The front-end reads the field (`src/api/mappers.
 
 ---
 
+## 12. Talks with students (not 1:1s)
+
+**Done in the backend on 2026-11-18** (backend `docs/one_on_one_deadlines.md`, migration `031_mentor_discussions`): `GET`,
+`POST` and `DELETE /mentor-discussions`. A talk never moves a deadline. Still open: a notification, an e-mail and a Google
+Calendar invitation for the invited students.
+
+---
+
 ## Optional
 
 - **Earlier versions of a hand-in** (`history` on `GET .../submissions/me`): the front-end shows them when present. The
