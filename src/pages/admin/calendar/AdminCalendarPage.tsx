@@ -30,6 +30,7 @@ import { ConfirmDialog } from '../ConfirmDialog'
 import { PostponeForm } from './PostponeForm'
 import '../../../components/calendar/calendar.css'
 import { Loading } from '../../../components/loading/Loading'
+import { serverNow } from '../../../utils/serverTime'
 
 type Filter = 'all' | SchoolKind
 type Action = { kind: 'new' } | { kind: 'edit' | 'postpone' | 'delete'; event: CalendarEvent }
@@ -48,7 +49,7 @@ const sameMonth = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a
 export default function AdminCalendarPage() {
   const calendar = useCalendarEvents()
   const { modules } = useCourses()
-  const [today] = useState(() => new Date())
+  const [today] = useState(() => serverNow())
   const [month, setMonth] = useState(() => startOfMonth(today))
   const [range, setRange] = useState<DayRange>(() => monthRange(today))
   const [preset, setPreset] = useState<Preset>('month')

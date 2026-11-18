@@ -12,6 +12,7 @@ import { type Loaded, type OverviewData, overviewTiles } from '../../utils/admin
 import { weekSummary } from '../../utils/adminWeek'
 import { CurrentWeekCard } from './CurrentWeekCard'
 import { Loading } from '../../components/loading/Loading'
+import { serverNow } from '../../utils/serverTime'
 
 const settle = <T,>(p: PromiseSettledResult<T>): Loaded<T> => (p.status === 'fulfilled' ? { ok: true, value: p.value } : { ok: false })
 
@@ -41,7 +42,7 @@ export default function AdminHomePage() {
   }, [look])
   useLive(['courses', 'directory', 'events'], refresh, { enabled: data !== null })
 
-  const [now] = useState(() => new Date())
+  const [now] = useState(() => serverNow())
   const tiles = data ? overviewTiles(data, now) : null
   const week = data?.modules.ok ? weekSummary(data.modules.value, data.events.ok ? data.events.value : [], now) : null
   const names = new Map((data?.users.ok ? data.users.value : []).map((u) => [u.id, u.name]))

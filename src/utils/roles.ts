@@ -1,4 +1,5 @@
 import type { Role, User } from '../types/user'
+import { serverNow } from './serverTime'
 
 /**
  * Who can do what. The app asks these questions instead of checking role names, so a mentor who
@@ -17,7 +18,7 @@ import type { Role, User } from '../types/user'
 type Someone = Pick<User, 'roles' | 'roleUntil'> | null | undefined
 
 /** The user holds the role now: it is theirs and, if it was given until a date, that date has not passed. */
-export function hasRole(user: Someone, role: Role, now: Date = new Date()): boolean {
+export function hasRole(user: Someone, role: Role, now: Date = serverNow()): boolean {
   if (!user?.roles.includes(role)) return false
   const until = user.roleUntil?.[role]
   return !until || new Date(until) > now

@@ -1,6 +1,7 @@
 import type { GoogleStatus } from '../types/google'
 import * as http from './google.http'
 import type { GoogleEventsResult } from './google.http'
+import { serverNow } from '../utils/serverTime'
 
 /**
  * The Google Calendar connection (./google.http). Two ways out: disconnect (the server forgets its copy) and revoke
@@ -30,7 +31,7 @@ export async function connectGoogle(user: { name: string; email: string }): Prom
 }
 
 /** The person's own Google Calendar around today (about a year), read-only. Only asked for when Google is connected. */
-export async function fetchGoogleCalendar(now: Date = new Date()): Promise<GoogleEventsResult> {
+export async function fetchGoogleCalendar(now: Date = serverNow()): Promise<GoogleEventsResult> {
   const DAY = 86_400_000
   return http.fetchCalendarEvents(new Date(now.getTime() - 120 * DAY), new Date(now.getTime() + 240 * DAY))
 }

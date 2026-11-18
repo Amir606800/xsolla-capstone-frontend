@@ -13,6 +13,7 @@ import { Modal } from '../Modal'
 import '../../styles/ui.css'
 import './notifications.css'
 import { Loading } from '../loading/Loading'
+import { serverNow } from '../../utils/serverTime'
 
 const TYPE_ICON: Record<NotificationType, IconName> = {
   task: 'tasks',
@@ -38,7 +39,7 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
   const [filter, setFilter] = useState<Filter>('all')
   const [failed, setFailed] = useState(false)
   // fixed while the panel is open, so the relative times don't jump around
-  const [now] = useState(() => new Date())
+  const [now] = useState(() => serverNow())
 
   // "Ask before opening a notification" - remembered, so people who don't want the extra step can turn it off
   const [confirmMode, setConfirmMode] = usePersistedState<ConfirmMode>('notif_confirm', 'ask', CONFIRM_MODES)

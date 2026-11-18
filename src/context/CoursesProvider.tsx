@@ -23,6 +23,7 @@ import { isModuleLocked, orderByOpening } from '../utils/progress'
 import { canAuthor, hasRole, isStudent } from '../utils/roles'
 import { CoursesContext } from './courses'
 import type { LoadStatus } from './courses'
+import { serverNow } from '../utils/serverTime'
 
 function withSubmission(modules: CourseModule[], assignmentId: string, result: Submission): CourseModule[] {
   return modules.map((m) =>
@@ -79,7 +80,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const mayAuthor = canAuthor(user)
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [modules, setModules] = useState<CourseModule[]>([])
-  const [now, setNow] = useState(() => new Date())
+  const [now, setNow] = useState(() => serverNow())
   const [attempt, setAttempt] = useState(0)
   // the course with the student's 1:1s, which their deadlines follow
   const userRef = useRef(user)
@@ -97,7 +98,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         if (cancelled) return
         setModules(data)
-        setNow(new Date())
+        setNow(serverNow())
         setStatus('ready')
       })
       .catch(() => {
@@ -128,7 +129,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
         if (version.current !== started) return
         if (sameData(shown.current, next)) return
         setModules(next)
-        setNow(new Date())
+        setNow(serverNow())
       },
       () => undefined,
     )
@@ -149,7 +150,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
         .then((data) => {
           if (!active) return
           setModules(data)
-          setNow(new Date())
+          setNow(serverNow())
         })
         .catch(() => {})
     }, 2500)
@@ -163,7 +164,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     async (assignmentId: string, payload: SubmitPayload) => {
       // Defence in depth: the UI hides locked modules, but never accept work for one.
       const owner = modules.find((m) => m.items.some((i) => i.id === assignmentId))
-      if (student && owner && isModuleLocked(owner, new Date())) {
+      if (student && owner && isModuleLocked(owner, serverNow())) {
         throw new Error('This module is not open yet')
       }
       // Graded work is final. The backend must refuse it too.
@@ -177,7 +178,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       version.current += 1
       // whether it was late is the server's answer
       setModules((prev) => withSubmission(prev, assignmentId, result))
-      setNow(new Date())
+      setNow(serverNow())
     },
     [modules, student, user?.id],
   )
@@ -189,7 +190,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       const next = await run()
       version.current += 1
       setModules(forRole(next, student))
-      setNow(new Date())
+      setNow(serverNow())
     },
     [mayAuthor, student],
   )
@@ -217,7 +218,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       // The new module is shown at once (so the caller can open it without waiting for the whole course to load again),
       // in its place among the weeks; the quiet refresh then brings in anything else that changed.
       setModules((prev) => orderByOpening([...prev.filter((m) => m.id !== id), module]).map((m, i) => ({ ...m, position: i + 1 })))
-      setNow(new Date())
+      setNow(serverNow())
       refresh()
       return { id, warning: datesNotKept(patch, module) }
     },
@@ -241,7 +242,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       const next = await apiSubmitQuizAttempt(quizId, answers, { studentId: user?.id })
       version.current += 1
       setModules(forRole(next, student))
-      setNow(new Date())
+      setNow(serverNow())
     },
     [student, user?.id],
   )

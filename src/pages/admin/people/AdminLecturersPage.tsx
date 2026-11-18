@@ -20,6 +20,7 @@ import { RolePills } from './RolePills'
 import { RolesForm } from './RolesForm'
 import { StudentForm } from './StudentForm'
 import { Loading } from '../../../components/loading/Loading'
+import { serverNow } from '../../../utils/serverTime'
 
 type Show = 'all' | 'only' | 'temporary'
 type Action = { kind: 'add' } | { kind: 'edit' | 'weeks' | 'team' | 'roles' | 'password' | 'delete'; person: SchoolUser }
@@ -39,7 +40,7 @@ const mainOf = (u: SchoolUser) => {
 export default function AdminLecturersPage() {
   const { status, users, teams, reload, addLecturer, editMentor, changeRoles, setNewPassword, removeAccount } = useDirectory()
   const courses = useCourses()
-  const [today] = useState(() => new Date())
+  const [today] = useState(() => serverNow())
   const [query, setQuery] = useState('')
   const [show, setShow] = useState<Show>('all')
   const [action, setAction] = useState<Action | null>(null)

@@ -27,6 +27,7 @@ import type { CalendarEvent, EventKind } from '../types/calendar'
 import '../styles/ui.css'
 import '../components/calendar/calendar.css'
 import { Loading } from '../components/loading/Loading'
+import { serverNow } from '../utils/serverTime'
 
 const LEGEND: [EventKind, string][] = [
   ['lecture', 'Lecture'],
@@ -66,7 +67,7 @@ export default function CalendarPage() {
   const lectureOnly = !isAdmin(user)
   const student = isStudent(user)
 
-  const [today] = useState(() => new Date())
+  const [today] = useState(() => serverNow())
   const [month, setMonth] = useState(() => startOfMonth(today))
   const [selected, setSelected] = useState(() => dateKey(today))
   // staff: what is open in the "add to this day" part of the panel (null = just the choices)

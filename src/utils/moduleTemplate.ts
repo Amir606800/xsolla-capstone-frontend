@@ -1,5 +1,6 @@
 import type { AssignmentItem, ContentItem, CourseModule, QuizItem, QuizQuestion, ResourceItem } from '../types/course'
 import { schoolClock, schoolDate, schoolDayNumber } from './schoolTime'
+import { serverNow } from './serverTime'
 
 /**
  * A module template: the modules of a course as a file, so the next group gets them without typing everything again.
@@ -50,7 +51,7 @@ function whenOf(iso: string, base: Date): When {
 }
 
 /** The modules as a template, in the order they open. Modules without both dates cannot be placed and are left out. */
-export function buildTemplate(modules: CourseModule[], now: Date = new Date()): ModuleTemplate {
+export function buildTemplate(modules: CourseModule[], now: Date = serverNow()): ModuleTemplate {
   const dated = modules
     .filter((m): m is CourseModule & { opensAt: string; closesAt: string } => !!m.opensAt && !!m.closesAt)
     .sort((a, b) => a.position - b.position)
@@ -86,7 +87,7 @@ export function buildTemplate(modules: CourseModule[], now: Date = new Date()): 
   }
 }
 
-export const templateFileName = (now: Date = new Date()) => `module-template-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`
+export const templateFileName = (now: Date = serverNow()) => `module-template-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`
 
 // ---------- reading a file ----------
 

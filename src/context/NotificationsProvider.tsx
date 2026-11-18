@@ -14,6 +14,7 @@ import { useLive } from '../hooks/useLive'
 import type { AppNotification } from '../types/notification'
 import type { LoadStatus } from './courses'
 import { NotificationsContext } from './notifications'
+import { serverNow } from '../utils/serverTime'
 
 const byNewest = (a: AppNotification, b: AppNotification) => b.createdAt.localeCompare(a.createdAt)
 
@@ -93,7 +94,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     async (id: string) => {
       const target = notifications.find((n) => n.id === id)
       if (!target || target.readAt) return // unknown or already read: nothing to do
-      const readAt = new Date().toISOString()
+      const readAt = serverNow().toISOString()
       version.current += 1
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAt } : n)))
       try {
@@ -112,7 +113,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const markAllRead = useCallback(async () => {
     const before = notifications
     if (!before.some((n) => !n.readAt)) return
-    const readAt = new Date().toISOString()
+    const readAt = serverNow().toISOString()
     version.current += 1
     setNotifications((prev) => prev.map((n) => (n.readAt ? n : { ...n, readAt })))
     try {

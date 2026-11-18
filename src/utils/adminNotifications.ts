@@ -1,5 +1,6 @@
 import type { User } from '../types/user'
 import { hasRole, isAdmin, isStudent } from './roles'
+import { serverNow } from './serverTime'
 
 /** Who an announcement goes to. */
 export type Audience = 'all' | 'students' | 'mentors' | 'lecturers'
@@ -26,7 +27,7 @@ export const LINK_CHOICES: { value: string; label: string }[] = [
 type Someone = Pick<User, 'roles' | 'roleUntil'>
 
 /** Admins are not part of the school's "everyone": they do not use the LMS pages the bell is in. */
-export function inAudience(user: Someone, audience: Audience, now: Date = new Date()): boolean {
+export function inAudience(user: Someone, audience: Audience, now: Date = serverNow()): boolean {
   if (isAdmin(user)) return false
   switch (audience) {
     case 'all':
@@ -41,7 +42,7 @@ export function inAudience(user: Someone, audience: Audience, now: Date = new Da
 }
 
 /** How many of these people each audience reaches. */
-export function audienceCounts(users: Array<Someone & { leftAt?: string }>, now: Date = new Date()): Record<Audience, number> {
+export function audienceCounts(users: Array<Someone & { leftAt?: string }>, now: Date = serverNow()): Record<Audience, number> {
   const active = users.filter((u) => !u.leftAt)
   return Object.fromEntries(AUDIENCES.map((a) => [a, active.filter((u) => inAudience(u, a, now)).length])) as Record<Audience, number>
 }

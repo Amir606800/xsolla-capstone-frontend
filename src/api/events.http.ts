@@ -3,6 +3,7 @@ import type { SaveOptions, SaveResult } from '../types/google'
 import { authedRequest } from './authed'
 import { eventToApi, isServerId, mapEvent } from './mappers'
 import type { ApiEvent } from './types'
+import { serverNow } from '../utils/serverTime'
 
 /**
  * Real calendar calls (internal/handlers/event.go). Lectures, meetings and off-campus days only:
@@ -22,7 +23,7 @@ function range(now: Date): string {
   return `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
 }
 
-export async function fetchEvents(now: Date = new Date()): Promise<CalendarEvent[]> {
+export async function fetchEvents(now: Date = serverNow()): Promise<CalendarEvent[]> {
   const rows = await authedRequest<ApiEvent[] | null>(`/events${range(now)}`)
   return (rows ?? []).map(mapEvent)
 }

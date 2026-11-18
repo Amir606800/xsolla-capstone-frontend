@@ -2,6 +2,7 @@ import axios, { AxiosError } from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 import { publish, topicsForPath } from '../sync/bus'
 import { runtimeEnv } from '../config/runtime.ts'
+import { noteServerDate } from '../utils/serverTime'
 
 /** Thin axios wrapper for the LMS backend: JSON in/out and one error type for every failure. */
 
@@ -78,8 +79,11 @@ export async function apiRequest<T>(path: string, { method = 'GET', body, token,
   }
 
   let res
+  const sentAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
   try {
     res = await http.request<unknown>(config)
+    // the server's clock, so locks and deadlines do not follow this device's clock (utils/serverTime)
+    noteServerDate(res.headers?.date, sentAt, typeof performance !== 'undefined' ? performance.now() : Date.now())
   } catch (e) {
     // no answer at all: offline, DNS, CORS, a refused connection
     if (e instanceof AxiosError || axios.isAxiosError(e)) {

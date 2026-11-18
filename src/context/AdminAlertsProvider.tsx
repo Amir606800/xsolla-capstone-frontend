@@ -11,6 +11,7 @@ import { keepIfSame } from '../utils/same'
 import type { AdminAlert } from '../utils/adminAlerts'
 import { AdminAlertsContext } from './adminAlerts'
 import type { LoadStatus } from './courses'
+import { serverNow } from '../utils/serverTime'
 
 /**
  * Loads what the admin needs to be told about (the school's data, looked at as a whole) once for the whole
@@ -33,7 +34,7 @@ export function AdminAlertsProvider({ children }: { children: ReactNode }) {
             failed: [modules, users, teams, events, sent].every((r) => r.status === 'rejected'),
             alerts: buildAlerts(
               { modules: ok(modules, []), users: ok(users, []), teams: ok(teams, []), events: ok(events, []), sent: ok(sent, []) },
-              new Date(),
+              serverNow(),
             ),
           }
         },

@@ -6,6 +6,7 @@ import { ApiError } from './http'
 import { mapModules } from './mappers'
 import type { StoredStanding } from '../types/standing'
 import type { ApiModule } from './types'
+import { serverNow } from '../utils/serverTime'
 
 /**
  * Weekly grades on the real backend. A module is one week, and the week's grade of a student is the `grade` of
@@ -50,7 +51,7 @@ interface Week {
 /** The weeks in the same order (and so with the same numbers) as the course pages. */
 async function weeks(): Promise<Week[]> {
   const rows = (await authedRequest<ApiModule[] | null>('/modules')) ?? []
-  return mapModules(rows, {}).map((m) => ({ moduleId: m.id, week: m.position, title: m.title, date: m.closesAt ?? m.createdAt ?? new Date().toISOString() }))
+  return mapModules(rows, {}).map((m) => ({ moduleId: m.id, week: m.position, title: m.title, date: m.closesAt ?? m.createdAt ?? serverNow().toISOString() }))
 }
 
 /** A week whose enrollments the caller may not read (403) counts as "no grades yet". */

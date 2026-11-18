@@ -10,6 +10,7 @@ import { GradedPill } from '../GradedPill'
 import { Icon } from '../Icon'
 import { LatePill } from '../LatePill'
 import { EarlierVersions, FileList } from './SubmissionVersions'
+import { serverNow } from '../../utils/serverTime'
 
 interface SubmissionPanelProps {
   assignment: AssignmentItem
@@ -51,7 +52,7 @@ export function SubmissionPanel({ assignment, onSubmit, now }: SubmissionPanelPr
 
   const graded = submission?.gradedAt !== undefined
   // the deadline has passed: handing in still works, but it will be late
-  const pastDue = !graded && isOverdue(assignment, now ?? new Date())
+  const pastDue = !graded && isOverdue(assignment, now ?? serverNow())
   const history = submission?.history ?? []
   const versions = submission ? history.length + 1 : 0
   const canSubmit = (text.trim().length > 0 || files.length > 0 || keep.length > 0) && !busy && !graded

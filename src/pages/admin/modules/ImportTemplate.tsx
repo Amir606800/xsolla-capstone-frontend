@@ -10,13 +10,14 @@ import type { ModuleTemplate } from '../../../utils/moduleTemplate'
 import { formatShortDate } from '../../../utils/date'
 import { FileDropzone, PickedFiles } from '../../../components/FileDropzone'
 import { Icon } from '../../../components/Icon'
+import { serverNow } from '../../../utils/serverTime'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 const pad = (n: number) => String(n).padStart(2, '0')
 const dayInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
 /** The next Monday (today when it is one): the usual first day of week 1. */
-function nextMonday(from = new Date()): string {
+function nextMonday(from = serverNow()): string {
   const d = new Date(from.getFullYear(), from.getMonth(), from.getDate())
   d.setDate(d.getDate() + ((8 - d.getDay()) % 7))
   return dayInput(d)
