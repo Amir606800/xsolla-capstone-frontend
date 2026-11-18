@@ -79,6 +79,11 @@ export default function ModulePage() {
             </span>
             <h2 id="assignments-title">Assignments</h2>
           </header>
+          {module.lecturers && module.lecturers.length > 0 && (
+            <p className="module__lecturer">
+              {module.lecturers.length === 1 ? 'Lecturer' : 'Lecturers'}: <strong>{module.lecturers.map((l) => l.name).join(', ')}</strong>
+            </p>
+          )}
           {assignments.length === 0 ? (
             <p className="card__empty">No assignments in this module.</p>
           ) : (

@@ -165,6 +165,16 @@ Still open:
 
 ---
 
+## 11. The lecturer's name for students
+
+The module page shows "Lecturer: name" above the assignments. A student cannot read it today: `GET /users` is staff only,
+and `GET /modules/{id}/enrollments` gives a student only their own enrollment. Proposed: add to `ModuleResponse`
+(`GET /modules`, `GET /modules/{id}`) `"lecturers": [{ "id": 12, "name": "Leyla Aliyeva" }]` (the enrolled users with the lecturer role; only id and name).
+**Done in the backend on 2026-11-18** (`module_service.go` fills it from the module's enrollments). Until the backend is
+deployed the line is not shown. The front-end reads the field (`src/api/mappers.ts`).
+
+---
+
 ## Optional
 
 - **Earlier versions of a hand-in** (`history` on `GET .../submissions/me`): the front-end shows them when present. The

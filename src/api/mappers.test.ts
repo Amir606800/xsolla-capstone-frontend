@@ -119,6 +119,13 @@ describe('mapModules', () => {
     expect(mapModules([{ ...modules[1], lecturer_id: null }], items)[0]).not.toHaveProperty('createdBy')
   })
 
+  it('keeps the names of the lecturers the server sends, for a student to see', () => {
+    const [m] = mapModules([{ ...modules[1], lecturers: [{ id: 12, name: 'Leyla Aliyeva' }] }], items)
+    expect(m.lecturers).toEqual([{ id: 12, name: 'Leyla Aliyeva' }])
+    expect(m.lecturerIds).toEqual([12])
+    expect(mapModules(modules, items)[0]).not.toHaveProperty('lecturers')
+  })
+
   it('for admins: hidden items are kept and marked hidden', () => {
     const [m1] = mapModules(modules, items, {}, { includeHidden: true })
     expect(m1.items.map((i) => [i.id, !!i.hidden])).toEqual([

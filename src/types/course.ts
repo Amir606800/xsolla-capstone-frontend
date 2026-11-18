@@ -118,6 +118,8 @@ export interface CourseModule {
   closesAt?: string
   /** The lecturers the week is assigned to (user ids): a week can have several, a lecturer can teach several weeks. */
   lecturerIds?: number[]
+  /** The names of the week's lecturers, as the server sends them (a student cannot read the user list). */
+  lecturers?: { id: number; name: string }[]
   /** The first of `lecturerIds` (kept for places that need "the" lecturer, e.g. who wrote an item), and when the module was made. */
   createdBy?: number
   createdAt?: string

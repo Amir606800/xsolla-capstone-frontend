@@ -166,10 +166,14 @@ export function mapQuiz(q: ApiQuiz): QuizItem {
   }
 }
 
-function lecturerFields(m: ApiModule): { lecturerIds?: number[]; createdBy?: number } {
-  const ids = m.lecturer_ids ?? (m.lecturer_id != null ? [m.lecturer_id] : [])
+function lecturerFields(m: ApiModule): { lecturerIds?: number[]; createdBy?: number; lecturers?: { id: number; name: string }[] } {
+  const named = (m.lecturers ?? []).filter((l) => l.name).map((l) => ({ id: Number(l.id), name: l.name }))
+  const ids = m.lecturer_ids ?? (m.lecturer_id != null ? [m.lecturer_id] : named.map((l) => l.id))
   const lecturers = [...new Set(ids.map(Number))]
-  return lecturers.length ? { lecturerIds: lecturers, createdBy: lecturers[0] } : {}
+  return {
+    ...(lecturers.length ? { lecturerIds: lecturers, createdBy: lecturers[0] } : {}),
+    ...(named.length ? { lecturers: named } : {}),
+  }
 }
 
 /**

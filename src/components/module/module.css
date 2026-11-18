@@ -668,3 +668,14 @@
 .ai-quiz__hint p {
   margin: 0;
 }
+
+/* who teaches the week, above the assignments */
+.module__lecturer {
+  margin: 0 0 12px;
+  color: var(--text-muted, inherit);
+  font-size: 14px;
+}
+.module__lecturer strong {
+  color: var(--text, inherit);
+  font-weight: 600;
+}

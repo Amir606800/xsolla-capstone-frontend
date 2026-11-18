@@ -19,6 +19,8 @@ export interface ApiModule {
   lecturer_id?: ApiId | null
   /** Filled by the front-end from the module's enrollments: every lecturer enrolled in the week. */
   lecturer_ids?: ApiId[]
+  /** Proposed (BACKEND_REQ_OPEN_ITEMS.md 11): who teaches the week, with names, so a student can see them. */
+  lecturers?: { id: ApiId; name: string }[] | null
   created_at: string
   /** Proposed (BACKEND_REQUIREMENTS.md 3.2): the week's dates. The server does not store them yet. */
   opens_at?: string | null
