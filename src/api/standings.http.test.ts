@@ -139,10 +139,21 @@ describe('weekly grades on the real backend (enrollment grades)', () => {
     await backend({ forbidWeek: '7' })
     expect((await fetchEveryGrade())?.every((r) => r.week === 1)).toBe(true)
 
+    // a server without the combined route (404), whose per-week route refuses every week
     await stubHttp(async (url: string) =>
       url.endsWith('/modules')
         ? new Response(JSON.stringify([{ id: 5, title: 'Week A', created_by: 1, created_at: '2026-11-01T00:00:00Z' }]), { status: 200 })
-        : new Response(JSON.stringify({ error: 'forbidden', message: 'no' }), { status: 403 }),
+        : url.includes('/enrollments?module_ids=')
+          ? new Response(JSON.stringify({ error: 'not_found', message: 'no' }), { status: 404 })
+          : new Response(JSON.stringify({ error: 'forbidden', message: 'no' }), { status: 403 }),
+    )
+    expect(await fetchEveryGrade()).toBeNull()
+
+    // a server with the combined route leaves the refused week out of its answer
+    await stubHttp(async (url: string) =>
+      url.endsWith('/modules')
+        ? new Response(JSON.stringify([{ id: 5, title: 'Week A', created_by: 1, created_at: '2026-11-01T00:00:00Z' }]), { status: 200 })
+        : new Response(JSON.stringify({}), { status: 200 }),
     )
     expect(await fetchEveryGrade()).toBeNull()
   })
