@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { ResourceItem } from '../../types/course'
-import { MATERIAL_KINDS, hasErrors, materialToDraft, validateMaterial } from '../../utils/authoring'
+import { MATERIAL_KINDS, hasErrors, materialKindOf, materialToDraft, validateMaterial } from '../../utils/authoring'
 import type { MaterialDraft } from '../../utils/authoring'
-import { ALLOWED_EXTENSIONS, formatBytes, MAX_FILE_BYTES, validateFile } from '../../utils/files'
+import { ALLOWED_EXTENSIONS, ALLOWED_TYPES_TEXT, extensionOf, formatBytes, MAX_FILE_BYTES, validateFile } from '../../utils/files'
 import { FileDropzone, PickedFiles } from '../FileDropzone'
 import { Field, FormActions } from './Field'
 import { useSave } from './useSave'
@@ -24,12 +24,28 @@ export function MaterialForm({
   // the file this material had before it was edited (kept when a newly picked one is taken back out)
   const original = item?.file
   const [pickProblem, setPickProblem] = useState('')
+  const maxSize = formatBytes(MAX_FILE_BYTES).replace('.0 ', ' ')
+  const sourceLabel = useId()
 
   function pick(files: File[]) {
     const f = files[0]
     const problem = validateFile(f)
-    setPickProblem(problem ?? '')
-    if (!problem) set({ file: { name: f.name, sizeBytes: f.size }, upload: f })
+    const wrongType = !(ALLOWED_EXTENSIONS as readonly string[]).includes(extensionOf(f.name))
+    setPickProblem(
+      problem
+        ? wrongType
+          ? `“${f.name}” can't be added: a material must be a ${ALLOWED_TYPES_TEXT} file.`
+          : `“${f.name}” is too big: a file can be at most ${maxSize}.`
+        : '',
+    )
+    // the kind comes from the file itself (pdf, pptx, md or zip), not from a list
+    if (!problem) set({ file: { name: f.name, sizeBytes: f.size }, upload: f, kind: materialKindOf(f.name) })
+  }
+
+  // File or Link: a file keeps the kind of the file already chosen
+  const choose = (link: boolean) => {
+    setPickProblem('')
+    set({ kind: link ? 'link' : d.file ? materialKindOf(d.file.name) : 'pdf' })
   }
 
   return (
@@ -44,17 +60,19 @@ export function MaterialForm({
       <Field label="Title" error={touched ? errors.title : undefined}>
         {(p) => <input {...p} className="field__input form__input" value={d.title} onChange={(e) => set({ title: e.target.value })} />}
       </Field>
-      <Field label="Type">
-        {(p) => (
-          <select {...p} className="field__input form__input" value={d.kind} onChange={(e) => set({ kind: e.target.value as MaterialDraft['kind'] })}>
-            {MATERIAL_KINDS.map((k) => (
-              <option key={k.value} value={k.value}>
-                {k.label}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
+      <div className="form__field">
+        <span className="field__label" id={sourceLabel}>
+          Material
+        </span>
+        <div className="view-toggle" role="group" aria-labelledby={sourceLabel}>
+          <button type="button" className={`view-toggle__btn${isLink ? '' : ' is-active'}`} aria-pressed={!isLink} onClick={() => choose(false)}>
+            File
+          </button>
+          <button type="button" className={`view-toggle__btn${isLink ? ' is-active' : ''}`} aria-pressed={isLink} onClick={() => choose(true)}>
+            Link
+          </button>
+        </div>
+      </div>
 
       {isLink ? (
         <Field label="Link" error={touched ? errors.url : undefined} hint="An external source, e.g. documentation or a video.">
@@ -74,7 +92,9 @@ export function MaterialForm({
         <Field
           label="File"
           error={pickProblem || (touched ? errors.file : undefined)}
-          hint={`Slides, notes or an archive: ${ALLOWED_EXTENSIONS.join(', ')}, up to ${formatBytes(MAX_FILE_BYTES).replace('.0 ', ' ')}.`}
+          hint={`Allowed: ${ALLOWED_TYPES_TEXT}, up to ${maxSize}. Other files can't be added.${
+            d.file ? ` This one is: ${MATERIAL_KINDS.find((k) => k.value === d.kind)?.label ?? d.kind}.` : ''
+          }`}
         >
           {(p) => (
             <>

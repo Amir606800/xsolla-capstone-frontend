@@ -2,6 +2,9 @@
 export const ALLOWED_EXTENSIONS = ['pdf', 'pptx', 'md', 'zip'] as const
 export const MAX_FILE_BYTES = 10 * 1024 * 1024
 
+/** The allowed files in words, for hints and messages. */
+export const ALLOWED_TYPES_TEXT = 'PDF, PowerPoint (.pptx), Markdown (.md) or ZIP'
+
 export function extensionOf(name: string): string {
   const dot = name.lastIndexOf('.')
   return dot === -1 ? '' : name.slice(dot + 1).toLowerCase()

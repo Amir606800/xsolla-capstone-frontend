@@ -34,6 +34,9 @@ interface ApiContentItemBase {
   position: number
   is_visible: boolean
   file_id?: ApiId | null
+  /** A file material's uploaded file: its name (e.g. "week1.pptx") and type. Absent on an older server. */
+  file_name?: string | null
+  file_mime_type?: string | null
   /** Always empty now that sections are gone; read defensively in case a parent ever comes back. */
   children?: ApiContentItem[]
 }

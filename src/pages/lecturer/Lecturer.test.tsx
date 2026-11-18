@@ -272,7 +272,7 @@ describe('Module editor: materials', () => {
     const { unmount } = renderAs(LECTURER, '/courses/m6')
     await user.click(await screen.findByRole('button', { name: 'Add' }))
     await user.type(within(dialog()).getByLabelText('Title'), 'Effective Go')
-    await user.selectOptions(within(dialog()).getByLabelText('Type'), 'link')
+    await user.click(within(dialog()).getByRole('button', { name: 'Link' }))
     await user.type(within(dialog()).getByLabelText('Link'), 'go.dev/doc')
     await user.click(within(dialog()).getByRole('button', { name: 'Add material' }))
     expect(within(dialog()).getByText(/starts with http/)).toBeInTheDocument()
