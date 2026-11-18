@@ -153,7 +153,7 @@ describe('Admin: creating content', () => {
     await user.click(screen.getByRole('button', { name: 'New resource' }))
     form = within(await dialog())
     await user.type(form.getByLabelText('Title'), 'Kubernetes docs')
-    await user.selectOptions(form.getByLabelText('Type'), 'Link')
+    await user.click(form.getByRole('button', { name: 'Link' }))
     await user.type(form.getByLabelText('Link'), 'https://kubernetes.io/docs/')
     await user.click(form.getByRole('button', { name: 'Add material' }))
     expect(await screen.findByText('Resource added.')).toBeInTheDocument()

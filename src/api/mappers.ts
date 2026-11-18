@@ -10,9 +10,9 @@ import type { ApiAttendee, ApiContentItem, ApiEvent, ApiGoogleCalendarEvent, Api
 
 const RESOURCE_KINDS: Record<string, ResourceItem['kind']> = { pdf: 'pdf', pptx: 'pptx', md: 'md', zip: 'zip' }
 
-/** The material kind from the file name; anything else is shown as a plain file (pdf icon). */
-function resourceKind(title: string): ResourceItem['kind'] {
-  const ext = title.split('.').pop()?.toLowerCase() ?? ''
+/** The material kind from the file's name; anything else is shown as a plain file (pdf icon). */
+function resourceKind(fileName: string): ResourceItem['kind'] {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
   return RESOURCE_KINDS[ext] ?? 'pdf'
 }
 
@@ -87,7 +87,8 @@ export function mapContentItems(
         moduleId,
         type: 'resource',
         title: node.title,
-        kind: resourceKind(node.title),
+        // the uploaded file's own name says what it is; the title only on an older server that does not send it
+        kind: resourceKind(node.file_name || node.title),
         ...hidden,
         ...(text.description ? { description: text.description } : {}),
         ...(node.file_id != null ? { fileId: String(node.file_id) } : {}),

@@ -96,6 +96,15 @@ export const MATERIAL_KINDS: { value: ResourceItem['kind']; label: string }[] = 
   { value: 'link', label: 'Link' },
 ]
 
+/**
+ * A material is either a file or a link. A file's kind (pdf, pptx, md, zip) is read from the file itself, so nobody
+ * picks it by hand (and cannot pick it wrong).
+ */
+export function materialKindOf(fileName: string): ResourceItem['kind'] {
+  const ext = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase()
+  return ext === 'pptx' || ext === 'md' || ext === 'zip' ? ext : 'pdf'
+}
+
 export interface MaterialDraft {
   title: string
   kind: ResourceItem['kind']
