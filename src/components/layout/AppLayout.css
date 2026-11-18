@@ -490,8 +490,13 @@
   }
 }
 
-/* the narrowest phones (320px): menu | logo | search, bell, account must still fit one row */
-@media (max-width: 400px) {
+/* phones: the bar must fit one row (menu | logo | search, bell, account), the page gets less padding */
+@media (max-width: 600px) {
+  .shell__main {
+    padding: 20px 14px 32px;
+  }
+}
+@media (max-width: 480px) {
   .header {
     gap: 6px;
     padding: 0 10px;

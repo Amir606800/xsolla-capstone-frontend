@@ -84,3 +84,17 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* phones: a student's status goes under the name, so the name and the e-mail keep the whole row */
+@media (max-width: 600px) {
+  .mentor__student {
+    flex-wrap: wrap;
+  }
+  .mentor__student .team__info {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+  .mentor__student > .chip {
+    margin-left: 56px;
+  }
+}

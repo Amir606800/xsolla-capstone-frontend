@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { PageLoader } from '../../components/loading/PageLoader'
 import { Avatar } from '../../components/profile/Avatar'
@@ -15,6 +15,7 @@ import { FoldBody, FoldHeading } from '../../components/nav/Fold'
 import { useAuth } from '../../hooks/useAuth'
 import { useFoldableNav } from '../../hooks/useFoldableNav'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { useTableLabels } from '../../hooks/useTableLabels'
 import { useTheme } from '../../hooks/useTheme'
 import '../../styles/ui.css'
 import './admin.css'
@@ -52,8 +53,16 @@ function AdminFrame() {
     ],
     [],
   )
-  // on a phone the list is a row under the top bar (no headings): nothing to fold
+  // on a phone the list is a drawer the menu button opens (no headings): nothing to fold
   const phone = useMediaQuery('(max-width: 800px)')
+  useTableLabels()
+  const [navOpen, setNavOpen] = useState(false)
+  useEffect(() => {
+    if (!navOpen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setNavOpen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [navOpen])
   const [navRef, fold] = useFoldableNav({ storageKey: 'admin_nav_fold', groups, pathname, enabled: !phone })
 
   async function handleSignOut() {
@@ -64,6 +73,15 @@ function AdminFrame() {
   return (
     <div className="admin">
       <header className="admin__bar">
+        <button
+          type="button"
+          className="admin-icon-btn admin__menu-btn"
+          aria-label="Open the section list"
+          aria-expanded={navOpen}
+          onClick={() => setNavOpen(true)}
+        >
+          <Icon name="menu" size={20} />
+        </button>
         <div className="admin-brand">
           <XsollaLogo className="admin-brand__logo" />
           <span className="admin-brand__tag">Admin</span>
@@ -82,14 +100,23 @@ function AdminFrame() {
           >
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
           </button>
-          <button type="button" className="admin-btn" onClick={handleSignOut}>
-            <Icon name="logout" size={16} /> Sign out
+          <button type="button" className="admin-btn admin__signout" onClick={handleSignOut} aria-label="Sign out">
+            <Icon name="logout" size={16} /> <span>Sign out</span>
           </button>
         </div>
       </header>
 
       <div className="admin__body">
-        <nav className="admin-nav" aria-label="Admin sections" ref={navRef}>
+        {navOpen && <div className="admin-nav-backdrop" onClick={() => setNavOpen(false)} aria-hidden="true" />}
+        <nav
+          className={`admin-nav${navOpen ? ' is-open' : ''}`}
+          aria-label="Admin sections"
+          ref={navRef}
+          onClick={(e) => (e.target as HTMLElement).closest('a') && setNavOpen(false)}
+        >
+          <button type="button" className="admin-icon-btn admin-nav__close" aria-label="Close the section list" onClick={() => setNavOpen(false)}>
+            <Icon name="close" size={18} />
+          </button>
           <NavLink to="/admin" end className={linkClass}>
             <Icon name="dashboard" size={18} /> Overview
           </NavLink>

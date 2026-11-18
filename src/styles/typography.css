@@ -81,6 +81,12 @@
   --fw-strong: 600;
 }
 
+/* Phones: no automatic text enlarging (Chrome and Safari on a phone otherwise inflate the text of wide blocks) */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   font-family: var(--font-body);
   font-size: var(--fs-p);
@@ -132,6 +138,26 @@ h4 {
 strong,
 b {
   font-weight: var(--fw-strong);
+}
+
+/* Phones: a smaller scale, so titles and text do not fill the narrow screen */
+@media (max-width: 600px) {
+  :root {
+    --fs-display: clamp(24px, 7vw, 30px);
+    --lh-display: 1.15;
+    --fs-h1: 28px;
+    --lh-h1: 32px;
+    --fs-h2: 22px;
+    --lh-h2: 28px;
+    --fs-h3: 19px;
+    --lh-h3: 24px;
+    --fs-h4: 16px;
+    --lh-h4: 22px;
+    --fs-p: 15px;
+    --lh-p: 22px;
+    --fs-label: 13px;
+    --lh-label: 18px;
+  }
 }
 
 /* Page-level display heading + lead text used across the app */

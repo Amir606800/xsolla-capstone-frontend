@@ -1,4 +1,5 @@
 import { useId, useReducer, useState } from 'react'
+import { useTableLabels } from '../../hooks/useTableLabels'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Icon } from '../../components/Icon'
@@ -29,6 +30,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
  * Nothing is saved: a reload brings the sample data back.
  */
 export default function SuperAdminPage() {
+  useTableLabels('.sa')
   const [state, dispatch] = useReducer(superAdminReducer, initialState)
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [message, setMessage] = useState('')

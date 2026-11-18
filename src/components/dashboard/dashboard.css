@@ -547,8 +547,50 @@
   .node__label {
     width: auto;
     flex: 1;
+    min-width: 0;
     align-items: flex-start;
     text-align: left;
+  }
+  .path {
+    --circle: 72px;
+  }
+  .progress {
+    padding: 12px;
+    gap: 16px;
+  }
+  /* the score card: one centred column, no second frame's worth of padding */
+  .score {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  .score__ring {
+    align-self: center;
+  }
+  .score__stats {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+  /* the ring follows the smaller circle (its size is set inline for the wide path) */
+  .node__circle .ring {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .node__circle .ring svg {
+    width: 100%;
+    height: 100%;
+  }
+  .node__circle .ring__content {
+    inset: 8px;
+  }
+  /* the Opened / Due tags stay inside the screen next to the smaller circle (more specific than their wide-path rules below) */
+  .path .node__tag--left {
+    left: -6px;
+  }
+  .path .node__tag--right {
+    right: -40px;
   }
 }
 

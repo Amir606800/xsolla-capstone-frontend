@@ -214,3 +214,23 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* phones: a slimmer reminder, so it does not push the page down */
+@media (max-width: 600px) {
+  .profile-reminder {
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 12px;
+  }
+  .profile-reminder__icon {
+    display: none;
+  }
+  .profile-reminder__text {
+    flex-basis: 100%;
+    font-size: 13px;
+  }
+  .profile-reminder .btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}

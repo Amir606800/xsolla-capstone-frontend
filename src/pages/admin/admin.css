@@ -400,33 +400,52 @@
   .admin__body {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* the section list becomes a row that scrolls sideways under the top bar */
+  /* the section list becomes a drawer: the menu button in the top bar opens it */
   .admin-nav {
-    top: 56px;
-    z-index: 9;
-    flex-direction: row;
-    align-items: center;
-    height: auto;
-    padding: 8px 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    border-right: 0;
-    border-bottom: 1px solid var(--divider);
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    left: 0;
+    width: min(280px, 85vw);
+    height: 100dvh;
+    padding: 12px;
+    transform: translateX(-102%);
+    transition: transform 0.2s ease;
+    border-right: 1px solid var(--divider);
+    box-shadow: none;
   }
-  .admin-nav__group {
-    flex-direction: row;
+  .admin-nav.is-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
   }
-  .admin-nav__heading {
-    display: none;
+  .admin-nav__close {
+    display: inline-flex;
+    align-self: flex-end;
+    margin-bottom: 4px;
   }
-  .admin-nav__link.is-active {
-    box-shadow: inset 0 -3px 0 var(--xs-cyan);
+  .admin__menu-btn {
+    display: inline-flex;
   }
-  .admin-nav__tools {
-    margin: 0 0 0 4px;
-    padding: 0 0 0 8px;
-    border-top: 0;
-    border-left: 1px solid var(--divider);
+  .admin-nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+.admin__menu-btn,
+.admin-nav__close {
+  display: none;
+}
+@media (max-width: 800px) {
+  .admin__menu-btn,
+  .admin-nav__close {
+    display: inline-flex;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav {
+    transition: none;
   }
 }
 @media (max-width: 600px) {
@@ -436,6 +455,19 @@
   /* on a phone only the picture is left, still a link to the profile */
   .admin__who > span:last-child {
     display: none;
+  }
+  /* the sign-out button is just its icon */
+  .admin__signout span {
+    display: none;
+  }
+  .admin__signout {
+    padding: 0 10px;
+  }
+  .admin__bar {
+    gap: 8px;
+  }
+  .admin-brand {
+    margin-right: auto;
   }
   .admin__main {
     padding: 20px 16px;
@@ -1695,3 +1727,99 @@ a.admin-cell {
 .lecturer-card li {
   padding: 2px 0;
 }
+
+/* ---------- phones: every table row is a card (the cells are labelled by useTableLabels) ---------- */
+@media (max-width: 700px) {
+  .admin-table-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+  .admin-table-wrap .admin-table,
+  .admin-table-wrap .admin-table tbody,
+  .admin-table-wrap .admin-table tr,
+  .admin-table-wrap .admin-table td {
+    display: block;
+    width: auto;
+  }
+  /* the header row stays for screen readers only */
+  .admin-table-wrap .admin-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .admin-table-wrap .admin-table tbody tr {
+    margin-bottom: 10px;
+    border: 1px solid var(--field-border);
+    border-radius: 6px;
+    background: var(--card);
+  }
+  .admin-table-wrap .admin-table tbody tr:hover {
+    background: var(--card);
+  }
+  .admin-table-wrap .admin-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: none;
+    padding: 8px 12px;
+    overflow: visible;
+    text-align: right;
+    white-space: normal;
+  }
+  .admin-table-wrap .admin-table tbody tr:last-child td {
+    border-bottom: 1px solid var(--divider);
+  }
+  .admin-table-wrap .admin-table tbody tr td:last-child {
+    border-bottom: 0;
+  }
+  .admin-table-wrap .admin-table td::before {
+    content: attr(data-label);
+    flex: none;
+    max-width: 42%;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+  .admin-table-wrap .admin-table td:not([data-label])::before {
+    content: none;
+  }
+  .admin-table-wrap .admin-table td:not([data-label]) {
+    justify-content: flex-end;
+  }
+  .admin-table-wrap .admin-cell {
+    max-width: 100%;
+  }
+  .admin-table-wrap .admin-table td .admin-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+/* the narrowest phones (320px): menu | logo | picture, theme, sign-out must fit one row */
+@media (max-width: 400px) {
+  .admin__bar {
+    padding: 0 10px;
+    gap: 6px;
+  }
+  .admin__account {
+    gap: 4px;
+  }
+  .admin-brand {
+    gap: 6px;
+    min-width: 0;
+  }
+  .admin-brand__logo {
+    height: 18px;
+  }
+  .admin-brand__tag {
+    display: none;
+  }
+}
+
