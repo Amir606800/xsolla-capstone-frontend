@@ -8,7 +8,7 @@ import { Icon } from '../../../components/Icon'
  */
 export function LecturerChip({ names }: { names: string[] }) {
   const [open, setOpen] = useState(false)
-  const [at, setAt] = useState<{ left: number; bottom: number } | null>(null)
+  const [at, setAt] = useState<{ left?: number; right?: number; bottom: number } | null>(null)
   const button = useRef<HTMLButtonElement>(null)
   const card = useRef<HTMLDivElement>(null)
   const id = useId()
@@ -57,7 +57,15 @@ export function LecturerChip({ names }: { names: string[] }) {
         aria-label={`${names.length} lecturers`}
         onClick={() => {
           const r = button.current?.getBoundingClientRect()
-          if (r) setAt({ left: r.left, bottom: window.innerHeight - r.top + 8 })
+          // a chip on the right half of the screen (a phone's card) opens the list leftwards, so it stays on the screen
+          if (r) {
+            const bottom = window.innerHeight - r.top + 8
+            setAt(
+              r.left > window.innerWidth / 2
+                ? { right: Math.max(8, window.innerWidth - r.right), bottom }
+                : { left: Math.max(8, r.left), bottom },
+            )
+          }
           setOpen((v) => !v)
         }}
       >
@@ -67,7 +75,14 @@ export function LecturerChip({ names }: { names: string[] }) {
         <span className="lecturer-chip__count">{names.length}</span>
       </button>
       {open && at && (
-        <div ref={card} id={id} role="dialog" aria-label="Lecturers of this week" className={`lecturer-card lecturer-card--${tone}`} style={{ left: at.left, bottom: at.bottom }}>
+        <div
+          ref={card}
+          id={id}
+          role="dialog"
+          aria-label="Lecturers of this week"
+          className={`lecturer-card lecturer-card--${tone}`}
+          style={{ ...(at.left !== undefined ? { left: at.left } : { right: at.right }), bottom: at.bottom }}
+        >
           <p className="lecturer-card__title">{names.length} lecturers</p>
           <ul>
             {names.map((n) => (

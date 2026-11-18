@@ -1698,6 +1698,7 @@ a.admin-cell {
   position: fixed;
   z-index: 60;
   min-width: 180px;
+  max-width: calc(100vw - 16px);
   padding: 10px 14px;
   border: 1px solid color-mix(in srgb, var(--tone) 60%, transparent);
   border-radius: 6px;
