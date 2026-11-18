@@ -1,6 +1,7 @@
 import type { AssignmentItem, ContentItem, CourseModule, QuizItem, ResourceItem, Submission, SubmissionFile } from '../types/course'
 import { type UserDto, mapUser } from './auth.http'
 import { authedRequest } from './authed'
+import { fetchByIds } from './batch'
 import { ApiError } from './http'
 import { isServerId, joinDescription, mapModules, mapSubmission, parseQuizServerId, quizToApi, taskToApi, toQuizDomainId } from './mappers'
 import type { ApiContentItem, ApiFile, ApiModule, ApiQuiz, ApiSubmission } from './types'
@@ -47,12 +48,13 @@ async function lecturersByModule(moduleIds: number[]): Promise<Record<string, nu
     const users = await authedRequest<UserDto[] | null>('/users?search=')
     const lecturers = new Set((users ?? []).map(mapUser).filter((u) => u.roles.includes('lecturer')).map((u) => u.id))
     if (lecturers.size === 0) return {}
-    const lists = await Promise.all(
-      moduleIds.map((id) => authedRequest<EnrollmentDto[] | null>(`/modules/${id}/enrollments`).then((r) => r ?? [], () => [] as EnrollmentDto[])),
+    // one request for every week's enrollments
+    const lists = await fetchByIds('enrollments', 'module_ids', moduleIds, (id) =>
+      authedRequest<EnrollmentDto[] | null>(`/modules/${id}/enrollments`).then((r) => r ?? [], () => [] as EnrollmentDto[]),
     )
     const out: Record<string, number[]> = {}
-    moduleIds.forEach((id, i) => {
-      const found = lists[i].map((e) => Number(e.user_id)).filter((u) => lecturers.has(u))
+    moduleIds.forEach((id) => {
+      const found = (lists[String(id)] ?? []).map((e) => Number(e.user_id)).filter((u) => lecturers.has(u))
       if (found.length) out[String(id)] = found
     })
     return out
@@ -61,41 +63,45 @@ async function lecturersByModule(moduleIds: number[]): Promise<Record<string, nu
   }
 }
 
-/** `withSubmissions`: students also get their own hand-ins (one request per task; staff have none). */
+/**
+ * `withSubmissions`: students also get their own hand-ins (staff have none). The weeks' items, quizzes, hand-ins and
+ * (for staff) enrollments each come in ONE combined request for all weeks (see ./batch), not one request per week.
+ */
 export async function fetchModules(withSubmissions: boolean): Promise<CourseModule[]> {
   const modules = await authedRequest<ApiModule[] | null>('/modules')
   const list = modules ?? []
+  const ids = list.map((m) => String(m.id))
+  // one request for every week's items and one for every week's quizzes (fetchByIds), not one per week
   const [items, quizzes] = await Promise.all([
-    Promise.all(
-      list.map((m) => authedRequest<ApiContentItem[] | null>(`/modules/${m.id}/content-items`).then((r) => r ?? [])),
+    fetchByIds('content-items', 'module_ids', ids, (id) =>
+      authedRequest<ApiContentItem[] | null>(`/modules/${id}/content-items`).then((r) => r ?? []),
     ),
-    Promise.all(
-      list.map((m) =>
-        authedRequest<ApiQuiz[] | null>(`/modules/${m.id}/quizzes`)
-          .then((r) => r ?? [])
-          .catch((e) => {
-            // 404: a server without quizzes. 403: the server only lists a module's quizzes to its students, its creator and
-            // admins (a mentor, or a lecturer who is not the creator, is refused): no quizzes for them, not a broken course.
-            if (e instanceof ApiError && (e.status === 404 || e.status === 403)) return []
-            throw e
-          }),
-      ),
+    fetchByIds('quizzes', 'module_ids', ids, (id) =>
+      authedRequest<ApiQuiz[] | null>(`/modules/${id}/quizzes`)
+        .then((r) => r ?? [])
+        .catch((e) => {
+          // 404: a server without quizzes. 403: the server only lists a module's quizzes to its students, its creator and
+          // admins (a mentor, or a lecturer who is not the creator, is refused): no quizzes for them, not a broken course.
+          if (e instanceof ApiError && (e.status === 404 || e.status === 403)) return []
+          throw e
+        }),
     ),
   ])
   const itemsByModule: Record<string, ApiContentItem[]> = {}
   const quizzesByModule: Record<string, ApiQuiz[]> = {}
-  list.forEach((m, i) => {
-    itemsByModule[String(m.id)] = items[i]
-    quizzesByModule[String(m.id)] = quizzes[i]
-  })
+  for (const id of ids) {
+    // a week the server left out of a combined answer has nothing this person may see
+    itemsByModule[id] = items[id] ?? []
+    quizzesByModule[id] = quizzes[id] ?? []
+  }
 
   const mine: Record<string, ApiSubmission | undefined> = {}
   if (withSubmissions) {
     const wanted = list.flatMap((m) => itemsByModule[String(m.id)].filter(isAssignment).map((a) => [String(m.id), String(a.id)] as const))
-    const found = await Promise.all(wanted.map(([mid, aid]) => mySubmission(mid, aid)))
-    wanted.forEach(([, aid], i) => {
-      mine[aid] = found[i]
-    })
+    const weekOf = new Map(wanted.map(([mid, aid]) => [aid, mid]))
+    // one request for all the student's hand-ins (a task without one is left out)
+    const found = await fetchByIds('submissions/me', 'assignment_ids', [...weekOf.keys()], (aid) => mySubmission(weekOf.get(aid)!, aid))
+    for (const [, aid] of wanted) mine[aid] = found[aid]
   }
   // staff also learn which lecturers teach each week (students have no use for it)
   const teaching = withSubmissions ? {} : await lecturersByModule(list.map((m) => Number(m.id)))

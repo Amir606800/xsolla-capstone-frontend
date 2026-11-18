@@ -67,9 +67,37 @@ describe('fetchModules', () => {
       ['41', 'assignment', '4'],
     ])
     expect(calls.every((c) => (c.init.headers as Record<string, string>).Authorization === 'Bearer acc')).toBe(true)
-    // modules, items, quizzes (this server has none: 404 = no quizzes), and the users list that tells who the lecturers are
+    // this server has no combined routes (404), so after trying them it asks week by week: modules, the two combined
+    // tries, items, quizzes (none: 404 = no quizzes), and the users list that tells who the lecturers are
     expect(calls.filter((c) => c.path.includes('/submissions'))).toHaveLength(0)
-    expect(calls).toHaveLength(4)
+    expect(calls.map((c) => c.path)).toEqual(['/modules', '/content-items', '/quizzes', '/modules/4/content-items', '/modules/4/quizzes', '/users'])
+  })
+
+  it('a server with the combined routes is asked once per kind of data, not once per week', async () => {
+    const week = (id: number) => ({ id, title: `Week ${id}`, created_by: 9, created_at: `2026-11-0${id}T00:00:00Z` })
+    await backend({
+      'GET /modules': () => ({ status: 200, body: [week(4), week(5), week(6)] }),
+      'GET /content-items': () => ({
+        status: 200,
+        body: {
+          '4': [{ id: 41, type: 'assignment', title: 'CLI tool', description: '', position: 1, is_visible: true, due_at: '2026-11-09T18:00:00Z' }],
+          '5': [{ id: 51, type: 'assignment', title: 'HTTP server', description: '', position: 1, is_visible: true, due_at: '2026-11-16T18:00:00Z' }],
+          // week 6 left out: nothing this person may see
+        },
+      }),
+      'GET /quizzes': () => ({ status: 200, body: {} }),
+      'GET /submissions/me': () => ({
+        status: 200,
+        body: { '51': { id: 9, content_item_id: 51, student_id: 1, text_body: 'repo link', submitted_at: '2026-11-15T10:00:00Z' } },
+      }),
+    })
+    const course = await fetchModules(true)
+    expect(calls.map((c) => c.path)).toEqual(['/modules', '/content-items', '/quizzes', '/submissions/me'])
+    expect(calls[1].url).toBe(`${BASE}/content-items?module_ids=4,5,6`)
+    expect(find('GET', '/submissions/me').url).toBe(`${BASE}/submissions/me?assignment_ids=41,51`)
+    expect(course.map((m) => m.items.length)).toEqual([1, 1, 0])
+    expect(course[0].items[0]).not.toHaveProperty('submission')
+    expect(course[1].items[0]).toMatchObject({ submission: { textBody: 'repo link' } })
   })
 
   it('a module whose quizzes the server will not list to this person (403) just has none; any other failure still fails the load', async () => {

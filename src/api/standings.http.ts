@@ -1,6 +1,7 @@
 import type { StandingLevel, WeeklyStanding } from '../types/standing'
 import { parseStandingLevel } from '../utils/standing'
 import { authedRequest } from './authed'
+import { fetchByIds } from './batch'
 import { ApiError } from './http'
 import { mapModules } from './mappers'
 import type { StoredStanding } from '../types/standing'
@@ -62,10 +63,16 @@ async function enrollments(moduleId: string): Promise<EnrollmentDto[]> {
   }
 }
 
+/** Every week's enrollments in one combined request (a week the caller may not read is left out). */
+async function enrollmentsByWeek(list: Week[], one: (moduleId: string) => Promise<EnrollmentDto[] | undefined>) {
+  return fetchByIds('enrollments', 'module_ids', list.map((w) => w.moduleId), one)
+}
+
 /** Every grade given to these students, week by week. */
 async function gradesOf(studentIds: Set<number>): Promise<StoredStanding[]> {
   const list = await weeks()
-  const rows = await Promise.all(list.map((w) => enrollments(w.moduleId)))
+  const byWeek = await enrollmentsByWeek(list, enrollments)
+  const rows = list.map((w) => byWeek[w.moduleId] ?? [])
   const out: StoredStanding[] = []
   list.forEach((w, i) => {
     for (const e of rows[i]) {
@@ -105,20 +112,17 @@ export interface WeekGrade extends StoredStanding {
  */
 export async function fetchEveryGrade(): Promise<WeekGrade[] | null> {
   const list = await weeks()
-  let refused = 0
-  const rows = await Promise.all(
-    list.map(async (w) => {
-      try {
-        return (await authedRequest<EnrollmentDto[] | null>(`/modules/${w.moduleId}/enrollments`)) ?? []
-      } catch (e) {
-        if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
-          refused += 1
-          return []
-        }
-        throw e
-      }
-    }),
-  )
+  const byWeek = await enrollmentsByWeek(list, async (moduleId) => {
+    try {
+      return (await authedRequest<EnrollmentDto[] | null>(`/modules/${moduleId}/enrollments`)) ?? []
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 403 || e.status === 404)) return undefined // refused: left out
+      throw e
+    }
+  })
+  // a week left out of the answer was refused
+  const refused = list.filter((w) => byWeek[w.moduleId] === undefined).length
+  const rows = list.map((w) => byWeek[w.moduleId] ?? [])
   if (list.length > 0 && refused === list.length) return null
   const out: WeekGrade[] = []
   list.forEach((w, i) => {
