@@ -35,7 +35,7 @@ const LEGEND: [EventKind, string][] = [
   ['off-campus', 'Off-campus'],
   ['deadline', 'Deadline'],
   ['availability', '1:1 times'],
-  ['discussion', 'Talk'],
+  ['discussion', 'Discuss'],
   ['google', 'Google'],
 ]
 const HIDDEN_KEY = 'calendar_hidden_kinds'
@@ -179,7 +179,7 @@ export default function CalendarPage() {
             onDelete: async (event) => {
               if (event.kind === 'discussion') {
                 await removeTalk(event.id.replace(/^talk-/, ''))
-                setNotice({ tone: 'ok', text: 'Talk cancelled.' })
+                setNotice({ tone: 'ok', text: 'Discussion cancelled.' })
                 return
               }
               await removeEvent(event.id)

@@ -585,12 +585,20 @@
   .node__circle .ring__content {
     inset: 8px;
   }
-  /* the Opened / Due tags stay inside the screen next to the smaller circle (more specific than their wide-path rules below) */
+  /* the Opened / Due tags sit side by side above the current module's circle, clear of its name (more specific than their
+     wide-path rules below) */
+  .path .node--active {
+    margin-top: 58px;
+  }
+  .path .node__tag {
+    top: -58px;
+  }
   .path .node__tag--left {
-    left: -6px;
+    left: 0;
   }
   .path .node__tag--right {
-    right: -40px;
+    left: 60px;
+    right: auto;
   }
 }
 

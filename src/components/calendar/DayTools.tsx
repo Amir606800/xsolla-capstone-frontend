@@ -10,7 +10,7 @@ import { AvailabilityForm } from './Slots'
 import type { SlotActions } from './Slots'
 import { TalkForm } from './TalkForm'
 
-/** What is open for adding: the event form (new or an existing event), the 1:1 times form, or the form of a talk. */
+/** What is open for adding: the event form (new or an existing event), the 1:1 times form, or the form of a discussion. */
 export type Tool = { kind: 'event'; event?: CalendarEvent } | { kind: 'slots' } | { kind: 'talk' }
 
 /**
@@ -30,7 +30,7 @@ export function DayActions({
   /** A lecturer adds lectures only; an admin adds any kind of event. */
   lectureOnly?: boolean
   canAddSlots: boolean
-  /** A mentor sets up a talk with students (not a 1:1). */
+  /** A mentor sets up a discussion with students (not a 1:1). */
   canAddTalk?: boolean
   tool: Tool | null
   onTool: (tool: Tool | null) => void
@@ -75,12 +75,12 @@ export function DayActions({
         <button
           type="button"
           className="btn btn--small day-actions__btn"
-          aria-label="Add a talk with students"
+          aria-label="Add a discussion with students"
           aria-pressed={tool?.kind === 'talk'}
-          title="A talk with some or all of your students, on any day. It is not a 1:1 and does not change a deadline."
+          title="A discussion with some or all of your students, on any day. It is not a 1:1 and does not change a deadline."
           onClick={() => open({ kind: 'talk' })}
         >
-          <Icon name="plus" size={16} /> Talk
+          <Icon name="plus" size={16} /> Discuss
         </button>
       )}
     </div>
@@ -89,7 +89,7 @@ export function DayActions({
 
 function titleOf(tool: Tool, lectureOnly: boolean): string {
   if (tool.kind === 'slots') return 'Add 1:1 times'
-  if (tool.kind === 'talk') return 'New talk with students'
+  if (tool.kind === 'talk') return 'New discussion with students'
   if (lectureOnly) return tool.event ? 'Edit lecture' : 'New lecture'
   return tool.event ? 'Edit event' : 'New lecture or event'
 }

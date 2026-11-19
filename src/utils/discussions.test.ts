@@ -43,7 +43,7 @@ describe('discussionEvents', () => {
   })
   it('shows a student the mentor', () => {
     const [e] = discussionEvents([rows[0]], { isMentor: false })
-    expect(e.description).toBe('A talk with Rashad.')
+    expect(e.description).toBe('A discussion with Rashad.')
     expect(e.attendees?.map((a) => a.name)).toEqual(['Rashad'])
   })
 })

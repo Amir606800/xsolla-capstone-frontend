@@ -66,6 +66,7 @@ export default function ContentPage() {
   const [only, setOnly] = useState<'mine' | 'all' | null>(null)
   const view = lecturer && mineIds.size > 0 ? (only ?? 'mine') : 'all'
   const shown = view === 'mine' ? sorted.filter((m) => mineIds.has(m.id)) : sorted
+  // what is still to do matters to a lecturer only in the weeks they prepare (an admin sees every week's)
   const gapsByModule = useMemo(() => {
     const map = new Map<string, ContentGap[]>()
     for (const g of contentGaps(modules, now)) map.set(g.moduleId, [...(map.get(g.moduleId) ?? []), g])
@@ -116,7 +117,7 @@ export default function ContentPage() {
       {status === 'ready' && (
         <ul className="content-rows" aria-label="Modules">
           {shown.map((m) => (
-            <ModuleRow key={m.id} module={m} now={now} gaps={gapsByModule.get(m.id) ?? []} mine={lecturer && mineIds.has(m.id)} />
+            <ModuleRow key={m.id} module={m} now={now} gaps={lecturer && !mineIds.has(m.id) ? [] : (gapsByModule.get(m.id) ?? [])} mine={lecturer && mineIds.has(m.id)} />
           ))}
         </ul>
       )}

@@ -141,14 +141,16 @@ describe('Course content', () => {
     expect(screen.queryByRole('button', { name: /Assigned to me/ })).not.toBeInTheDocument()
   })
 
-  it('flags a module with missing content', async () => {
-    removeItem('m8-r1')
-    removeItem('m8-r2')
+  it('flags missing content only in the modules assigned to the lecturer', async () => {
+    // Rashad (900) has the odd weeks: week 9 is his, week 8 is Elvin's
+    for (const id of ['m8-r1', 'm8-r2', 'm9-r1', 'm9-r2']) removeItem(id)
     const user = userEvent.setup()
     renderAs(LECTURER, '/courses')
     await user.click(await screen.findByRole('button', { name: 'All modules (12)' }))
-    const row = (await screen.findAllByRole('link', { name: /Module 8/ }))[0]
-    expect(row).toHaveTextContent('1 thing to do')
+    const row = (n: number) => screen.findAllByRole('link', { name: new RegExp(`Module ${n} `) }).then((r) => r[0])
+    expect(await row(9)).toHaveTextContent('1 thing to do')
+    expect(await row(8)).not.toHaveTextContent('to do')
+    expect(screen.getByRole('status')).toHaveTextContent('still to do in them')
   })
 
   it('the module page says it is assigned to you', async () => {

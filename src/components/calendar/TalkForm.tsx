@@ -6,7 +6,7 @@ import { TimeInput } from '../TimeInput'
 import type { Notice } from './DayPanel'
 
 /**
- * Mentor: set up a talk with students of the team, to discuss something. It is not a 1:1, so it can be on any day and it
+ * Mentor: set up a discussion with students of the team, to discuss something. It is not a 1:1, so it can be on any day and it
  * never moves a deadline. Shown in the "add" part of the day panel.
  */
 export function TalkForm({
@@ -38,7 +38,7 @@ export function TalkForm({
   const members = team?.members ?? []
   const timeError = useMemo(() => talkTimeError(dayKey, start, end, now), [dayKey, start, end, now])
   const problem = !title.trim()
-    ? 'Give the talk a title.'
+    ? 'Give the discussion a title.'
     : (timeError ?? (!wholeTeam && picked.length === 0 ? 'Choose at least one student.' : null))
 
   const toggle = (studentId: number) =>
@@ -61,13 +61,13 @@ export function TalkForm({
       })
       onMessage({
         tone: 'ok',
-        text: 'Talk set up. The students can see it on their calendar.',
+        text: 'Discussion set up. The students can see it on their calendar.',
       })
       onDone()
     } catch (err) {
       onMessage({
         tone: 'error',
-        text: err instanceof Error ? err.message : 'Could not set up the talk',
+        text: err instanceof Error ? err.message : 'Could not set up the discussion',
       })
     } finally {
       setBusy(false)
@@ -88,7 +88,7 @@ export function TalkForm({
   return (
     <form className="slots__form" onSubmit={submit} noValidate>
       <p className="slots__hint">
-        A talk to discuss something with your students. It is not a 1:1: nobody books it, and it does not change any deadline.
+        A discussion with your students, to talk something over. It is not a 1:1: nobody books it, and it does not change any deadline.
       </p>
 
       <label className="field__label" htmlFor={`${id}-title`}>
@@ -147,7 +147,7 @@ export function TalkForm({
 
       <div className="slots__fields">
         <button type="submit" className="btn" disabled={problem !== null || busy || status !== 'ready'}>
-          Set up the talk
+          Set up the discussion
         </button>
         <button type="button" className="btn btn--ghost" onClick={onCancel}>
           Cancel
