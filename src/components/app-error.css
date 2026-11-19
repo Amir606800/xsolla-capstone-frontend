@@ -1,0 +1,23 @@
+/* shown in place of a page that could not be shown */
+.app-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  text-align: center;
+  background: var(--main-bg);
+  color: var(--text);
+}
+.app-error__title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.app-error__text {
+  margin: 0 0 8px;
+  max-width: 36ch;
+  color: var(--text-muted);
+}

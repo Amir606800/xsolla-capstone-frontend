@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import AdminRoute from './components/AdminRoute'
+import { AppErrorBoundary } from './components/AppErrorBoundary'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Allow, ByRole, StudentOnly } from './components/RoleRoutes'
 import { ADMIN_SECTIONS } from './config/adminNav'
@@ -69,103 +70,106 @@ function ToProfile({ to }: { to: string }) {
 }
 
 export default function App() {
+  const { pathname } = useLocation()
   return (
-    <Suspense fallback={<PageLoader fullscreen />}>
-      <Routes>
-        <Route path="/login" element={<AuthPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
-        <Route path="/admin/login" element={<AdminLoginPage />} />
-        {/* a front-end demo of the super admin (coordinators and cohorts): a demo sign-in (admin / admin), nothing is saved */}
-        <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
-        <Route path="/super-admin" element={<SuperAdminRoute />}>
-          <Route index element={<SuperAdminPage />} />
-          <Route path="*" element={<Navigate to="/super-admin" replace />} />
-        </Route>
-        <Route path="/admin" element={<AdminRoute />}>
-          <Route element={<AdminLayout />}>
-            <Route index element={<AdminHomePage />} />
-            <Route path="/admin/modules" element={<AdminCoursesLayout />}>
-              <Route index element={<AdminModulesPage />} />
-              <Route path=":moduleId" element={<AdminModulePage />} />
-            </Route>
-            <Route path="/admin/calendar" element={<AdminCoursesLayout />}>
-              <Route index element={<AdminCalendarPage />} />
-            </Route>
-            <Route path="/admin/students" element={<AdminStudentsPage />} />
-            {/* a mentor made a lecturer is given weeks right away, so the page loads the course */}
-            <Route path="/admin/mentors" element={<AdminCoursesLayout />}>
-              <Route index element={<AdminMentorsPage />} />
-            </Route>
-            <Route path="/admin/teams" element={<AdminTeamsPage />} />
-            {/* the page names each review's week from the course, so it loads the course */}
-            <Route path="/admin/student-reviews" element={<AdminCoursesLayout />}>
-              <Route index element={<AdminStudentReviewsPage />} />
-            </Route>
-            <Route path="/admin/mentor-reviews" element={<AdminCoursesLayout />}>
-              <Route index element={<AdminReviewsPage />} />
-            </Route>
-            <Route path="/admin/lecture-reviews" element={<AdminCoursesLayout />}>
-              <Route index element={<AdminLectureReviewsPage />} />
-            </Route>
-            <Route path="/admin/reports" element={<AdminReportsPage />} />
-            <Route path="/admin/announce" element={<AdminAnnouncePage />} />
-            <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
-            <Route path="/admin/analytics" element={<AnalyticsOverviewPage />} />
-            <Route path="/admin/analytics/students" element={<AnalyticsPeoplePage role="students" />} />
-            <Route path="/admin/analytics/students/:studentId" element={<StudentAnalyticsPage />} />
-            <Route path="/admin/analytics/mentors" element={<AnalyticsPeoplePage role="mentors" />} />
-            <Route path="/admin/analytics/mentors/:mentorId" element={<MentorAnalyticsPage />} />
-            <Route path="/admin/analytics/lecturers" element={<AnalyticsPeoplePage role="lecturers" />} />
-            <Route path="/admin/analytics/lecturers/:lecturerId" element={<LecturerAnalyticsPage />} />
-            <Route path="/admin/office-tour" element={<OfficeTourPage />} />
-            <Route path="/admin/profile" element={<AdminProfilePage />} />
-            <Route path="/admin/settings" element={<ToProfile to="/admin/profile" />} />
-            {/* the lecturers page counts each lecturer's modules, so it loads the course */}
-            <Route path="/admin/lecturers" element={<AdminCoursesLayout />}>
-              <Route index element={<AdminLecturersPage />} />
-            </Route>
-            {/* sections that are not built yet */}
-            {ADMIN_SECTIONS.filter((s) => !BUILT_ADMIN.includes(s.key)).map((s) => (
-              <Route key={s.key} path={s.path} element={<AdminSectionPage section={s} />} />
-            ))}
-            <Route path="*" element={<Navigate to="/admin" replace />} />
+    <AppErrorBoundary resetKey={pathname}>
+      <Suspense fallback={<PageLoader fullscreen />}>
+        <Routes>
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+  
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          {/* a front-end demo of the super admin (coordinators and cohorts): a demo sign-in (admin / admin), nothing is saved */}
+          <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
+          <Route path="/super-admin" element={<SuperAdminRoute />}>
+            <Route index element={<SuperAdminPage />} />
+            <Route path="*" element={<Navigate to="/super-admin" replace />} />
           </Route>
-        </Route>
-
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<ByRole student={<DashboardPage />} staff={<StaffDashboard />} />} />
-            <Route
-              path="/courses"
-              element={<ByRole student={<CoursesPage />} staff={<Allow when={canAuthor}><ContentPage /></Allow>} />}
-            />
-            <Route
-              path="/courses/:moduleId"
-              element={<ByRole student={<ModulePage />} staff={<Allow when={canAuthor}><ModuleEditorPage /></Allow>} />}
-            />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/office-tour" element={<OfficeTourPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<ToProfile to="/profile" />} />
-            <Route
-              path="/team"
-              element={<ByRole student={<TeamPage />} staff={<Allow when={canMentor}><MentorTeamPage /></Allow>} />}
-            />
-            <Route
-              path="/grading"
-              element={<Allow when={canMentor}><GradingPage /></Allow>}
-            />
-            <Route element={<StudentOnly />}>
-              <Route path="/tasks" element={<TasksPage />} />
-              <Route path="/grades" element={<GradesPage />} />
-              <Route path="/mentor-review" element={<MentorReviewPage />} />
+          <Route path="/admin" element={<AdminRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route index element={<AdminHomePage />} />
+              <Route path="/admin/modules" element={<AdminCoursesLayout />}>
+                <Route index element={<AdminModulesPage />} />
+                <Route path=":moduleId" element={<AdminModulePage />} />
+              </Route>
+              <Route path="/admin/calendar" element={<AdminCoursesLayout />}>
+                <Route index element={<AdminCalendarPage />} />
+              </Route>
+              <Route path="/admin/students" element={<AdminStudentsPage />} />
+              {/* a mentor made a lecturer is given weeks right away, so the page loads the course */}
+              <Route path="/admin/mentors" element={<AdminCoursesLayout />}>
+                <Route index element={<AdminMentorsPage />} />
+              </Route>
+              <Route path="/admin/teams" element={<AdminTeamsPage />} />
+              {/* the page names each review's week from the course, so it loads the course */}
+              <Route path="/admin/student-reviews" element={<AdminCoursesLayout />}>
+                <Route index element={<AdminStudentReviewsPage />} />
+              </Route>
+              <Route path="/admin/mentor-reviews" element={<AdminCoursesLayout />}>
+                <Route index element={<AdminReviewsPage />} />
+              </Route>
+              <Route path="/admin/lecture-reviews" element={<AdminCoursesLayout />}>
+                <Route index element={<AdminLectureReviewsPage />} />
+              </Route>
+              <Route path="/admin/reports" element={<AdminReportsPage />} />
+              <Route path="/admin/announce" element={<AdminAnnouncePage />} />
+              <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
+              <Route path="/admin/analytics" element={<AnalyticsOverviewPage />} />
+              <Route path="/admin/analytics/students" element={<AnalyticsPeoplePage role="students" />} />
+              <Route path="/admin/analytics/students/:studentId" element={<StudentAnalyticsPage />} />
+              <Route path="/admin/analytics/mentors" element={<AnalyticsPeoplePage role="mentors" />} />
+              <Route path="/admin/analytics/mentors/:mentorId" element={<MentorAnalyticsPage />} />
+              <Route path="/admin/analytics/lecturers" element={<AnalyticsPeoplePage role="lecturers" />} />
+              <Route path="/admin/analytics/lecturers/:lecturerId" element={<LecturerAnalyticsPage />} />
+              <Route path="/admin/office-tour" element={<OfficeTourPage />} />
+              <Route path="/admin/profile" element={<AdminProfilePage />} />
+              <Route path="/admin/settings" element={<ToProfile to="/admin/profile" />} />
+              {/* the lecturers page counts each lecturer's modules, so it loads the course */}
+              <Route path="/admin/lecturers" element={<AdminCoursesLayout />}>
+                <Route index element={<AdminLecturersPage />} />
+              </Route>
+              {/* sections that are not built yet */}
+              {ADMIN_SECTIONS.filter((s) => !BUILT_ADMIN.includes(s.key)).map((s) => (
+                <Route key={s.key} path={s.path} element={<AdminSectionPage section={s} />} />
+              ))}
+              <Route path="*" element={<Navigate to="/admin" replace />} />
             </Route>
           </Route>
-        </Route>
-
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </Suspense>
+  
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<ByRole student={<DashboardPage />} staff={<StaffDashboard />} />} />
+              <Route
+                path="/courses"
+                element={<ByRole student={<CoursesPage />} staff={<Allow when={canAuthor}><ContentPage /></Allow>} />}
+              />
+              <Route
+                path="/courses/:moduleId"
+                element={<ByRole student={<ModulePage />} staff={<Allow when={canAuthor}><ModuleEditorPage /></Allow>} />}
+              />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/office-tour" element={<OfficeTourPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/settings" element={<ToProfile to="/profile" />} />
+              <Route
+                path="/team"
+                element={<ByRole student={<TeamPage />} staff={<Allow when={canMentor}><MentorTeamPage /></Allow>} />}
+              />
+              <Route
+                path="/grading"
+                element={<Allow when={canMentor}><GradingPage /></Allow>}
+              />
+              <Route element={<StudentOnly />}>
+                <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/grades" element={<GradesPage />} />
+                <Route path="/mentor-review" element={<MentorReviewPage />} />
+              </Route>
+            </Route>
+          </Route>
+  
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Suspense>
+    </AppErrorBoundary>
   )
 }

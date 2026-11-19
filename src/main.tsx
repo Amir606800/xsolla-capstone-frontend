@@ -11,10 +11,16 @@ import { GoogleProvider } from './context/GoogleProvider.tsx'
 import { ProfileProvider } from './context/ProfileProvider.tsx'
 import { ThemeProvider } from './context/ThemeProvider.tsx'
 import { runtimeEnv } from './config/runtime.ts'
+import { reloadOnceForStaleBuild } from './utils/staleBuild.ts'
 
 if (!runtimeEnv('VITE_API_URL')) {
   throw new Error('VITE_API_URL is required. Configure the frontend environment before loading the app.')
 }
+
+// Vite reports a page file (or its CSS) that could not be preloaded: the tab is older than the deployed build
+window.addEventListener('vite:preloadError', (event) => {
+  if (reloadOnceForStaleBuild()) event.preventDefault()
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
