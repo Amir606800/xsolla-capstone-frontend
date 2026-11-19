@@ -36,6 +36,25 @@ describe('in-app notifications: with a backend', () => {
     ])
   })
 
+  it('an announcement shows what the admin wrote, not just "Announcement from ...", and opens its page', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.test')
+    const title = 'Announcement from School Admin'
+    const announcement = dto({
+      id: 7,
+      type: 'announcement.created',
+      title,
+      message: 'Hi Anna,\r\n\r\nNo lectures on Friday.\r\nSee you Monday.\r\n\r\nOpen it in the LMS: /calendar',
+    })
+    const plain = dto({ id: 6, type: 'announcement.created', title, message: 'Hi Anna,\r\n\r\nHello all.' })
+    await stubHttp(vi.fn(async () => new Response(JSON.stringify([announcement, plain]), { status: 200 })))
+    const { fetchNotifications } = await real()
+    const rows = await fetchNotifications()
+    expect(rows.map((n) => [n.type, n.message, n.link])).toEqual([
+      ['announcement', 'No lectures on Friday.\nSee you Monday.', '/calendar'],
+      ['announcement', 'Hello all.', ''],
+    ])
+  })
+
   it('a server with no notification database (503) or no route has no notifications: an empty bell, not an error', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.test')
     await stubHttp(vi.fn(async () => new Response(JSON.stringify({ error: 'service_unavailable', message: 'off' }), { status: 503 })))

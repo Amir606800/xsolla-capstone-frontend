@@ -37,8 +37,30 @@ const EVENT: Record<string, { type: NotificationType; link: string }> = {
   'submission.created': { type: 'submission', link: '/grading' },
 }
 
+/**
+ * An announcement's subject is only "Announcement from <admin>": what the admin wrote is in the body, between the greeting
+ * ("Hi <name>,") and the line naming the page ("Open it in the LMS: /calendar"). The bell shows that text, and the page opens on click.
+ */
+function announcementOf(d: NotificationDto): { text: string; link: string } {
+  const body = d.message.replace(/\r/g, '').trim()
+  const link = /\nOpen it in the LMS: (\/\S*)\s*$/.exec(body)?.[1] ?? ''
+  const text = body.replace(/\n+Open it in the LMS: .*$/s, '').replace(/^Hi [^\n]*,\n+/, '').trim()
+  return { text, link }
+}
+
 /** The bell shows one line: the email's subject (the body is the same text in full sentences). */
 export function toNotification(d: NotificationDto): AppNotification {
+  if (d.type === 'announcement.created') {
+    const { text, link } = announcementOf(d)
+    return {
+      id: String(d.id),
+      type: 'announcement',
+      message: text || d.title.trim(),
+      link,
+      createdAt: d.created_at,
+      readAt: d.read_at ?? null,
+    }
+  }
   const known = EVENT[d.type]
   return {
     id: String(d.id),
